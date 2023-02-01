@@ -15,8 +15,9 @@ Function Checkpoint-ModuleVersion {
         Ideal for:
             * quick revision updates that you may not necessarily want to immediately push into your git repository until you've reached a new build/minor version
             * quickly versioning your latest change in case you need to roll your upcoming changes back.
+            * if you are working offline, then this can replace git as an ad-hoc versioning tool without any dependencies (such as PowerShellGet).
 
-        Each update also archives the current version's module files, e.g., to your folder synced with your git repository.
+        Each update also archives the current version's module files, e.g., to your folder synced with your git repository or a general backup directory.
 
         It's similar to Save-Module; however, it is built with the following different logic:
             1. The module files aren't zipped, and PowerShellGet isn't invoked.
