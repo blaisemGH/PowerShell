@@ -6,7 +6,7 @@ Function Checkpoint-ModuleVersion {
     
     .NOTES
         REQUIRES a .psd1 file with your module. (See: help New-ModuleManifest to quickly create one).
-        Any exported module members should be defined in the psm1 file.
+        Any exported module members should be defined in the psm1 file via Export-ModuleMember, and not in one of the related manifest keys (see end of DESCRIPTION).
         Developed on Windows PowerShell 5.1.14393.
 
     .DESCRIPTION
