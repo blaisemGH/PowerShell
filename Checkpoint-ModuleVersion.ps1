@@ -5,7 +5,7 @@ Function Checkpoint-ModuleVersion {
         The old version is archived to a directory of your choice, e.g., your repo directory.
     
     .NOTES
-        REQUIRES a .psd1 file with your module. (See: help New-ModuleManifest to quickly create one).
+        REQUIRES a .psd1 file with your module. To quickly create a manifest, enter PS>Get-Help New-ModuleManifest
         Any exported module members should be defined in the psm1 file via Export-ModuleMember, and not in one of the related manifest keys (see end of DESCRIPTION).
         Developed on Windows PowerShell 5.1.14393.
 
@@ -24,11 +24,12 @@ Function Checkpoint-ModuleVersion {
                 Technically, it is possible to increment multiple version properties at a time, or increment by more than 1.
                 If an explicit version is needed, the parameterset VersionExplicit is available.
             3. It preserves previous module versions of the same major and minor version in your PSModulePath.
-                This maintains an accessible record of changes to a major/minor version without bloating your module work directory with old/deprecated major/minor versions.
+                This maintains an accessible record of changes to a major/minor version without bloating your module work dir with old/deprecated major/minor versions.
         
         To use this function, simply provide the ModuleName parameter and then either a combination of increments or the versionExplicit parameter.
         
         If you typically only work on 1 module at a time, the default value for ModuleName can be set, so you don't need to provide ModuleName anymore.
+
         The archiving parent directory can be set at the top of the script.
             * It defaults to your module's parent directory + repo/<ModuleName>.
             * If $env:repoDir is set, then it is archived to $env:repoDir + modules/$moduleName.
@@ -36,7 +37,7 @@ Function Checkpoint-ModuleVersion {
         
         NOTE: You must use Export-ModuleMember in your psm1 file if you wish to restrict your exported ModuleMembers.
             Update-ModuleManifest automatically comments out the export members in its manifest unless specified as a parameter.
-            To avoid commenting them out, the parameters are specified with a '*', and export restrictions are left to the psm1 file to dictate.
+            To avoid commenting them out, the parameters are input with a '*', and export restrictions are left to the psm1 file to dictate.
 
     .EXAMPLE
         Checkpoint-ModuleVersion -ModuleName MyModule -RevisionIncrement 1
@@ -111,7 +112,7 @@ Function Checkpoint-ModuleVersion {
     $module = Get-Module $ModuleName | Where Version -eq ( Get-Module $ModuleName | Measure-Object Version -Maximum | Select-Object -ExpandProperty Maximum)
     $moduleVersion = $v = $module | Select-Object -ExpandProperty Version
 
-    # Reassemble version to ensure all 4 version properties are involved (There was some reason I had to do this...)
+    # Reassemble version to ensure all 4 version properties are present (corrects for the scenario where a user didn't specify all 4 in the psd1 version key)
     [version]$currentVersion = $v.Major.ToString() + '.' + $v.Minor.ToString() + '.' + $v.Build.ToString() + '.' + $v.Revision.ToString()
 
     [version]$newVersion = & {
