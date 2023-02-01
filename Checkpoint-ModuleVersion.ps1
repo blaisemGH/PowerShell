@@ -83,7 +83,7 @@ Function Checkpoint-ModuleVersion {
 
         #Explicitly set a new version.
         [Parameter(ParameterSetName='VersionExplicit')]
-        [Version]$VersionExplicit
+        [version]$VersionExplicit
     )
 
     $incMa = $MajorIncrement
@@ -107,9 +107,9 @@ Function Checkpoint-ModuleVersion {
     $moduleVersion = $v = $module | Select-Object -ExpandProperty Version
 
     # Reassemble version to ensure all 4 version properties are involved (There was some reason I had to do this...)
-    [Version]$currentVersion = $v.Major.ToString() + '.' + $v.Minor.ToString() + '.' + $v.Build.ToString() + '.' + $v.Revision.ToString()
+    [version]$currentVersion = $v.Major.ToString() + '.' + $v.Minor.ToString() + '.' + $v.Build.ToString() + '.' + $v.Revision.ToString()
 
-    [Version]$newVersion = & {
+    [version]$newVersion = & {
         If ( $VersionExplicit ) {
             $VersionExplicit
         }
@@ -132,7 +132,7 @@ Function Checkpoint-ModuleVersion {
     $build = if ($newVersion.Build -lt 0 -or (!$incBu -and ($incMa -or $incMi)) ) { 0 } else { $newVersion.Build }
     $revision = if ($newVersion.Revision -lt 0 -or (!$incRe -and ($incMa -or $incMi -or $incBu)) ) { 0 } else { $newVersion.Revision }
 
-    [Version]$cleanVersion = $major.ToString() + '.' + $minor.ToString() + '.' + $build.ToString() + '.' + $revision.ToString()
+    [version]$cleanVersion = $major.ToString() + '.' + $minor.ToString() + '.' + $build.ToString() + '.' + $revision.ToString()
 
     If ( $cleanVersion -lt $currentVersion ) {
         Throw "Attempted to update module to an older version! Current Version: $currentVersion | Attempted new version: $cleanVersion"
@@ -140,8 +140,8 @@ Function Checkpoint-ModuleVersion {
 
     Write-Host ('{0}Updating module "{1}" from version {2} to new version {3}' -f [Environment]::NewLine, $module.Name, $currentVersion, $cleanVersion) -Fore Green
 
-    $progressDir = $null
-    $progressCopy = $null
+    $progressDir      = $null
+    $progressCopy     = $null
     $progressManifest = $null
     $archiveModuleDir = $archiveModuleBaseDir
     try {
