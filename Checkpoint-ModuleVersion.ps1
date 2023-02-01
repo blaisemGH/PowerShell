@@ -19,7 +19,7 @@ Function Checkpoint-ModuleVersion {
                 Technically, it is possible to increment multiple version properties at a time, or increment by more than 1.
                 If an explicit version is needed, the parameterset VersionExplicit is available.
             3. It preserves previous module versions of the same major and minor version in your PSModulePath.
-                This maintains an accessible record of changes to a major/minor version without bloating your module work directory with old and deprecated major/minor versions.
+                This maintains an accessible record of changes to a major/minor version without bloating your module work directory with old/deprecated major/minor versions.
         
         To use this function, simply provide the ModuleName parameter and then either a combination of increments or the versionExplicit parameter.
         
@@ -46,7 +46,8 @@ Function Checkpoint-ModuleVersion {
         
         Furthermore, after the script archives the latest version, it will offer to clean up your module's base directory of lower minor versions.
             * There will be a prompt for removing each version directory.
-            * It won't save these older folders before deletion, but if Checkpoint-ModuleVersion has been used for every version update, then you will have already archived these older versions.
+            * It won't save these older folders before deletion.
+                --> However, if Checkpoint-ModuleVersion has been used for every version update, then you will have already archived these older versions.
 
     .EXAMPLE
         Checkpoint-ModuleVersion -ModuleName MyModule -VersionExplicit 4.3.2.1
@@ -120,7 +121,7 @@ Function Checkpoint-ModuleVersion {
     <#
         If a version property is empty, casting to the version type defaults it to -1, which doesn't make sense and would cause future increments to arrive at 0.
         The following code enforces a minimum of 0.
-        Also, if you upgrade a higher version property, then it resets the lower version properties to 0, e.g., updating the minor version should reset build and revision to 0.
+        Also, this section resets lower version properties to 0, e.g., updating the minor version will automatically reset build and revision to 0.
     #>
     $major = if ($newVersion.Major -lt 0) { 0 } else { $newVersion.Major }
     $minor = if ($newVersion.Minor -lt 0 -or (!$incMi -and $incMa) ){ 0 } else { $newVersion.Minor }
