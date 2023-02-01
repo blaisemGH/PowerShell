@@ -1,9 +1,15 @@
 Function Checkpoint-ModuleVersion {
 <#
     .SYNOPSIS
-        Checkpoint a module's files in one command, like taking a snapshot.
+        Simultaneously checkpoint a module's files, like taking a snapshot, and upgrade its version, so you can continue working immediately.
+		The old version is archived to a directory of your choice, e.g., your repo directory.
+
     .DESCRIPTION
-        This function is intended to create a quick snapshot of your module development using basic cmdlets, then update it to the next version, so you can continue working immediately from a new checkpoint without interrupting your workflow. This is ideal for quick revision updates that you may not necessarily want to immediately push into your git repository until you've reached a new build/minor version, but you still want to version the latest change in case you need to roll it back.
+        This function is intended to create a quick snapshot of your module development using basic cmdlets, then update it to the next version.
+		This allows you to continue working immediately from a new checkpoint without interrupting your workflow.
+		Ideal for:
+			* quick revision updates that you may not necessarily want to immediately push into your git repository until you've reached a new build/minor version
+			* quickly versioning your latest change in case you need to roll your upcoming changes back.
 
 		Each update also archives the current version's module files, e.g., to your folder synced with your git repository.
 
@@ -11,12 +17,13 @@ Function Checkpoint-ModuleVersion {
             1. The module files aren't zipped, and PowerShellGet isn't invoked.
             2. The checkpoint will increment a version property (supports major/minor/build/revision) by 1.
                 Technically, it is possible to increment multiple version properties at a time, or increment by more than 1.
-                If an explicit version is needed, the parameter set versionExplicit is available.
-            3. It preserves previous module versions of the same major and minor version in your PSModulePath, to provide an accessible record of changes to a major/minor version.
+                If an explicit version is needed, the parameterset VersionExplicit is available.
+            3. It preserves previous module versions of the same major and minor version in your PSModulePath.
+				This maintains an accessible record of changes to a major/minor version without bloating your module work directory with old and deprecated major/minor versions.
         
-        Simply provide the ModuleName parameter and then either a combination of increments or the versionExplicit parameter.
+        To use this function, simply provide the ModuleName parameter and then either a combination of increments or the versionExplicit parameter.
         
-		If you typically only work on 1 module at a time, the default value for ModuleName can be changed.
+		If you typically only work on 1 module at a time, the default value for ModuleName can be set, so you don't need to provide ModuleName anymore.
         The archiving parent directory can be set at the top of the script.
 			* It defaults to your module's parent directory + repo/<ModuleName>.
 			* If $env:repoDir is set, then it is archived to $env:repoDir + modules/$moduleName.
@@ -39,12 +46,12 @@ Function Checkpoint-ModuleVersion {
 		
 		Furthermore, after the script archives the latest version, it will offer to clean up your module's base directory of lower minor versions.
 			* There will be a prompt for removing each version directory.
-			* It will not save these older folders before deletion, but if Checkpoint-ModuleVersion has been used for every version update, then you will have already archived these older versions.
+			* It won't save these older folders before deletion, but if Checkpoint-ModuleVersion has been used for every version update, then you will have already archived these older versions.
 
     .EXAMPLE
         Checkpoint-ModuleVersion -ModuleName MyModule -VersionExplicit 4.3.2.1
         
-        This would explicitly set the new module folder to version 4.3.2.1. I am not sure of the use case, but it's here just in case you need full control of setting the version.
+        This would explicitly set the new module folder to version 4.3.2.1. I don't know the use case, but it's here if you need explicit control over the version.
 #>
     [CmdletBinding(SupportsShouldProcess)]
     Param(
@@ -110,7 +117,11 @@ Function Checkpoint-ModuleVersion {
         Throw "Error in deriving current and new versions! Current: $currentVersion | New: $newVersion"
     }
 
-	# If a version property is empty, casting to the version type defaults it to -1, which doesn't make sense and would cause future increments to arrive at 0. The following code enforces a minimum of 0. Also, if you upgrade a higher version property, then it resets the lower version properties to 0, e.g., updating the minor version should reset build and revision to 0.
+	<#
+		If a version property is empty, casting to the version type defaults it to -1, which doesn't make sense and would cause future increments to arrive at 0.
+		The following code enforces a minimum of 0.
+		Also, if you upgrade a higher version property, then it resets the lower version properties to 0, e.g., updating the minor version should reset build and revision to 0.
+	#>
     $major = if ($newVersion.Major -lt 0) { 0 } else { $newVersion.Major }
     $minor = if ($newVersion.Minor -lt 0 -or (!$incMi -and $incMa) ){ 0 } else { $newVersion.Minor }
     $build = if ($newVersion.Build -lt 0 -or (!$incBu -and ($incMa -or $incMi)) ) { 0 } else { $newVersion.Build }
