@@ -3,6 +3,7 @@ Function Checkpoint-ModuleVersion {
     .SYNOPSIS
         Simultaneously checkpoint a module's files, like taking a snapshot, and upgrade its version, so you can continue working immediately.
         The old version is archived to a directory of your choice, e.g., your repo directory.
+        Built on Windows PowerShell 5.1.14393.
 
     .DESCRIPTION
         This function is intended to create a quick snapshot of your module development using basic cmdlets, then update it to the next version.
