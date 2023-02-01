@@ -3,7 +3,11 @@ Function Checkpoint-ModuleVersion {
     .SYNOPSIS
         Simultaneously checkpoint a module's files, like taking a snapshot, and upgrade its version, so you can continue working immediately.
         The old version is archived to a directory of your choice, e.g., your repo directory.
-        Built on Windows PowerShell 5.1.14393.
+    
+    .NOTES
+        REQUIRES a .psd1 file with your module. (See: help New-ModuleManifest to quickly create one).
+        Any exported module members should be defined in the psm1 file.
+        Developed on Windows PowerShell 5.1.14393.
 
     .DESCRIPTION
         This function is intended to create a quick snapshot of your module development using basic cmdlets, then update it to the next version.
