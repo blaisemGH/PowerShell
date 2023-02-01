@@ -154,7 +154,7 @@ Function Checkpoint-ModuleVersion {
         $newModuleDir   = Join-Path $moduleHome $cleanVersion
         $tempDir        = Join-Path $moduleHome tempUpdateDir
 
-        # Create a temporary folder to copy module files into
+        # Create a temporary folder to copy module files into. Making changes in a temporary directory allows for an easy rollback in case of error later.
         If ( $PSCmdlet.ShouldProcess( $tempDir, 'Create Directory') ) {
             New-Item $tempDir -ItemType Directory -Confirm:$false
             $progressDir = $true
