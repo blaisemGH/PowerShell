@@ -66,9 +66,9 @@ Function Checkpoint-ModuleVersion {
     [CmdletBinding(SupportsShouldProcess)]
     Param(
         #Name of the module to checkpoint
-        [Parameter(Position = 0, ParameterSetName='Increment')]
-        [Parameter(Position = 0, ParameterSetName='VersionExplicit')]
-        [string]$ModuleName = 'batch',
+        [Parameter(Mandatory, Position = 0, ParameterSetName='Increment')]
+        [Parameter(Mandatory, Position = 0, ParameterSetName='VersionExplicit')]
+        [string]$ModuleName,
 
         #Number to increment major version by
         [Parameter(ParameterSetName='Increment')]
