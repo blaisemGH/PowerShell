@@ -28,6 +28,10 @@ Function Checkpoint-ModuleVersion {
             * It defaults to your module's parent directory + repo/<ModuleName>.
             * If $env:repoDir is set, then it is archived to $env:repoDir + modules/$moduleName.
         If the archiving directory already contains a subfolder with the same version, it will prompt you to overwrite it.
+        
+        NOTE: You must use Export-ModuleMember in your psm1 file if you wish to restrict your exported ModuleMembers.
+            Update-ModuleManifest automatically comments out the export members in its manifest unless specified as a parameter.
+            To avoid commenting them out, the parameters are specified with a '*', and export restrictions are left to the psm1 file to dictate.
 
     .EXAMPLE
         Checkpoint-ModuleVersion -ModuleName MyModule -RevisionIncrement 1
