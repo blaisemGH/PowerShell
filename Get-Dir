@@ -177,7 +177,7 @@ Function Get-Dir {
 		$cleanPath	=	(Convert-Path ($path -replace '[*]','.')).trim('/\')
 	
 		### Output the top-level path (root of the tree)
-		Write-Host ( '{0}{1}Root Search Path: {2}' -f [Env]::NL, "`t", $cleanPath ) -Fore Green
+		Write-Host ( '{0}{1}Root Search Path: {2}' -f [Environment]::NewLine, "`t", $cleanPath ) -Fore Green
 	
 		### This calls the .NET method GetFileSystemEntries to grab all the directories and files. It returns these as strings, so the sort is inexpensive. On a test of 30k directories and 140k files, this method ran in 3-5 seconds, while Get-ChildItem took 3 minutes. The sort is required to establish the tree hierarchy. Also, a '/' is added at the end of each path before the sort and removed via trim after the sort. This is because a '/' is sorted before a '.', where otherwise the '.' is sorted before a '\' or newline. This ensures the arrows point to the subfiles of directory, e.g., 7-zip, instead of to a file in the same directory as 7-zip, e.g., 7-zip.dll. After the sort and trim, the output is defined as an array of FileInfo. This converts the strings into FileInfo objects.
 		$recurse	=	If ( $noRecurse ) {
