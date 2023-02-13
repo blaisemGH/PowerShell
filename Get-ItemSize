@@ -1,0 +1,56 @@
+Function Get-ItemSize {
+	[CmdletBinding()]
+	Param (
+		[Alias('path','p')]
+		[Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true, Position=0)]
+		$FullName,
+		[Alias('u')]
+		[Parameter(Position=1)]
+		[ValidateSet('KB','MB','GB')]
+		$Units
+	)
+	begin {
+		$outputList = [System.Collections.Generic.List[object]]::new()
+		$currentDir = $PWD.Path
+	}
+	process {
+		$Path = Convert-Path $FullName
+		ForEach ( $itemPath in $Path ) {
+			$measure = Get-ChildItem $itemPath -Recurse -Force -ErrorAction SilentlyContinue -File | Measure-Object -Property Length -Sum
+			$sum = & {
+				If ( $Units ) {
+					('{0, -7} {1}' -f ($measure.Sum / "1$Units"), $Units)
+				}
+				ElseIf ( $measure.Sum ) {
+					$convertUnit = [math]::Floor([math]::log($measure.Sum,  1024))
+					$logSize     = [Math]::Round($measure.Sum / [math]::Pow(1024,$convertUnit),3)
+					$calcUnit = Switch ( $convertUnit ) {
+						0 { " b" }
+						1 { "Kb" }
+						2 { "Mb" }
+						3 { "Gb" }
+						4 { "Tb" }
+						5 { "Pb" }
+						6 { "Eb" }
+						7 { "Zb" }
+						8 { "Yb" }
+						Default { '' }
+				}
+					('{0, -7} {1}' -f $logSize.ToString(), $calcUnit)
+				}
+				Else {
+					'{0, -7}  b' -f '0' 
+				}
+			}
+			$outputList.Add(
+				[PSCustomObject]@{
+					Item = ((Get-Item $itemPath).FullName -Replace [Regex]::Escape($currentDir),'.')
+					Size = $sum
+				}
+			)
+		}
+	}
+	end {
+		$outputList | Sort-Object Item
+	}
+}
