@@ -70,7 +70,7 @@ Function Get-ItemSize {
 	process {
 		$Path = Convert-Path $FullName
 		ForEach ( $itemPath in $Path ) {
-			$measure = Get-ChildItem $itemPath -Recurse -Force -ErrorAction SilentlyContinue -File | Measure-Object -Property Length -Sum
+			$measure = Get-ChildItem $itemPath -File -Recurse -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum
 			If ( $Unit ) {
 				[ItemSize]::new($itemPath, $measure.Sum, $Unit)
 			}
