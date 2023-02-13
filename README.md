@@ -34,3 +34,9 @@ This is my repository of profile functions. All of the above files constitute 80
 * Validates arguments against a set of allowed values. Say you want to test if a collection contains 'a' or 'b'. You would submit a hashset containing @('a','b') and then your collection as a hashset. If your collection does not contain either value, then it throws an error; if it contains both values, then it also throws an error. The latter can be deactivated (see lines 20+).
 
   The purpose of this comes from a module I have where my parameter with attribute ValueFromRemainingArguments is used in 2 different contexts. I can only have 1 ValueFromRemainingArguments parameter, and my parameter sets are already complex, so I cannot comfortably split this into a different parameter for each context. I also cannot apply a single ValidationSet attribute to check for both contexts. Therefore, I apply the checks later in the module within each context. This function applies the validation accordingly.
+
+### Update-FileVersionIncrement
+
+* I have a module which aggregates CSVs into 1 file and exports this to a network drive.  Occasionally, the file will be rewritten as new data is delivered. I needed a means to update the file version and wrote this function.
+
+  This function inserts a version marker into the filename, just before the extension, e.g., filename-v01.ext The 'v' can be configured in the input parameter. The '-' is default; however, if the file uses this convention already (?v##), then the ? in ?v## can be a different character, and the function will infer that and use it. If no version is present in the filename, then it will default to -v01, and thereafter it will increment it by 1, e.g., v02, v03, v04 etc. If the file doesn't exist yet, then it will be created with -v01.
