@@ -4,6 +4,7 @@ class ItemSize {
 	hidden [int64]$Length
 	hidden [string]$FullName
 	hidden [string]$name
+
 	ItemSize([string]$fullPath, [int64]$rawLength) {
 		$this.Construct_Paths($fullPath)
 		$this.Construct_Length($rawLength)
@@ -12,12 +13,14 @@ class ItemSize {
 		$this.Construct_Paths( $fullPath )
 		$this.Construct_Length( $rawLength, $unit)
 	}
+
 	[void]Construct_Paths ( $fullPath ) {
 		$currentDir = $PWD.Path
 		$this.Item = (Get-Item $fullPath).FullName -Replace [Regex]::Escape($currentDir),'.'
 		$this.FullName = $fullPath
 		$this.Name = Split-Path $fullPath -Leaf
 	}
+
 	[void]Construct_Length ( $rawLength ) {
 		$this.Size = [ItemSize]::Get_Size($rawLength)
 		$this.Length = $rawLength
@@ -29,6 +32,7 @@ class ItemSize {
 		$this.Size = '{0, -7} {1}' -f ($rawLength / "1$divideByUnit"), $unit
 		$this.Length = $rawLength
 	}
+
 	static [string]Get_Size ($rawLength) {
 		If ( !$rawLength ) {
 			Return '{0, -7}  b' -f '0'
