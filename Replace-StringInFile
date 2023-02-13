@@ -67,7 +67,7 @@ Function Replace-StringInFile {
 
 					$line = $line -replace $oldPattern, $newPattern
 
-					Write-Host ( "`t`t" + 'new: ' ) -ForegroundColor 'cyan' -NoNewLine;	Write-Host ( $line + [Env]::NL ) -ForegroundColor 'white'
+					Write-Host ( "`t`t" + 'new: ' ) -ForegroundColor 'cyan' -NoNewLine;	Write-Host ( $line + [Environment]::NewLine ) -ForegroundColor 'white'
 					$flag = $true
 				}
 				$line
@@ -122,12 +122,12 @@ Function Replace-StringInFile {
 				$read.Dispose()
 			}
 			If ( $flag ) {
-				Write-Host ("`t`t  " + 'String matches found! ') -ForegroundColor 'darkgreen' -NoNewLine; Write-Host ('File has been ') -NoNewLine; Write-Host 'updated' -ForeGroundColor 'Cyan' -NoNewLine; Write-Host ('.{0}' -f [Env]::NL)
+				Write-Host ("`t`t  " + 'String matches found! ') -ForegroundColor 'darkgreen' -NoNewLine; Write-Host ('File has been ') -NoNewLine; Write-Host 'updated' -ForeGroundColor 'Cyan' -NoNewLine; Write-Host ('.{0}' -f [Environment]::NewLine)
 				$flag = $False
 				Move-Item $tmpFile $file -Force
 			}
 			Else {
-				Write-Host ('{0}No string match found. File will be ignored.{1}' -f "`t`t  ", [Env]::NL )
+				Write-Host ('{0}No string match found. File will be ignored.{1}' -f "`t`t  ", [Environment]::NewLine )
 				Remove-Item $tmpFile
 			}
 		}
