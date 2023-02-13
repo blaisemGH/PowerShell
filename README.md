@@ -19,7 +19,7 @@ This is my repository of profile functions. All of the above files constitute 80
 * An alternative to Get-ChildItem. The attributes column is displayed more prominently, and the length column is properly filled for folders. All columns have been reformatted to fixed widths for readability, and the length column is rounded to the nearest unit. Finally, this supports a tree parameter for viewing files in a tree format.
 
 ### Get-ItemSize (alias gs or du)
-* Sizes directories similar to du -sh in Bash. Automatically infers the closest unit (KB, MB, GB, TB, PB, etc.), but you can specify a specific unit, too.
+* Sizes directories similar to du -sh in Bash. Automatically infers the closest unit (KB, MB, GB, TB, PB, etc.), but you can specify a specific unit, too. I've left the fullname, name, and length as hidden properties to enable sorting or selects.
 
 ### Group-ObjectFixed (alias grp)
 * This addresses a performance bug in Group-Object in V5.1 that causes it to run unbearably long for moderately sized objects or larger. The original source does not output the same object as Group-Object; hence, I updated it here.
