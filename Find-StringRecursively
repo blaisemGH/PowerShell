@@ -2,7 +2,12 @@ Function Find-StringRecursively {
 
 	[CmdletBinding(DefaultParameterSetName='RegExPattern')]
 	Param (
-		[Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true, Position=1)]
+		[Parameter(
+			Mandatory=$true,
+			ValueFromPipelineByPropertyName=$true,
+			Position=1
+		)]
+		[string]
 			$FullName = '.',
 		[Parameter(Mandatory=$true, ParameterSetName = 'RegExPattern', Position=0)]
 		[Parameter(Mandatory=$true, ParameterSetName = 'SimplePattern', Position=0)]
@@ -21,16 +26,27 @@ Function Find-StringRecursively {
 		[switch]
 			$SimpleMatch,
 		[alias('f')]
-			$Filter = '*',
+		[string]
+			$FileFilter = '*',
 		[alias('nr')]
 		[switch]
 			$NoRecurse,
-		[alias('c','i')]
+		[alias('s')]
 		[switch]
 			$CaseSensitive,
 		[int[]]
 			$Context,
-		[Text.Encoding]
+		[ValidateScript({
+			If ($_ -in [Text.Encoding]::GetEncodings().Name -or 
+				$_ -in ([Text.Encoding] | Get-Member -Type Property -Static | Select-Object -exp Name)
+			) {
+				$true
+			}
+			Else {
+				Throw "$_ is not a valid Encoding given by [System.Text.Encoding]::GetEncodings() or a static property of [System.Text.Encoding]"
+			}
+		})]
+		[string]
 			$Encoding,
 		[switch]
 			$List,
@@ -129,12 +145,11 @@ Function Find-StringRecursively {
 					}
 				}
 				
+				#Contents replaces "`a", because this is present in some binary files (I found in a .class java file) and is the alert special character (beep sound)
 				[PSCustomObject]@{
 					Filename	= "{0,-$maxFileLength}" -f ("$ansi[38;5;202m"	+	($filePath.substring([math]::max($filePath.Length - 80, 0)))	 +	":$ansi[0m")
-					#Line		= '{0,-9}' -f ( $preContextSkip + "$ansi[93m" + $_.LineNumber	+	">$ansi[0m" + $postContextSkip )
 					Line		= '{0,-9}' -f ( $preLineNumber + "$ansi[93m" + $_.LineNumber	+	">$ansi[0m" + $postLineNumber )
-					#Contents	= '{0}{1}{2}{3}{4}' -f ($_.Context.PreContext | Out-String), [Environment]::NewLine, ($contextPointer + $_.Line),					[Environment]::NewLine, ($_.Context.PostContext | Out-String) #'{0, -155}' -f $_.Line
-					Contents	= '{0}{1}{2}' -f ($_.Context.PreContext | Out-String), ($contextPointer + $_.Line), ($_.Context.PostContext | Out-String) -replace "$([Environment]::NewLine)$" #'{0, -155}' -f $_.Line
+					Contents	= '{0}{1}{2}' -f ($_.Context.PreContext | Out-String), ($contextPointer + $_.Line), ($_.Context.PostContext | Out-String) -replace "$([Environment]::NewLine)$" -Replace "`a"
 				} | Format-Table -HideTableHeaders -Wrap
 			}
 		}
