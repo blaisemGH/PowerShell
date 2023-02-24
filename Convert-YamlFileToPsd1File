@@ -1,0 +1,190 @@
+Function Convert-YamlFileToPsd1File {### Converts a file from .Yaml to .psd1 --> Warning: Does NOT support lists in yaml (yet)
+	Param(
+		[Parameter(Mandatory)]
+		[string]$yamlFile
+	)
+	$lineCount = 0
+	$prevIndentCount = 0
+	$indentTracker = [Collections.Generic.Stack[string]]@()
+	$collectionTracker = [Collections.Generic.Stack[string]]@()
+
+	$outFileContents = Get-Content (Resolve-Path $yamlFile) | % {
+		$lineCount += 1
+		If ( $_ -match '[\S]' -and $_ -notmatch '^[\s]*#' ) {
+			
+			$line = $_
+
+			#Define indenting standard to start
+			If ( !$indentType -and $line -match '^\s') {
+				$indentType, $indentTypeName, $replaceDash = & {
+					If ( $line -match '^\t' ) {
+						([char]9).ToString(), 'tab', ''
+					}
+					Elseif ( $line -match '^ ' ) {
+						([char]32).ToString(), 'space', ' '
+					}
+				}
+			}
+			Elseif ( $indentType -and $line -match '^\s' -and $line -notmatch "^$indentType") {
+				Throw "Document identified first indent uses $indentTypeName indentation, but current line indentation does not. Please use consistent indentation characters on line $lineCount"
+			}
+
+			#Parse Indent depth
+				$indentBase	= (($line -replace '-(\s)',"$replaceDash`$1") -split '[^\s]')[0]
+				$lineContent = & {
+					If ( $indentBase ) {
+						(($line -replace '-(\s)',"$replaceDash`$1") -split $indentBase)[1]
+					}
+					Else {
+						$line
+					}
+				}
+	
+				If ( $indentTracker.Count -eq 0 ) {
+					$indentPeek = $null
+					$previousIndentCount = 0
+				}
+				Else {
+					$indentPeek = $indentTracker.Peek()
+					$previousIndentCount = ($indentPeek -split $indentType.ToString()).Count - 1
+				}
+				If ($indentType) {
+					$indentCount = ($indentBase -split $indentType).Count - 1
+				}
+				Else {
+					$indentCount = 0
+				}
+
+			#Parse Line Content
+				$isNotArrayElement = $false
+				$Matches = $null
+				[void]([Regex]::Escape($lineContent) -match '(^[''][^'']*['']:)|(^["][^"]*["]:)|(^[^''"]+:) ?')
+				$lineKeyPreFormat = If ( $Matches ) {
+					(($Matches[0] -split ':')[0] -replace '([^\s]+):(?:([\\ ]|[\\ ][\\ ]))(.*)','$1 = $2').Trim('\ ')
+				}
+				Else {
+					$null
+				}
+				$lineKey = $lineKeyPreFormat -replace '^([^''"]?[^''"]*[-_.][^''"]*)$','''$1'''
+				$lineValue = ($lineContent -replace $lineKeyPreFormat).Trim(': ') -replace '^\[', '@(' -replace '\]$', ')'
+
+				if ( $lineValue -isnot [int] -and $linevalue -isnot [double] ) {
+					$lineValue = $lineValue -replace '^([^''"][^''"]*[^''"])$', '''$1'''
+				}
+				If ( $lineKey ) {
+					If ( $lineValue -eq $lineContent ) {
+						Throw "Cannot parse key:value pair. Attempt to separate left and right of the colon yielded the same value as the original line. Line $lineCount"
+					}
+					$isNotArrayElement = $true
+					$outputLine = $indentBase + $lineKey + ' = ' + $lineValue
+				}
+				Else {
+					$outputLine = ($line -replace '\s*-\s*').Trim()
+					$outCharArray = $outputLine.ToCharArray()
+					If ( $outputLine -notmatch '^[''"].*[''"]$' ) {
+						If ( $outputLine -notmatch '[''"]' ) {
+							$outputLine = $indentBase + "'" + $outputLine + "'"
+						}
+						Else {
+							Throw "Cannot validate line. List element not wrapped in single or double quotes! Line $lineCount"
+						}
+					}
+				}
+
+			#Handle new outdent
+			If ( $indentCount -lt $previousIndentCount -and $indentTracker.Count -gt 0) {
+				While ($indentBase -ne $indentTracker.Peek() ) {
+					If ( $indentTracker.Count -eq 0 ) {
+						Throw "Indentation not in alignment with previous lines! Line $lineCount"
+					}
+					[void]$indentTracker.Pop()
+
+					$closeIndentPeek = & {
+						If ( $indentTracker.Count -gt 0 ) {
+							$indentTracker.Peek()
+						}
+						Else {
+							$null
+						}
+					}
+					Write-Output $(
+						Switch ( $collectionTracker.Peek() ) {
+							'@(' { $closeIndentPeek + ')' }
+							'@{' { $closeIndentPeek + '}' }
+							'@(@{' { $closeIndentPeek + '})' }
+						}
+					)
+
+					[void]$collectionTracker.Pop()
+					If ( $indentTracker.Count -eq 0 ) { break }
+				}
+	
+			}
+			# Handle new indent
+			ElseIf ( $indentCount -gt $previousIndentCount ) {
+
+				If ( $line -notmatch '^\s*-' ) {
+					$collectionTracker.Push('@{')
+					Write-Output ($indentPeek + $collectionTracker.Peek() )
+				}
+				Else {
+					if ( $isNotArrayElement ) {
+						Write-Output ( $indentPeek + '@(@{' )
+						$collectionTracker.Push('@(@{')
+					}
+				}
+
+				[void]$indentTracker.Push($indentBase)
+			}
+
+			#Handle open collections if no indent change
+			If ( $line -match '^\s*-' ) {
+				If ( $collectionTracker.Peek() -match '^@\(' -and $isNotArrayElement -and $indentCount -le $previousIndentCount) {
+					If ( $collectionTracker.Peek() -match '^@\(@\{' ) {
+						Write-Output ( $indentPeek + '};@{'  )
+					}
+					Else {
+						Write-Output ( $indentPeek + ')' )
+						[void]$collectionTracker.Pop()
+					}
+				}
+				If ( $collectionTracker.Peek() -notmatch '^@\(' -or $isNotArrayElement ){
+					If ( $collectionTracker.Peek() -notmatch '^@\(@\{' ) {
+						Write-Output ( $indentPeek + '@(' )
+						$collectionTracker.Push('@(')
+					}
+				}
+			}
+
+			Write-Output $outputLine
+
+		}
+	}
+	$closeOpenCollections = & {
+		ForEach ( $collection in $collectionTracker.ToArray().Clone() ) {
+			If ($indentTracker.Count -eq 0 ) {break}
+			[void]$indentTracker.Pop()
+			$endCloseIndentsPeek = & {
+				If ( $indentTracker.Count -gt 0 ) {
+					$indentTracker.Peek()
+				}
+				Else {
+					$null
+				}
+			}
+			Switch ( $collectionTracker.Peek() ) {
+				'@(' { $endCloseIndentsPeek + ')' }
+				'@{' { $endCloseIndentsPeek + '}' }
+				'@(@{' { $endCloseIndentsPeek + '})'}
+			}
+			[void]$collectionTracker.Pop()
+		}
+	}
+	$outFileContents += $closeOpenCollections
+	$outFileContents += ([Environment]::NewLine + '}')
+	$outFileContents[0] = '@{' + [Environment]::NewLine + [Environment]::NewLine +	$outFileContents[0]
+
+	$outFile = New-TemporaryFile
+	Add-Content -Path $outFile -Value $outFileContents
+	Return $outFile
+}
