@@ -21,7 +21,7 @@ This is my repository of profile functions. All of the above files constitute 80
 
 ### Export-PowerShellDataFile
 
-* This function takes an object and writes it to a path, similar to Export-CSV. This means you can now convert from other file formats to a PowerShellDataFile, e.g., `Invoke-WebRequest 'https://api.github.com/repos/PowerShell/PowerShell/issues' | ConvertFrom-Json | Export-PowerShellDataFile -Path config.psd1`.
+* This function takes an object and writes it to a path, similar to Export-CSV. This means you can now convert from other file formats to a PowerShellDataFile, e.g., `Get-Content file.json -Raw | ConvertFrom-Json | Export-PowerShellDataFile -Path config.psd1`.
 
   When I wrote the Import-Yaml function, due to another psd1 interface I had, for better or worse I parse the yaml file by converting it into essentially real PS code in-memory, which means it's the same content as a PowerShellDataFile. Therefore, it wasn't much of a logical leap to jump on the idea it might be useful to serialize this to an actual psd1 file. I wrote a function for this quickly, but I realized this only works on yaml files, and I thought it'd be nice to be able to interoperate with other common file formats. So I dug out another function I had borrowed [from Dave-Wyatt](https://stackoverflow.com/a/34383464/6076137) and expanded it for this use-case. It should now serialize any generic psobject/hashtable to a psd1 file. Keep in mind psd1 is for config files. Don't take a giant csv object and try to turn it into a psd1 ;)
 
