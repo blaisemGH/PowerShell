@@ -13,6 +13,20 @@ Function Import-Yaml {
 	}
 }
 
+Function ConvertFrom-Yaml {
+	Param(
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[string[]]$yamlCode
+	)
+	$tempFile = New-TemporaryFile
+	Add-Content -Path $tempFile -Value ($yamlCode -join [Environment]::NewLine)
+	Invoke-Expression (
+		[FileParser]::Yaml($tempFile)
+	)
+	Remove-Item $tempFile
+}
+		
+
 Class FileYaml {
 	[string]$yamlFile
 
