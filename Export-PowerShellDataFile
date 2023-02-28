@@ -1,0 +1,83 @@
+Function Export-PowerShellDataFile {
+	Param(
+		[Parameter(Mandatory,ValueFromPipeline)]
+		$inputObject,
+		[Parameter(Mandatory)]
+		[string]$Path,
+		[switch]$Force
+	)
+	
+	begin {
+		If ( (Test-Path $Path) -and !$Force) {
+			Throw "A file already exists at $Path"
+		}
+		$out = @()
+	}
+	process {
+		$out += ConvertTo-PowerShellDataFile $inputObject
+	}
+	end {
+		Set-Content -Path $Path -Value $out -Force
+	}
+}
+
+Function ConvertTo-PowerShellDataFile {
+	Param(
+		[Parameter(Mandatory,ValueFromPipeline)]
+		$inputObject = $null,
+		$indent = 0
+	)
+	
+	Process {
+		If ( $inputObject -is [hashtable] ) {
+			$hashtable = ForEach ($key in $inputObject.Keys ) {
+				$formatKey = $key -replace '^([^''"]?[^''"]*[-_.][^''"]*)$', '''$1'''
+				$value = (ConvertTo-PowerShellDataFile $inputObject.$key -indent ($indent + 1)) -replace '^\s*'
+				Write-Output (('  ' * $indent) + $formatKey + ' = ' + $value + [Environment]::NewLine)
+			}
+			Write-Output ( '@{' + [Environment]::NewLine + $hashtable + [Environment]::NewLine + ('  ' * $indent) + '}' )
+		}
+
+		ElseIf ( $inputObject -is [System.Collections.IEnumerable] -and $inputObject -isnot [string] ) {
+			$collection = @(
+								Foreach ( $object in $inputObject ) {
+									$addMissingIndent = $null
+									if ( $object -is [hashtable] ) {
+										[Environment]::NewLine
+										$addMissingIndent =  ('  ' * ($indent - 1))
+									}
+									Write-Output ($addMissingIndent + (ConvertTo-PowerShellDataFile $object -indent ($indent + 1)) )
+								}
+							)
+
+			Write-Output ( '@(' + [Environment]::NewLine + $collection + [Environment]::NewLine + ('  ' * $indent) + ')' )
+		}
+		
+		ElseIf ( $inputObject -is [psobject] ) {
+			$hashtable = @{}
+			Foreach ( $property in $inputObject.psobject.properties ) {
+				$value = If ( !$property.value) {
+					'@{}'
+				}
+				Else { 
+					ConvertTo-PowerShellDataFile $property.value
+				}
+				$hashtable.Add( $property.name , $value )
+			}
+			
+			Write-Output (ConvertTo-PowerShellDataFile $hashtable -indent ($indent + 1))
+		}
+		
+		Else {
+			If ( $inputObject -eq '@{}' ) {
+				'@{}'
+			}
+			ElseIf ( $inputObject -notmatch '^@{[^}]' ) {
+				Write-Output ('  ' * $indent + ($inputObject -replace '^([^''"]?[^''"]*[^''"]?)$', '''$1'''))
+			}
+			Else {
+				Write-Output ('  ' * $indent + $inputObject)
+			}
+		}
+	}
+}
