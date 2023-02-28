@@ -1,6 +1,6 @@
 using namespace System.Collections.Generic
 
-Function ConvertFrom-Yaml {
+Function Import-Yaml {
 	Param(
 		[Parameter(Mandatory, ValueFromPipelineByPropertyName)]
 		[Alias('Path')]
