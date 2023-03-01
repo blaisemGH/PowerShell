@@ -86,7 +86,7 @@ Class FileYaml {
                     Write-Output ($this.Write_NewIndent($line))
                 }
 
-                Write-Output ($this.Write_NextDictIfOpenDictList($line))
+                Write-Output $this.Write_NextDictIfOpenDictList($line)
 
                 Write-Output $outputLine
             }
@@ -106,12 +106,12 @@ Class FileYaml {
         If ( $line -match '^\t' ) {
             $this.indentType        = ([char]9).ToString()
             $this.indentTypeName    = 'tab'
-            $this.replaceDash        = ''
+            $this.replaceDash       = ''
         }
         Elseif ( $line -match '^ ' ) {
             $this.indentType        = ([char]32).ToString()
             $this.indentTypeName    = 'space'
-            $this.replaceDash        = ' '
+            $this.replaceDash       = ' '
         }
     }
 
