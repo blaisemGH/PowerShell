@@ -51,7 +51,6 @@ Class FileYaml {
     [string]$lineKeyPreFormat
     [string]$lineKey
     [string]$lineValue
-    [string]$outputLine
 
     # Ctor always requires a valid yaml file
     FileYaml([string]$yamlFilePath) {
@@ -77,7 +76,8 @@ Class FileYaml {
 
                 $this.Set_CurrentLineIndentation()                
                 $this.Set_CurrentLineKeyValuePair()
-                $this.Set_LineTextToPrint($line)
+
+                $outputLine = $this.Get_LineTextToPrint($line)
 
                 If ( $this.indentCount -lt $this.previousIndentCount -and $this.indentTracker.Count -gt 0) {
                     Write-Output ($this.Write_NewOutdent())
@@ -88,7 +88,7 @@ Class FileYaml {
 
                 Write-Output ($this.Write_NextDictIfOpenDictList($line))
 
-                Write-Output $this.outputLine
+                Write-Output $outputLine
             }
 
             ForEach ( $collection in $this.collectionTracker.ToArray().Clone() ) {
@@ -186,8 +186,9 @@ Class FileYaml {
             }
         }
     }
-    
-    [void] Set_LineTextToPrint([string]$line) {
+
+    # Assemble output line to print at the end of line processing (after the indentations have been adjusted for)
+    [string] Get_LineTextToPrint([string]$line) {
         # For all lines of kv-pairs...
         If ( $this.lineKey ) {
             If ( $this.lineValue -eq $this.lineContent ) { #If the key, value, and original line are all the same, something went wrong.
@@ -197,8 +198,7 @@ Class FileYaml {
             # Define that this line is not a list element for parsing below
             $this.isNotArrayElement = $true
 
-            # Assemble output line to print at the end of this loop ( code below handles the dict/list delimitations before printing $outputLine )
-            $this.outputLine = $this.lineIndentation + $this.lineKey + ' = ' + $this.lineValue
+            Return ( $this.lineIndentation + $this.lineKey + ' = ' + $this.lineValue )
         }
 
         # For all lines that aren't kv-pairs. i.e., list elements...
@@ -211,14 +211,14 @@ Class FileYaml {
                 Throw "Cannot validate line. List element not wrapped in single or double quotes! Line $($this.lineCount)"
             }
             
-            $this.outputLine = & {
+            Return $(
                 If ( $removeDashLine -match '^[''"].*[''"]$' ) {
                     Write-Output $removeDashLine
                 }
                 ElseIf ( $removeDashLine -notmatch '[''"]' ) {
                     Write-Output ($this.lineIndentation + "'" + $removeDashLine + "'")
                 }
-            }
+            )
         }
     }
 
