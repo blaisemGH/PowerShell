@@ -25,7 +25,7 @@ This is my repository of profile functions. All of the above files constitute 80
 
   When I wrote the Import-Yaml function, due to another psd1 interface I had, for better or worse I parse the yaml file by converting it into essentially real PS code in-memory, which means it's the same content as a PowerShellDataFile. Therefore, it wasn't much of a logical leap to jump on the idea it might be useful to serialize this to an actual psd1 file. I wrote a function for this quickly, but I realized this only works on yaml files, and I thought it'd be nice to be able to interoperate with other common file formats. So I dug out another function I had borrowed [from Dave-Wyatt](https://stackoverflow.com/a/34383464/6076137) and expanded it for this use-case. It should now serialize any generic psobject/hashtable to a psd1 file. Keep in mind psd1 is best for humble config files. Don't take a giant csv object and try to export it to a psd1 ;)
   
-  Note there is currently an issue with object properties containing a multiline value and single quotes that I need to look into.
+  Note there is currently an issue with object properties containing a multiline value and single quotes that I will look into when I have a use case for it.
 
 ### Checkpoint-ModuleVersion
 * This function contains comment-based help for its description. Please refer to this for more information. Background: Since I work in closed environments at customers, I desired a means of offline version control for my modules. This function was my approach. Even if using Git, it can still streamline your workflow as it presents a convenient means to update your module version and archive it.
