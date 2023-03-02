@@ -4,7 +4,8 @@ Function Find-StringRecursively {
         [Parameter(
             Mandatory=$true,
             ValueFromPipelineByPropertyName=$true,
-            Position=1)]
+            Position=1
+	)]
         [alias('Path')]
         [string]
             $FullName = '.',
