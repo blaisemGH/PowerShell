@@ -76,15 +76,15 @@ Function ConvertTo-PowerShellDataFile {
         }
         
         Else {
-            $openMultiLineString, $closeMultiLineString = $null
+            $openHereString, $closeHereString = $null
             If ( $inputObject -is [string] ) {
                 #Lines containing a newline, single quote, or backtick cause parsing issues. Therefore I wrap them in here strings to parse them literally.
                 If ( $inputObject -match [Environment]::NewLine -or $inputObject -match '(?<!^'')[''](?!$)' -or $inputObject -match '[``]') {
-                    $openMultiLineString = [Environment]::NewLine + "@'" + [Environment]::NewLine
-                    $closeMultiLineString = [Environment]::NewLine + "'@"
+                    $openHereString = [Environment]::NewLine + "@'" + [Environment]::NewLine
+                    $closeHereString = [Environment]::NewLine + "'@"
                 }
                 #Replace regex: If the object isn't wrapped in quotes, then wrap it in single quotes. All \n and \t are converted to newlines and tabs, respectively.
-                Write-Output ( $openMultiLineString + '  ' * $indent + ($inputObject -replace '^([^''"]?[^''"]*[^''"]?)$', '''$1''' -replace '\\n', [Environment]::NewLine -replace '\\t',"`t" ) + $closeMultiLineString )
+                Write-Output ( $openHereString + '  ' * $indent + ($inputObject -replace '^([^''"]?[^''"]*[^''"]?)$', '''$1''' -replace '\\n', [Environment]::NewLine -replace '\\t',"`t" ) + $closeHereString )
             }
             Else {
                 Write-Output ( '  ' * $indent + $inputObject )
