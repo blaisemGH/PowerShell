@@ -37,6 +37,7 @@ Function ConvertTo-PowerShellDataFile {
             ForEach ($key in $inputObject.Keys ) {
                 $formatKey = $key -replace '^([^''"]?[^''"]*[-_.][^''"]*)$', '''$1'''
                 $value = ConvertTo-PowerShellDataFile $inputObject.$key -indent ($indent + 1)
+                # The replaces remove whitespace between the = and the value. The '  ' * $indent works great on newlines but creates this extra whitespace on same lines.
                 Write-Output ((('  ' * ($indent + 1)) + $formatKey + ' = ' + ($value -replace '= [ ]*', '= ') + [Environment]::NewLine) -replace '= [ ]*','= ')
             }
 
@@ -77,10 +78,12 @@ Function ConvertTo-PowerShellDataFile {
         Else {
             $openMultiLineString, $closeMultiLineString = $null
             If ( $inputObject -is [string] ) {
+                #Lines containing a newline, single quote, or backtick cause parsing issues. Therefore I wrap them in here strings to parse them literally.
                 If ( $inputObject -match [Environment]::NewLine -or $inputObject -match '(?<!^'')[''](?!$)' -or $inputObject -match '[``]') {
                     $openMultiLineString = [Environment]::NewLine + "@'" + [Environment]::NewLine
                     $closeMultiLineString = [Environment]::NewLine + "'@"
                 }
+                #Replace regex: If the object isn't wrapped in quotes, then wrap it in single quotes. All \n and \t are converted to newlines and tabs, respectively.
                 Write-Output ( $openMultiLineString + '  ' * $indent + ($inputObject -replace '^([^''"]?[^''"]*[^''"]?)$', '''$1''' -replace '\\n', [Environment]::NewLine -replace '\\t',"`t" ) + $closeMultiLineString )
             }
             Else {
