@@ -20,7 +20,7 @@ Function ConvertFrom-Yaml {
         [string[]]$yamlCode
     )
 	begin {
-		$code = [System.Collections.Generic.List[string]]@()
+		$code = [List[string]]@()
 	}
 	process {
 		$code.Add($yamlCode)
