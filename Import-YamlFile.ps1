@@ -16,19 +16,23 @@ Function Import-YamlFile {
 Function ConvertFrom-Yaml {
     Param(
         [Parameter(Mandatory, ValueFromPipeline)]
+		[AllowEmptyString()]
         [string[]]$yamlCode
     )
-    $tempFile = New-TemporaryFile
-    Add-Content -Path $tempFile -Value ($yamlCode -join [Environment]::NewLine)
-    Invoke-Expression (
-        [FileParser]::Yaml($tempFile)
-    )
-    Remove-Item $tempFile
+	begin {
+		$code = [System.Collections.Generic.List[string]]@()
+	}
+	process {
+		$code.Add($yamlCode)
+	}
+	end {
+		Invoke-Expression ([YamlUtils]::new($code).parse() -join [Environment]::NewLine)
+	}
 }
         
 
-Class FileYaml {
-    [string]$yamlFile
+Class YamlUtils {
+    [string[]]$yamlCode
 
     [int]$lineCount = 0
     [int]$previousIndentCount = 0
@@ -52,15 +56,14 @@ Class FileYaml {
     [string]$lineKey
     [string]$lineValue
 
-    # Ctor always requires a valid yaml file
-    FileYaml([string]$yamlFilePath) {
-        $this.yamlFile = Convert-Path $yamlFilePath -ErrorAction Stop
-    }
+	YamlUtils([string[]]$code ) {	
+		$this.yamlCode = $code
+	}
 
     [string[]] Parse() {
         Return $(
             Write-Output ('{0}{1}{2}' -f '@{', [Environment]::NewLine, [Environment]::NewLine)
-            ForEach ( $line in Get-Content $this.yamlFile ) {
+            ForEach ( $line in $this.yamlCode ) {
                 $this.lineCount += 1
 
                 If ( $line -match '[\S]' -and $line -notmatch '^[\s]*#' ) {
@@ -307,9 +310,10 @@ Class FileYaml {
 
 Class FileParser {
 
-    static [object] Yaml ( [string] $yamlFilePath ) {
+    static [object] Yaml ( [string]$yamlFilePath ) {
+		$cleanPath = Convert-Path $yamlFilePath -ErrorAction Stop
 		Return (
-            [FileYaml]::new($yamlFilePath).Parse() -join [Environment]::NewLine
+            [YamlUtils]::new( (Get-Content $cleanPath) ).Parse() -join [Environment]::NewLine
         )
     }
 
