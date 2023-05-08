@@ -1,6 +1,6 @@
 using namespace System.Collections.Generic
 
-Function Import-Yaml {
+Function Import-YamlFile {
     Param(
         [Parameter(Mandatory, ValueFromPipelineByPropertyName)]
         [Alias('Path')]
@@ -65,30 +65,31 @@ Class FileYaml {
 
                 If ( $line -match '[\S]' -and $line -notmatch '^[\s]*#' ) {
                 
-                    If ( !$this.indentType -and $line -match '^\s') {
+                    If ( !$this.indentType -and $line -match '^[-\s]') {
                         $this.Set_IndentationStyle($line)
                     }
                     ElseIf ( $this.indentType -and $line -match '^\s' -and $line -notmatch "^$($this.indentType)") {
                         Throw "Document identified first indent uses $($this.indentTypeName) indentation, but current line indentation does not. Please use consistent indentation characters on line $($this.lineCount)"
                     }
-                }
-                $this.Split_CurrentLine($line)
 
-                $this.Set_CurrentLineIndentation()                
-                $this.Set_CurrentLineKeyValuePair()
+					$this.Split_CurrentLine($line)
+	
+					$this.Set_CurrentLineIndentation()                
+					$this.Set_CurrentLineKeyValuePair()
+	
+					$outputLine = $this.Get_LineTextToPrint($line)
+	
+					If ( $this.indentCount -lt $this.previousIndentCount -and $this.indentTracker.Count -gt 0) {
+						Write-Output ($this.Write_NewOutdent())
+					}
+					ElseIf ( $this.indentCount -gt $this.previousIndentCount -or $line -match '^-' ) {
+						Write-Output ($this.Write_NewIndent($line))
+					}
+	
+					Write-Output $this.Write_NextDictIfOpenDictList($line)
 
-                $outputLine = $this.Get_LineTextToPrint($line)
-
-                If ( $this.indentCount -lt $this.previousIndentCount -and $this.indentTracker.Count -gt 0) {
-                    Write-Output ($this.Write_NewOutdent())
-                }
-                ElseIf ( $this.indentCount -gt $this.previousIndentCount ) {
-                    Write-Output ($this.Write_NewIndent($line))
-                }
-
-                Write-Output $this.Write_NextDictIfOpenDictList($line)
-
-                Write-Output $outputLine
+					Write-Output $outputLine
+				}
             }
 
             ForEach ( $collection in $this.collectionTracker.ToArray().Clone() ) {
@@ -103,12 +104,13 @@ Class FileYaml {
     }
     
     [void] Set_IndentationStyle ([string]$line) {
-        If ( $line -match '^\t' ) {
+        $testLine = $line -replace '^-(.*)', '$1'
+		If ( $testLine -match '^\t' ) {
             $this.indentType        = ([char]9).ToString()
             $this.indentTypeName    = 'tab'
             $this.replaceDash       = ''
         }
-        Elseif ( $line -match '^ ' ) {
+        Elseif ( $testLine -match '^ ' ) {
             $this.indentType        = ([char]32).ToString()
             $this.indentTypeName    = 'space'
             $this.replaceDash       = ' '
@@ -116,10 +118,10 @@ Class FileYaml {
     }
 
     [void] Split_CurrentLine ( [string]$line ) {
-        $this.lineIndentation    = (($line -replace '-(\s)',"$($this.replaceDash)`$1") -split '[^\s]')[0]
+        $this.lineIndentation    = (($line -replace '^(\s*)-(\s)',"`$1$($this.replaceDash)`$2") -split '[^\s]')[0]
         $this.lineContent = & {
             If ( $this.lineIndentation ) {
-                (($line -replace '-(\s)',"$($this.replaceDash)`$1") -split $this.lineIndentation)[1]
+                (($line -replace '^(\s*)-(\s)',"`$1$($this.replaceDash)`$2") -split $this.lineIndentation)[1]
             }
             Else {
                 $line
@@ -204,7 +206,7 @@ Class FileYaml {
         # For all lines that aren't kv-pairs. i.e., list elements...
         Else {
             # Remove the leading - and any leading whitespace before the strings
-            $removeDashLine = ($line -replace '\s*-\s*').Trim()
+            $removeDashLine = ($line -replace '^\s*-\s*').Trim()
 
             # If the line doesn't have any quotes in it, add them. If they aren't able to be added, throw an error.
             If ( $removeDashLine -NotMatch '^[''"].*[''"]$' -and $removeDashLine -Match '[''"]' ) {
@@ -254,7 +256,7 @@ Class FileYaml {
 
         # Loop through all the possible outdents, since yaml files can outdent multiple levels from one line to the next.
         Return $(
-            While ($this.lineIndentation -ne $this.indentTracker.Peek() -and $this.indentTracker.Count -gt 0) {
+            While ( $this.indentTracker.Count -gt 0 -and $this.lineIndentation -ne $this.indentTracker.Peek() ) {
                 $this.Close_Outdent()
             }
         )
@@ -278,7 +280,7 @@ Class FileYaml {
                     $this.indentPeek + '@(@{'
                 }
                 # Open list of primitives
-                ElseIf ( $this.collectionTracker.Peek() -notmatch '^@\(@\{' ){
+                ElseIf ( !$this.isNotArrayElement -or $this.collectionTracker.Peek() -notmatch '^@\(@\{'){
                     $this.indentPeek + '@('
                     $this.collectionTracker.Push('@(')
                 }
@@ -292,7 +294,7 @@ Class FileYaml {
     [string] Write_NextDictIfOpenDictList ([string]$line) {
         # If line starts with '-', the current indentation has an open list of dictionaries, the current line is a kv pair, and it's not a new indent...
         If    (
-            $line -match '^\s*-' -and $this.collectionTracker.Peek() -match '^@\(@\{' -and
+            $line -match '^\s*-' -and $this.collectionTracker.count -gt 0 -and $this.collectionTracker.Peek() -match '^@\(@\{' -and
             $this.isNotArrayElement -and $this.indentCount -le $this.previousIndentCount
         ) {
             return $this.indentPeek + '};@{' # close list element of key-value pairs and open new list element of kv pairs.
@@ -306,7 +308,7 @@ Class FileYaml {
 Class FileParser {
 
     static [object] Yaml ( [string] $yamlFilePath ) {
-        Return (
+		Return (
             [FileYaml]::new($yamlFilePath).Parse() -join [Environment]::NewLine
         )
     }
