@@ -1,7 +1,7 @@
 using namespace System.Collections.Generic
 using namespace System.Management.Automation.Runspaces
 
-class Runspace_Runner {
+class RunspaceRunner {
 	[RunspacePool]$RunspacePool
 	[list[PSCustomObject]]$RunspaceInvocations = @()
 	[scriptblock] $Scriptblock
@@ -9,21 +9,21 @@ class Runspace_Runner {
 	[int]$Id = 0
 	[InitialSessionState]$InitialSessionState
 
-	Runspace_Runner ([scriptblock]$sb) {
+	RunspaceRunner ([scriptblock]$sb) {
 		$this.Scriptblock = $sb
 		$this.Parallelism = (Get-CimInstance Win32_ComputerSystem).NumberOfLogicalProcessors
 		$this.RunspacePool = [RunspaceFactory]::CreateRunspacePool(1, $this.Parallelism)
 		$this.RunspacePool.Open()
 	}
 
-	Runspace_Runner ([scriptblock]$sb, [int]$parallelism) {
+	RunspaceRunner ([scriptblock]$sb, [int]$parallelism) {
 		$this.Scriptblock = $sb
 		$this.Parallelism = [Math]::Max(1, $parallelism)
 		$this.RunspacePool = [RunspaceFactory]::CreateRunspacePool(1, $this.Parallelism)
 		$this.RunspacePool.Open()
 	}
 
-	Runspace_Runner ([InitialSessionState]$iss, [scriptblock]$sb) {
+	RunspaceRunner ([InitialSessionState]$iss, [scriptblock]$sb) {
 		$this.InitialSessionState = $iss
 		$this.Scriptblock = $sb
 		$this.Parallelism = (Get-CimInstance Win32_ComputerSystem).NumberOfLogicalProcessors
@@ -31,7 +31,7 @@ class Runspace_Runner {
 		$this.RunspacePool.Open()
 	}
 
-	Runspace_Runner ([InitialSessionState]$iss, [scriptblock]$sb, [int]$parallelism) {
+	RunspaceRunner ([InitialSessionState]$iss, [scriptblock]$sb, [int]$parallelism) {
 		$this.InitialSessionState = $iss
 		$this.Scriptblock = $sb
 		$this.Parallelism = [Math]::Max(1, $parallelism)
