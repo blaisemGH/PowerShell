@@ -26,3 +26,7 @@ This is my repository of modules.
 
 ### PSUtils
 * Similar to CliUtils but contains functions that you aren't likely to use on the cli but rather in scripts and more complex coding. There is a function to convert nested hashtables to PSCustomObjects, such as when importing from a psd1 file. A recursive Read-Host wrapper that will loop until defined valid strings are provided (up to 10 loops by default). There is also a function to join objects using Linq, which already exists as the popular Join-Object module, but I made my own for practice. Haven't worked with it much yet except to perform left joins in the kubectlUtils module.
+
+### RunspaceRunner
+
+* My initial attempt to provide a wrapper tos implify runspace creation, i.e., multithreading in PowerShell. I had a bad experience recently with Start-ThreadJob in PS 7.3, where the threads weren't being properly used beyond 2 threads, so I am now skeptical it's complete and based this module off what I did with runspaces in that script. Haven't tested it in action yet though 💀
