@@ -29,4 +29,8 @@ This is my repository of modules.
 
 ### RunspaceRunner
 
-* My initial attempt to provide a wrapper tos implify runspace creation, i.e., multithreading in PowerShell. I had a bad experience recently with Start-ThreadJob in PS 7.3, where the threads weren't being properly used beyond 2 threads, so I am now skeptical it's complete and based this module off what I did with runspaces in that script. Haven't tested it in action yet though 💀
+* My initial attempt to provide a wrapper tos implify runspace creation, i.e., multithreading in PowerShell. I had a bad experience recently with Start-ThreadJob in PS 7.3, where the threads weren't being properly used beyond 2 threads, so I am now skeptical it's complete and based this module off what I did with runspaces in that script. Barring bare minimum testing on my command line, I haven't tested it in action yet though 💀
+
+### AbacusUtils
+
+* Mostly deprecated functions since the migration to Kubernetes, but a coupel I use to parse the sqlx-process.log or daal-v2 logfile.

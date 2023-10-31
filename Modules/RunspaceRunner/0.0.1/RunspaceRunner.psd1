@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = 'RunspaceRunner'
+# RootModule = 'RunspaceRunner'
 
 # Version number of this module.
 ModuleVersion = '0.0.1'
@@ -24,13 +24,13 @@ GUID = '5a4c2b80-28a3-4a8c-bdf0-645cd3291130'
 Author = 'Blaise Mullenix'
 
 # Company or vendor of this module
-CompanyName = 'Unknown'
+CompanyName = 'None'
 
 # Copyright statement for this module
 Copyright = '(c) Blaise Mullenix. All rights reserved.'
 
 # Description of the functionality provided by this module
-# Description = ''
+Description = 'A wrapper for managing runspaces.'
 
 # Minimum version of the PowerShell engine required by this module
 PowerShellVersion = '7.3.6'
@@ -57,7 +57,7 @@ PowerShellVersion = '7.3.6'
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = @('./classes/RunspaceRunner.ps1')
+ScriptsToProcess = @('./classes/Runspace_Runner.ps1')
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
