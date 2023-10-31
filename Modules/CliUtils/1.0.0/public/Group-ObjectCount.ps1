@@ -1,5 +1,9 @@
-### Source: https://powershell.one/tricks/performance/group-object
-Function Group-ObjectFixed {
+<#
+	.SYNOPSIS
+		This function is a replacement for the standard PS function group-object. It addresses a bug in PS 5 (fixed in PS 7) that causes group-object to run extremely slowly.
+		Source: https://powershell.one/tricks/performance/group-object
+#>
+Function Group-ObjectCount {
     param (
         [string[]]
         $PKs

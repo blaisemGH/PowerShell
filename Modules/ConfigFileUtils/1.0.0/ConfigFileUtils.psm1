@@ -1,0 +1,1 @@
+Set-Alias -Name cfy -Value ConvertFrom-Yaml -Scope Global -Option AllScope

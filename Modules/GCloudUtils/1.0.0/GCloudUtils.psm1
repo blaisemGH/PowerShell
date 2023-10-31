@@ -1,0 +1,1 @@
+Set-Alias -Name gkecred -Value Get-GKECredentials -Scope Global -Option AllScope

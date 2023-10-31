@@ -56,27 +56,3 @@ class ItemSize {
 		}
 	}
 }
-Function Get-ItemSize {
-	[CmdletBinding()]
-	Param (
-		[Alias('path','p')]
-		[Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true, Position=0)]
-		$FullName,
-		[Alias('u')]
-		[Parameter(Position=1)]
-		[ValidateSet('B','KB','MB','GB','TB')]
-		$Unit
-	)
-	process {
-		$Path = Convert-Path $FullName
-		ForEach ( $itemPath in $Path ) {
-			$measure = Get-ChildItem $itemPath -File -Recurse -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum
-			If ( $Unit ) {
-				[ItemSize]::new($itemPath, $measure.Sum, $Unit)
-			}
-			Else {
-				[ItemSize]::new($itemPath, $measure.Sum)
-			}
-		}
-	}
-}
