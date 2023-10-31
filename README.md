@@ -4,8 +4,8 @@ My PowerShell repository
 This is my repository of modules.
 
 # Packages
-	
-	The modules are stored as zip files and can be unpacked in any path under $env:PSModulePath.
+
+* The modules are stored as zip files and can be unpacked in any path under $env:PSModulePath.
 
 # Modules
 
