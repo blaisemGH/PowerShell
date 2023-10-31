@@ -19,7 +19,7 @@ This is my repository of modules.
 
 ### KubectlUtils --> RequiredModules PSUtils
 
-* A wrapper for different kubectl functionalities. Some of my most used are to ping the metric api via Get-KubeMetrics, and then use kmax to find the most strained pod in the cluster, Set-KubeContext (kc) to transfer between clusters quickly, or Copy-KubeFile which has autocomplete on filepaths inside the container. Another example is kex, which is a wrapper for kubectl -exec. kex has autocomplete on pods, and thes imple syntax of `kex <pod> <command>`. If no command is provided, it will run `kubectl -exec -it <pod name> -- /bin/[bash|sh]`, where it will first attempt bash but default to sh if that fails. If a command is provided, then it runs `kubectl -exec <pod name> -- <command>` A single concise syntax for 3 different verbose kubectl variations.
+* A wrapper for different kubectl functionalities. Some of my most used are to ping the metric api via Get-KubeMetrics, and then use kmax to find the most strained pod in the cluster, Set-KubeContext (kc) to transfer between clusters quickly, or Copy-KubeFile which is a wrapper of kubectl -cp but has autocomplete on filepaths inside the container, which I find very convenient. Another example is kex, which is a wrapper for kubectl -exec. kex has autocomplete on pods, and the simple syntax of `kex <pod> <command>`. If no command is provided, it will run `kubectl -exec -it <pod name> -- /bin/[bash|sh]`, where it will first attempt bash but default to sh if that fails. If a command is provided, then it runs `kubectl -exec <pod name> -- <command>` A single concise syntax for 3 different verbose kubectl variations.
 
 ### Prompt
 * My prompt on a 20% opaque low-gradient background in Windows Terminal using the font Hasklug Nerd Font Mono and color scheme Tango Dark. It's a little stupid, but it's easily changed if you're familiar with the prompt function. I left all the symbols in the function, so you can insert your own emojis or symbols. It's like a mini, weaker version of oh-my-posh that doesn't have the wall of documentation and blackbox of go templates required to configure it. It's just 150 lines of PS Code. Also its own challenge, but for me it's more accessible.
@@ -29,8 +29,4 @@ This is my repository of modules.
 
 ### RunspaceRunner
 
-* My initial attempt to provide a wrapper tos implify runspace creation, i.e., multithreading in PowerShell. I had a bad experience recently with Start-ThreadJob in PS 7.3, where the threads weren't being properly used beyond 2 threads, so I am now skeptical it's complete and based this module off what I did with runspaces in that script. Barring bare minimum testing on my command line, I haven't tested it in action yet though 💀
-
-### AbacusUtils
-
-* Mostly deprecated functions since the migration to Kubernetes, but a coupel I use to parse the sqlx-process.log or daal-v2 logfile.
+* My initial attempt to provide a wrapper to simplify runspace creation, i.e., multithreading in PowerShell. I had a bad experience recently with Start-ThreadJob in PS 7.3, where the threads weren't being properly used beyond 2 threads, so I am now skeptical it's complete and based this module off what I did with runspaces in that script. Barring bare minimum testing on my command line, I haven't tested it in action yet though 💀
