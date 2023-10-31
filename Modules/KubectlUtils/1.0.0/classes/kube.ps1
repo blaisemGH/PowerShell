@@ -4,7 +4,7 @@ Class Kube {
 	static [string[]]$ArrayOfApiResources
 	static [string]$CurrentNamespace
 	
-	static [string] $relevantContainersFile = "$HOME/Documents/kube/relevantContainers.psd1"
+static [string] $relevantContainersFile = "$HOME/.pwsh/KubectlUtils/relevantContainers.psd1"
 	static [hashset[string]] $relevantContainers = ( & {
 		try {
 			return (Import-PowerShellDataFile ([Kube]::relevantContainersFile) -ErrorAction Stop).Values
@@ -14,7 +14,7 @@ Class Kube {
 		}
 	})
 
-	static [string] $contextFile = "$HOME/Documents/kubectl/contexts.psd1"
+	static [string] $contextFile = "$HOME/.pwsh/KubectlUtils/contexts.psd1"
 	static [hashtable] $mapGCloudContexts = ( &{
 		try {
 			return Import-PowerShellDataFile ([Kube]::contextFile)#& { $o = [ordered]@{}; ($ht = Import-PowerShellDataFile $HOME\Documents\tenants\contexts.psd1) | Select -exp Keys | Sort | % { $o.Add($_,$ht[$_])}; $o }
