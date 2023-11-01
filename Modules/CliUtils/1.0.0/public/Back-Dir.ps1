@@ -14,7 +14,7 @@ Function Back-Dir {
 	)
 
 	#Push-Location (Get-Location -stack).Path[$level]
-	For ( $n -in 0..$level ) {
+	ForEach ( $n -in 0..$level ) {
 		Pop-Location
 	}
 }
