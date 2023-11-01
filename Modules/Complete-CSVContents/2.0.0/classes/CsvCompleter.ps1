@@ -19,6 +19,7 @@ using namespace System.Management.Automation.Runspaces
 
 		7. Update_OutputFile, which writes all the output data in memory to the target output file. This occurs every set number of lines as specified in the input arguments, so as to keep memory pressure low while also not bottlenecking the performance behind too long a write. Note that the write is asynchronous, so the script will continue processing the next batch of lines while the write is performed.
 #>
+
 class CsvCompleter {
 	[StreamReader]$streamReader
 	[StreamWriter]$streamWriter
@@ -34,7 +35,6 @@ class CsvCompleter {
 
 	[StringBuilder]$fileContents
 	[string[]]$stringIndexes
-	[bool]$jobsExist = $false
 	
 	[list[PSCustomObject]]$runspaceInvocations = @()
 	[RunspacePool]$runspacePool
@@ -50,7 +50,7 @@ class CsvCompleter {
 		)
 		$manyLines = $stringBuilderBuffer.ToString().Trim([Environment]::NewLine) -split [Environment]::Newline
 		$processManyRows = [System.Text.Stringbuilder]''
-		$count = 0
+
 		Foreach ($line in $manyLines) {
 			[System.Collections.Generic.List[string]]$lineFields = $line -split $fieldDelim
 			Foreach ($index in $indexOfStringFields ) {
@@ -63,7 +63,6 @@ class CsvCompleter {
 			}
 			$csvLine = $lineFields -join $fieldDelim
 			$null = $processManyRows.AppendLine($csvLine)
-			$count += 1
 		}
 		Return $processManyRows.ToString()
 	}
@@ -135,11 +134,13 @@ class CsvCompleter {
 		$this.fileContents.AppendLine($headerLine)
 	}
 	
-	# This method loops through the first row below the headers and identifies which fields are supposed to be strings. The index number of the field is recorded.
+	# This method loops through the fields in the first row below the headers and identifies which fields are supposed to be strings. The index number of the field is recorded.
 	[void] Set_StringIndexes () {
 		if ( !$this.fileContents ) {
 			#$this.Read_CSVProperties()
+			# Adds header line if skipping call to Read_CSVProperties() for handling metadata above header line, i.e., we assume there is no metadata and the header line is the first line in the csv file.
 			$this.fileContents = [StringBuilder]''
+			$this.fileContents.AppendLine($this.streamReader.ReadLine())
 		}
 
 		$this.stringIndexes = @()
