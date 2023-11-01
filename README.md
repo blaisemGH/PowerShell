@@ -34,3 +34,7 @@ This is my repository of modules.
 ### RunspaceRunner
 
 * My initial attempt to provide a wrapper to simplify runspace creation, i.e., multithreading in PowerShell. I had a bad experience recently with Start-ThreadJob in PS 7.3, where the threads weren't being properly used beyond 2 threads, so I am now skeptical it's complete and based this module off what I did with runspaces in that script. Barring bare minimum testing on my command line, I haven't tested it in action yet though 💀
+
+### Complete-CSVContents
+
+* This is a pretty niche module. It identifies string fields in a csv file and wraps them in a delimiter character of your choice. It pushes the limits of PS performance, and I was satisfied with the runtimes, maybe around 30-60 sceonds per million lines at 40 fields, about half of which were strings. I may build upon it in the future with other CSV-based tasks as they arise, assuming the content isn't too proprietary.
