@@ -19,7 +19,7 @@
 			'YWJj' | b64 -decode
 #>
 Function Convert-Base64 {
-	[PSCmdletBinding(DefaultParameterSetName = 'encode')]
+	[CmdletBinding(DefaultParameterSetName = 'encode')]
 	Param(
 		[Parameter(Mandatory,ValueFromPipeline,ValueFromPipelineByPropertyName)]
 		[Alias('Line')]
