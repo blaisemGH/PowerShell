@@ -6,17 +6,13 @@ Function Back-Dir {
 	
 	[CmdletBinding()]
 	Param (
-	#[ValidateScript({
-	#	If ( $_ -match "[\d]*" ) {true}
-	#	Else { Throw 'please enter an integer as your argument. If no argument is entered, the default is 0'}
-	#})]
-		[int]$level = 0
+		[ValidateRange(0)]
+		[int]$NumberOfDirs = 1,
+		[string]$StackName
 	)
-
-	#Push-Location (Get-Location -stack).Path[$level]
-	ForEach ( $n in (0..$level) ) {
+	$repeats = [Math]::Min($NumberOfDirs, (Get-Location -StackName $StackName).Count )
+	#Push-Location (Get-Location -stack).Path[$NumberOfDirs]
+	ForEach ( $n in (1..$repeats) ) {
 		Pop-Location
 	}
 }
-
-Set-Alias -Name bd -Value Back-Dir

@@ -1,13 +1,3 @@
-# Faster backtracking up directory trees
-Function .. { cd .. }
-Function ... { cd ../.. }
-Function .... { cd ../../.. }
-Function ..... { cd ../../../.. }
-Function ...... { cd ../../../../.. }
-Function ....... { cd ../../../../../.. }
-Function ........ { cd ../../../../../../.. }
-Function ......... { cd ../../../../../../../.. }
-
 # Defines a Function equivalent to Unix's 'cd -'. We set the alias to 'cd-' for PowerShell.
 Function cd- {
 	Push-Location (Get-Location -stack).Path[0]
@@ -20,6 +10,7 @@ If ( [System.Environment]::OSVersion.Platform -notmatch 'unix' -and [System.Envi
 Else {
 	Set-Alias -Name pd -Value Push-Location -Scope Global -Option AllScope
 }
+
 Set-Alias -Name bd		-Value Back-Dir					-Scope Global -Option AllScope
 
 Set-Alias -Name fhash	-Value Out-FileHash				-Scope Global -Option AllScope
@@ -42,6 +33,15 @@ Set-Alias -Name gb		-Value Use-GitCliForBranch		-Scope Global -Option AllScope
 Set-Alias -Name base64	-Value Convert-Base64			-Scope Global -Option AllScope
 Set-Alias -Name b64		-Value Convert-Base64			-Scope Global -Option AllScope
 
+# Faster backtracking up directory trees
+Function .. 		{ Push-Location ..							}
+Function ...		{ Push-Location ../..						}
+Function ....		{ Push-Location ../../..					}
+Function .....		{ Push-Location ../../../..					}
+Function ...... 	{ Push-Location ../../../../..				}
+Function .......	{ Push-Location ../../../../../..			}
+Function ........	{ Push-Location ../../../../../../..		}
+Function .........	{ Push-Location ../../../../../../../..		}
 $bullet = [char]::ConvertFromUtf32(0x2022)
 Write-Host @"
 

@@ -43,25 +43,28 @@ Function Export-ContextFileAsPSD1 {
 		$NL = [Environment]::NewLine
 
 		[ValidateNotNullOrEmpty()]$pathContextFile = [Kube]::contextFile
-		[ValidateNotNullOrEmpty()]$pathBackupContextFile = $pathContextFile -replace '^',' bkp_'
-		[ValidateNotNullOrEmpty()]$pathTempContextFile = $pathContextFile -replace '^', 'failed_'
-		
+		$contextParent = Split-Path $pathContextFile -Parent
+		$contextLeaf = Split-Path $pathContextFile -Leaf
+		[ValidateNotNullOrEmpty()]$pathBackupContextFile = Join-Path $contextParent ($contextLeaf -replace '^', 'bkp_')
+
 		$newContent = '@{' + $NL
 	}
 	process {
 		Foreach ( $key in $ContextMap.Keys ) {
-			$newContent += "`t" + $key + ' = ' + $contextMap.$key + $NL
+			$newContent += "`t'" + $key + "' = '" + $contextMap.$key + "'" + $NL
 		}
 	}
 	end {
 		$newContent += '}'
 		try {
-			Copy-Item -Path $pathContextFile -Destination $pathBackupContextFile
-			$newContent | Set-Content $pathContextFile -Force
+			Copy-Item -Path $pathContextFile -Destination $pathBackupContextFile -ErrorAction Stop
+			$newContent | Set-Content $pathContextFile -Force -ErrorAction Stop
 			[Kube]::mapGCloudContexts = Import-PowerShellDatafile ([Kube]::contextFile)
 		}
 		catch {
-			$newContent | Set-Content $pathContextFile -Force
+			$pathFailedContextFile = Join-Path $contextParent ($contextLeaf -replace '^', 'failed_')
+			$newContent | Set-Content $pathFailedContextFile -Force
+
 			Throw "Failed to update context file at $pathContextFile.
 			Created a backup file at $pathBackupContextFile
 			Created a file of the failed update contents at $pathTempContextFile"
