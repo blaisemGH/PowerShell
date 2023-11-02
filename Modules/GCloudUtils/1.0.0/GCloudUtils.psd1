@@ -72,7 +72,7 @@ ScriptsToProcess = 'private\ContextFileUtils.ps1', 'public\Add-GKECredentials.ps
 FunctionsToExport = 'Add-GKECredentials'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = '*'
+CmdletsToExport = 'Add-GKECredentials'
 
 # Variables to export from this module
 VariablesToExport = '*'
