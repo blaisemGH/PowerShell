@@ -19,35 +19,32 @@ Function Find-StringRecursively {
 			#ParameterSetName = 'dir'
 		)]
 		[alias('PSPath')]
-		[string]
-			$Path = '.',
+		[string]$Path = '.',
+
 		[Parameter(Mandatory=$true, ParameterSetName = 'RegExPattern', Position=0)]
 		[Parameter(Mandatory=$true, ParameterSetName = 'SimplePattern', Position=0)]
-		[string]
-			$Pattern,
+		[string]$Pattern,
+
 		[Parameter(Mandatory=$true, ParameterSetName = 'RegExNotMatch')]
 		[Parameter(Mandatory=$true, ParameterSetName = 'SimpleNotMatch')]
-		[string]
-			$NotMatch,
+		[string]$NotMatch,
+
 		[Parameter(ParameterSetName = 'RegExPattern')]
 		[Parameter(ParameterSetName = 'RegExNotMatch')]
-		[switch]
-			$AllMatches,
+		[switch]$AllMatches,
+
 		[Parameter(ParameterSetName = 'SimplePattern')]
 		[Parameter(ParameterSetName = 'SimpleNotMatch')]
-		[switch]
-			$SimpleMatch,
-		[string]
-			$FilterFile = '*',
+		[switch]$SimpleMatch,
+
+		[string]$FilterFile = '*',
+
 		[alias('nr')]
-		[switch]
-			$NoRecurse,
-		[switch]
-			$Force,
-		[switch]
-			$CaseSensitive,
-		[int[]]
-			$Context,
+		[switch]$NoRecurse,
+		[switch]$Force,
+		[switch]$CaseSensitive,
+		[int[]]$Context,
+
 		[ArgumentCompleter({
 			param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
 			(
@@ -66,12 +63,13 @@ Function Find-StringRecursively {
                 Throw "$_ is not a valid Encoding given by [System.Text.Encoding]::GetEncodings() or a static property of [System.Text.Encoding]"
             }
         })]
-        [string]
-			$Encoding,
-		[switch]
-			$List,
-		[switch]
-			$Quiet
+        [string]$Encoding,
+
+		[switch]$List,
+
+		[switch]$Quiet,
+
+		[switch]$IncludeBinaryFiles
 	)
 	begin {
 		$odir = Convert-Path (PWD)
@@ -89,10 +87,10 @@ Function Find-StringRecursively {
 		If ( $FilterFile ) {
 			$GCIparams.Add( 'Filter' , $FilterFile)
 		}
+		$binaryFilter = If ( $IncludeBinaryFiles ) { '^.' } Else { '(?<![.]((zip)|(7z)|(.ar)|(dll)|(class)|(t?gz)|(exe)|(png)|(jpe?g)|(svg)|(tiff)|(gif)|(bmp)))$' }
+		$binaryFilterPattern = [regex]::new($binaryFilter, 'Compiled')
 
-		#$contextPointer = $null
 		$SLSparams = @{}
-		#$SLSparams.Add(	'LiteralPath'	, $Null)
 		If ( $Pattern ) {
 			$SLSparams.Add( 'Pattern'		, $Pattern)
 		}
@@ -142,14 +140,14 @@ Function Find-StringRecursively {
 		}
 		If ( Test-Path $path ) {
 			$isFilePath = $true
-			Foreach ( $fullPath in (Convert-Path $path) ) {
+			Foreach ( $fullPath in Convert-Path $path ) {
 				try {
 					[string[]]$subFolderfileList = [System.IO.Directory]::GetFiles( $fullPath, $FilterFile, $recurse )
 				}
 				catch {
 					[string[]]$subFolderfileList = ( Get-ChildItem -LiteralPath $fullPath @GCIParams -Recurse:(!$NoRecurse) -Force:$Force ).FullName
 				}
-				$SLSInput.AddRange($subFolderfileList)
+				$SLSInput.AddRange( [string[]]($subFolderfileList | Where { $binaryFilterPattern.Match($_).Success }) )
 			}
 			$maxFileLength = [Math]::Min(90, (Measure-Object -InputObject $subFolderfileList -Property length -Maximum).Maximum)
 		}
