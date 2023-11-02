@@ -14,7 +14,11 @@ Function Back-Dir {
 	)
 
 	#Push-Location (Get-Location -stack).Path[$level]
+<<<<<<< HEAD
 	ForEach ( $n in (0..$level) ) {
+=======
+	ForEach ( $n -in 0..$level ) {
+>>>>>>> refs/remotes/origin/main
 		Pop-Location
 	}
 }
