@@ -1,4 +1,4 @@
-Function Join-Object {
+Function Join-ObjectLinq {
 	Param(
 		[object[]]$inputObjectLeft,
 		[object[]]$inputObjectRight,
