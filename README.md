@@ -1,11 +1,12 @@
 # PowerShell
-My PowerShell repository
+My repository of PowerShell modules.
 
-This is my repository of modules.
+Before using these, I recommend installing Windows Terminal, the latest PowerShell Core version, and using this as your default in Windows Terminal. If you use my prompt module, then Windows Terminal and also a nerd font are required (https://www.nerdfonts.com/font-downloads).
 
 # Packages
 
 * The modules are stored as zip files and can be unpacked in any path under $env:PSModulePath.
+* After doing so, add `Import-Module <module name>` to your `$profile`, e.g., `Import-Module CliUtils`.
 
 # Modules
 
@@ -26,7 +27,7 @@ This is my repository of modules.
 * A wrapper for different kubectl functionalities. Some of my most used are to ping the metric api via Get-KubeMetrics, and then use kmax to find the most strained pod in the cluster, Set-KubeContext (kc) to transfer between clusters quickly, or Copy-KubeFile which is a wrapper of kubectl -cp but has autocomplete on filepaths inside the container, which I find very convenient. Another example is kex, which is a wrapper for kubectl -exec. kex has autocomplete on pods, and the simple syntax of `kex <pod> <command>`. If no command is provided, it will run `kubectl -exec -it <pod name> -- /bin/[bash|sh]`, where it will first attempt bash but default to sh if that fails. If a command is provided, then it runs `kubectl -exec <pod name> -- <command>` A single concise syntax for 3 different verbose kubectl variations.
 
 ### Prompt
-* My prompt on a 20% opaque low-gradient background in Windows Terminal using the font Hasklug Nerd Font Mono and color scheme Tango Dark. It's a little stupid, but it's easily changed if you're familiar with the prompt function. I left all the symbols in the function, so you can insert your own emojis or symbols. It's like a mini, weaker version of oh-my-posh that doesn't have the wall of documentation and blackbox of go templates required to configure it. It's just 150 lines of PS Code. Also its own challenge, but for me it's more accessible.
+* My prompt on a 20% opaque low-gradient background in Windows Terminal using the font Hasklug Nerd Font Mono Regular and color scheme Tango Dark. It's a little stupid, but it's easily changed if you're familiar with the prompt function. I left all the symbols in the function, so you can insert your own emojis or symbols. It's like a mini, weaker version of oh-my-posh that doesn't have the wall of documentation and blackbox of go templates required to configure it. It's just 150 lines of PS Code. Also its own challenge, but for me it's more accessible.
 
 ### PSUtils
 * Similar to CliUtils but contains functions that you aren't likely to use on the cli but rather in scripts and more complex coding. There is a function to convert nested hashtables to PSCustomObjects, such as when importing from a psd1 file. A recursive Read-Host wrapper that will loop until defined valid strings are provided (up to 10 loops by default). There is also a function to join objects using Linq, which already exists as the popular Join-Object module, but I made my own for practice. Haven't worked with it much yet except to perform left joins in the kubectlUtils module.

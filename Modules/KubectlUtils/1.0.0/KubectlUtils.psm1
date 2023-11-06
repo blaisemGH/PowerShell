@@ -3,6 +3,7 @@ try {
 }
 catch {}
 
+Set-Alias -name k	-value kubectl					-Scope Global -Option AllScope
 Set-Alias -Name kmax -Value Find-MaxPodMetric		-Scope Global -Option AllScope
 Set-Alias -Name kex	-Value Enter-KubePod			-Scope Global -Option AllScope
 Set-Alias -Name kcp	-Value Copy-KubeFile			-Scope Global -Option AllScope
