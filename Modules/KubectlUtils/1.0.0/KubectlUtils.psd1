@@ -61,7 +61,8 @@ RequiredModules = @(
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 ScriptsToProcess = 'classes\kube.ps1', 'classes\ViewNodesByPod.ps1', 
                'private\Measure-KubeContainers.ps1', 'public\Copy-KubeFile.ps1', 
-               'public\Enter-KubePod.ps1', 'public\Find-MaxPodMetric.ps1', 
+               'public\Enter-KubePod.ps1', 'public\Find-MaxPodMetric.ps1',
+               'public\Get-KubeContext',
                'public\Get-KubeMetrics.ps1', 'public\Get-KubeNodesByPod.ps1', 
                'public\Get-KubeResource.ps1', 'public\Measure-DiskIO.ps1', 
                'public\Set-KubeContext.ps1', 'public\Set-KubeNamespace.ps1', 
@@ -97,7 +98,8 @@ AliasesToExport = '*'
 # List of all files packaged with this module
 FileList = 'classes\kube.ps1', 'classes\ViewNodesByPod.ps1', 'KubectlUtils.psm1', 
                'private\Measure-KubeContainers.ps1', 'public\Copy-KubeFile.ps1', 
-               'public\Enter-KubePod.ps1', 'public\Find-MaxPodMetric.ps1', 
+               'public\Enter-KubePod.ps1', 'public\Find-MaxPodMetric.ps1',
+               'public\Get-KubeContext',
                'public\Get-KubeMetrics.ps1', 'public\Get-KubeNodesByPod.ps1', 
                'public\Get-KubeResource.ps1', 'public\Measure-DiskIO.ps1', 
                'public\Set-KubeContext.ps1', 'public\Set-KubeNamespace.ps1', 
