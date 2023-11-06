@@ -1,9 +1,10 @@
-try {
-	iex ([Kube]::Initialize_KubeApiAutocomplete($false))
+$kubectlAlias = 'k'
+If ( Get-Command kubectl -ErrorAction SilentlyContinue ) {
+	kubectl completion powershell | Out-String | Invoke-Expression
+	Register-ArgumentCompleter -CommandName $kubectlAlias -ScriptBlock $__kubectlCompleterBlock
 }
-catch {}
+Set-Alias -name $kubectlAlias	-value kubectl		-Scope Global -Option AllScope
 
-Set-Alias -name k	-value kubectl					-Scope Global -Option AllScope
 Set-Alias -Name kmax -Value Find-MaxPodMetric		-Scope Global -Option AllScope
 Set-Alias -Name kex	-Value Enter-KubePod			-Scope Global -Option AllScope
 Set-Alias -Name kcp	-Value Copy-KubeFile			-Scope Global -Option AllScope
@@ -15,5 +16,9 @@ Set-Alias -Name gkr	-Value Get-KubeResource			-Scope Global -Option AllScope
 Set-Alias -Name gkc	-Value Get-KubeContext			-Scope Global -Option AllScope
 Set-Alias -Name skc	-Value Set-KubeContext			-Scope Global -Option AllScope
 
+try {
+	iex ([Kube]::Initialize_KubeApiAutocomplete($false))
+}
+catch {}
 
 Update-KubeCompletions
