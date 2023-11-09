@@ -65,7 +65,7 @@ Function Replace-StringInFile {
 
 			$contents = (( Get-Content $file ) | ForEach {
 				$line = $_
-				If ( $line -notmatch $noComments -and $line -match $oldPattern -and $line -notmatch "daal.*ConnectionURL ?[=]" ) {
+				If ( $line -notmatch $noComments -and $line -match $oldPattern ) {
 					Write-Host ( $file + ': Replacing line...' ) -ForegroundColor 'yellow'
 					Write-Host ( "`t`t" + 'old: ' ) -ForegroundColor 'magenta' -NoNewLine;	Write-Host $line -ForegroundColor 'darkgreen'
 

@@ -9,18 +9,22 @@ Function Copy-KubeFile {
 			{
 				param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
 				$pod = $fakeBoundParameters.PodName
-				$lsCmd	=	if ( $wordToComplete -match '/$' ) { 'ls -lA' }
-							else { 'ls -dlA' }
-				[string[]]@(kubectl exec $pod -- sh -c "$lsCmd $wordToComplete*") | % {
-					if ( $_ -match '^d' ) {
-						($_ -split ' ')[-1] + '/'
-					}
-					Else {
-						($_ -split ' ')[-1]
-					}
-				} | Where-Object {
-					$_ -like "$wordToComplete*"
-				} 
+				$lsCmd = "ls -dlA $wordToComplete*"
+				[string[]]@(kubectl exec $pod -- sh -c $lsCmd) |
+					ForEach {
+                        if ( $_ -match '^l' ) {
+                            ($_ -split ' ')[-3]
+                        }
+                        elseif ( $_ -match '^d' ) {
+                            ($_ -split ' ')[-1] + '/'
+                        }
+                        Else {
+                            ($_ -split ' ')[-1]
+                        }
+                    } |
+                    Where-Object {
+                        $_ -like "$wordToComplete*"
+                    }
 			}
 		)]
 		[alias('r')]
