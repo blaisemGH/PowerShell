@@ -1,12 +1,16 @@
 Function Update-ContextFileMap {
 	Param (
 		[Parameter(Mandatory)]
-		[string]$ProjectName
+		[string]$ProjectID
 	)
 	
 	$contextMap = [Kube]::mapGCloudContexts
 
-	$kubeContext = kubectl config view -o json | ConvertFrom-Json | select -ExpandProperty Contexts | where name -match $ProjectName | select -ExpandProperty Name
+	$kubeContext = kubectl config view -o json |
+        ConvertFrom-Json |
+        select -ExpandProperty Contexts |
+        where name -match $ProjectID |
+        select -ExpandProperty Name
 	
 	if ($contextMap.Values -contains $kubeContext ) {
 		$confirm = Test-ReadHost -Query "Context map already contains a matching context. Would you like to replace it? [y/n]" -ValidationStrings 'y','yes','yeah','yea','ja','why are you still reading this?'
