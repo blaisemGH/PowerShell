@@ -68,10 +68,7 @@ Function Out-AllMembersAsGridView {
             }
         }
 
-        $(
-            ForEach ( $object in $outputList ) {
-                $object | Select-Object -Property $finalHeaderList
-            }
-        ) | Out-Gridview @gridViewParameters
+        $outputList[0] = Select-Object -InputObject $outputList[0] -Property $finalHeaderList
+        $outputList | Out-Gridview @gridViewParameters
     }
 }
