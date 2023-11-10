@@ -1,20 +1,26 @@
 using namespace System.Collections.Generic
 <#
+    .SYNOPSIS
+        Outputs a collection of objects as a PowerShell GridView with all of their properties, even those missing in the first item of the collection.
+        Source of code inspiration: https://stackoverflow.com/a/68036424/6076137
+        See also the PSUtils module, function Sync-HeaderProperties, for a portable function.
     .DESCRIPTION
         This function receives an object that consists of a collection of objects with inhomogenous object properties, and outputs a homogenized
-        representation as a PowerShell GridView (a graphical representation).
+        representation as a PowerShell GridView (a graphical representation), with missing property values defaulting to empty ($null).
         
         The reason homogenization is necessary is because PowerShell fixes a property set based on the first item in a collection.
-        All subsequent items in the collection with properties not present in the first item will not display these properties in the output.
-
-        This function scans the entire collection for all properties and sets them to appear in the output.
-        If a given object in the collection does not possess one of the properties added, the value defaults to $null (empty).
+        The output suppresses any new properties from subsequent items, so they do not appear. This is particularly bad for Out-GridView.
         
-        Source of code inspiration: https://stackoverflow.com/a/68036424/6076137
+        The "homogenization" is performed by adding all the unique properties that exist in the collection to the first item in the collection.
+        This means only the first item in the collection is changed. It is purely a workaround for PowerShell's display.
+        
+        The logic for homogenization has been copied from the PSUtils module, function Sync-HeaderProperties.
+        Effectively this function is equivalent to a wrapper that performs `Sync-HeaderProperties | Out-GridView`, but with unified input parameters.
+        I avoided designing this function as a wrapper to prevent a cross-modular dependency just to support a niche gridview function.
     .EXAMPLE
-        $object | Out-AllMembersAsGridView
+        Out-AllPropertiesInGridView $object
     .EXAMPLE
-        $object | Out-AllMembersAsGridView -Title 'MyObject' -OutputMode 'Multiple' -SortHeaders -ExcludeProperties '_TechnicalField1', 'Field2'
+        $object | Out-AllPropertiesInGridView -Title 'MyObject' -OutputMode 'Multiple' -SortHeaders -ExcludeProperties '_TechnicalField1', 'Field2'
 #>
 Function Out-AllPropertiesInGridView {
     [Cmdletbinding(DefaultParameterSetName='OutputMode')]
