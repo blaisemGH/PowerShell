@@ -36,8 +36,8 @@ Function Out-AllMembersAsGridView {
     )
 
     begin {
-        $outputList     = [List[object]]::new()
-        $propertiesSet    = [HashSet[string]]::new()
+        $outputList = [List[object]]::new()
+        $propertiesSet = [HashSet[string]]::new()
         $gridViewParameters = @{ 'Title' = $Title }
         If ( $PSCmdlet.ParameterSetName -eq 'OutputMode' ) {
             $gridViewParameters.Add('OutputMode',$OutputMode)
@@ -53,7 +53,7 @@ Function Out-AllMembersAsGridView {
     process {
         ForEach ( $item in $InputObject ) {
             $propertiesSet.UnionWith(([HashSet[String]]($item | Get-Member -MemberType Properties).Name))
-            [void]$outputList.Add($item)
+            $outputList.Add($item)
         }
     }
 
