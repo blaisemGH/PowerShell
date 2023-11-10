@@ -1,11 +1,16 @@
 using namespace System.Collections.Generic
 <#
     .DESCRIPTION
-        This function takes in an object from the pipeline that consists of an array of objects with inhomogenous object properties, and outputs a
-        homogenized representation as a graph. The reason this is necessary is because PowerShell only displays properties that are in common. For
-        a table output, this means you would only see the columns that all objects in the array have in common. Any columns that aren't present in
-        every object from the array would not be displayed. This function sets such columns to NULL, so that they may displayed graphically.
-        Source of inspiration: https://stackoverflow.com/a/68036424/6076137
+        This function receives an object that consists of a collection of objects with inhomogenous object properties, and outputs a homogenized
+        representation as a PowerShell GridView (a graphical representation).
+        
+        The reason this is necessary is because PowerShell fixes a property set based on the first item in a collection.
+        All subsequent items in the collection with properties not present in the first item will not display these properties in the output.
+        
+        This function scans the entire collection for all properties and sets them to appear in the output.
+        If a given object in the collection does not possess one of the properties added, the value defaults to $null (empty).
+        
+        Source of code inspiration: https://stackoverflow.com/a/68036424/6076137
 
     .EXAMPLE
         $object | Out-AllMembersAsGridView
