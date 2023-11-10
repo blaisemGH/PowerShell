@@ -2,24 +2,37 @@ using namespace System.Collections.Generic
 <#
     .DESCRIPTION
         This function takes in an object from the pipeline that consists of an array of objects with inhomogenous object properties, and outputs a homogenized representation as a graph. The reason this is necessary is because PowerShell only displays properties that are in common. For a table output, this means you would only see the columns that all objects in the array have in common. Any columns that aren't present in every object from the array would not be displayed. This function sets such columns to NULL, so that they may displayed graphically.
-        Source: https://stackoverflow.com/a/68036424/6076137
+        Source of inspiration: https://stackoverflow.com/a/68036424/6076137
+
     .EXAMPLE
         $object | Out-AllMembersAsGridView
-        $obect | graph
+    
+    .EXAMPLE
+        $object | Out-AllMembersAsGridView -Title 'MyObject' -OutputMode 'Multiple' -SortHeaders -ExcludeProperties '_TechnicalField1', '_TechnicalField2'
 #>
 Function Out-AllMembersAsGridView {
     [Cmdletbinding(DefaultParameterSetName='OutputMode')]
     param(
         [Parameter(ValueFromPipeline, Position=0)]
         [object[]]$InputObject,
-        [switch]$SortHeaders,
-        [string]$Title = 'default',
-        [string[]]$ExcludeProperties,
+
+        # Sets the name of the GridView window.
+        [string]$Title = 'PS GridView',
+
+        # [None|Single|Multiple] Sets the OutputMode parameter for Out-GridView, allowing the user to output a single or multiple rows in the GridView selection. Default: 'None'.
         [Parameter(ParameterSetName='OutputMode')]
         [ValidateSet('None', 'Single', 'Multiple')]
         [string]$OutputMode = 'None',
+
+        # The GridView passes its output for further processing. Effectively the same as OutputMode = 'Multiple'.
         [Parameter(ParameterSetName='PassThru')]
-        [switch]$PassThru   
+        [switch]$PassThru,
+
+        # Excludes certain properties from the output, if you are trying to curate a GridView for end users.
+        [string[]]$ExcludeProperties,
+
+        # Reorders all objects to the same order of headers in the output grid.
+        [switch]$SortHeaders
     )
 
     begin {
@@ -31,6 +44,9 @@ Function Out-AllMembersAsGridView {
         }
         ElseIf ( $PSCmdlet.ParameterSetName -eq 'PassThru' ) {
             $gridViewParameters.Add('PassThru',$PassThru)
+        }
+        Else {
+            $gridViewParameters.Add('Wait', $True)
         }
     }
 
@@ -44,7 +60,7 @@ Function Out-AllMembersAsGridView {
     end {
         $finalHeaderList = & {
             If ($SortHeaders) {
-                $propertiesSet | Where { $_ -notin $ExcludeProperties } | Sort-Object -Unique
+                $propertiesSet | Where { $_ -notin $ExcludeProperties } | Sort-Object
             }
             Else {
                 $propertiesSet | Where { $_ -notin $ExcludeProperties }
