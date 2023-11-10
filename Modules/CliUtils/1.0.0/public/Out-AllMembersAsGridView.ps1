@@ -1,7 +1,10 @@
 using namespace System.Collections.Generic
 <#
     .DESCRIPTION
-        This function takes in an object from the pipeline that consists of an array of objects with inhomogenous object properties, and outputs a homogenized representation as a graph. The reason this is necessary is because PowerShell only displays properties that are in common. For a table output, this means you would only see the columns that all objects in the array have in common. Any columns that aren't present in every object from the array would not be displayed. This function sets such columns to NULL, so that they may displayed graphically.
+        This function takes in an object from the pipeline that consists of an array of objects with inhomogenous object properties, and outputs a
+        homogenized representation as a graph. The reason this is necessary is because PowerShell only displays properties that are in common. For
+        a table output, this means you would only see the columns that all objects in the array have in common. Any columns that aren't present in
+        every object from the array would not be displayed. This function sets such columns to NULL, so that they may displayed graphically.
         Source of inspiration: https://stackoverflow.com/a/68036424/6076137
 
     .EXAMPLE
@@ -21,11 +24,13 @@ Function Out-AllMembersAsGridView {
 
         # [None|Single|Multiple] Sets the OutputMode parameter for Out-GridView, allowing the user to output a single or multiple rows in the GridView selection. Default: 'None'.
         [Parameter(ParameterSetName='OutputMode')]
+        [Alias('om')]
         [ValidateSet('None', 'Single', 'Multiple')]
         [string]$OutputMode = 'None',
 
         # The GridView passes its output for further processing. Effectively the same as OutputMode = 'Multiple'.
         [Parameter(ParameterSetName='PassThru')]
+        [Alias('pt')]
         [switch]$PassThru,
 
         # Excludes certain properties from the output, if you are trying to curate a GridView for end users.
