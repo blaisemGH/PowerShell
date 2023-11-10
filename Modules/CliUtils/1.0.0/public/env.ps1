@@ -1,3 +1,3 @@
 Function env {
-	Get-ChildItem env:
+    Get-ChildItem env:
 }

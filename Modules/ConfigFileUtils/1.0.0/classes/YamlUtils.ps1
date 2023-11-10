@@ -4,8 +4,8 @@ using namespace System.Collections.Generic
 
 Class YamlUtils {
     [string[]]$yamlCode
-	[string]$outType = '[PSCustomObject]@{'
-	[string]$outTypeRegex = '\[PSCustomObject\]@\{'
+    [string]$outType = '[PSCustomObject]@{'
+    [string]$outTypeRegex = '\[PSCustomObject\]@\{'
 
     [int]$lineCount = 0
     [int]$previousIndentCount = 0
@@ -29,35 +29,35 @@ Class YamlUtils {
     [string]$lineKey
     [string]$lineValue
 
-	<#
-		The Parse method in this class, which is the main workhorse logic behind reading the yaml file, processes yaml input line-by-line, so it requires single-line values. A key-value (kv) pair must not have a value that spans multiple lines.
-		
-		This occurs, e.g., in the kubernetes .kube file after running `kubectl config view`. Certain string values can span multiple lines for no reason even though they belong to a single key.
-		
-		In the constructors below is a -replace operator that converts such multi-line values into single-line values.
-		
-		The goal is to only match multi-line strings of the form "<indent?><key>: foo<newline><indent?>bar", where "foo bar" is a single string value to <key> that has been entered in the yaml file to span multiple lines, and <indent?> refers to arbitrary indentation (including no indentation). The Regex pattern should match the portion "<newline><indent?>" and replace it with a single whitespace, turning the multi-line string value into a single-line string value for the Parse method.
+    <#
+        The Parse method in this class, which is the main workhorse logic behind reading the yaml file, processes yaml input line-by-line, so it requires single-line values. A key-value (kv) pair must not have a value that spans multiple lines.
+        
+        This occurs, e.g., in the kubernetes .kube file after running `kubectl config view`. Certain string values can span multiple lines for no reason even though they belong to a single key.
+        
+        In the constructors below is a -replace operator that converts such multi-line values into single-line values.
+        
+        The goal is to only match multi-line strings of the form "<indent?><key>: foo<newline><indent?>bar", where "foo bar" is a single string value to <key> that has been entered in the yaml file to span multiple lines, and <indent?> refers to arbitrary indentation (including no indentation). The Regex pattern should match the portion "<newline><indent?>" and replace it with a single whitespace, turning the multi-line string value into a single-line string value for the Parse method.
 
-		To explain the regex in detail, the regex pattern is a multi-line pattern (?m) that checks for 1 or more newlines which are followed by 0 or more spaces/tab characters (\s*), and then looks ahead (?!=...) to check the subsequent characters are NOT:
-			1. Pattern '- \S+', i.e., a dash followed by a space and then non-space characters, as this would indicate a list element in yaml.
-			2. Pattern '[^:]+:\s*', i.e., any characters followed by a colon and 0 or more whitespace, as this would indicate a new dictionary in yaml.
-			3. Pattern '[^:]+: \S+', i.e., any characters followed by a colon, then a space, and then non-space characters, as this would indicate a kv pair in yaml.
-		Summarized, the regex should not match a line followed by new list elements, new dictionaries, or kv pairs in the yaml file. It is assumed that any other scenario would be a multi-line string and therefore should be concatenated into a single-line value.		
-	#>
-	YamlUtils([string[]]$inputYamlContents ) {	
-		$this.yamlCode = $inputYamlContents -join [Environment]::NewLine -replace (
-			'(?m)((' + [Environment]::NewLine + ')|(\n))+\s*(?!((- \S+)|([^:]+:\s*(' + [Environment]::NewLine + ')|(\n))|([^:]+: \S+)))'
-		), ' ' -split [Environment]::NewLine
-	}
-	YamlUtils([string[]]$inputYamlContents, [bool]$outAsHashTable ) {	
-		$this.yamlCode = $inputYamlContents -join [Environment]::NewLine -replace (
-				'(?m)((' + [Environment]::NewLine + ')|(\n))+\s*(?!((- \S+)|([^:]+:\s*(' + [Environment]::NewLine + ')|(\n))|([^:]+: \S+)))'
-			), ' ' -split [Environment]::NewLine
-		If ( $outAsHashTable ) {
-			$this.outType = '@{'
-			$this.outTypeRegex = '@\{'
-		}
-	}
+        To explain the regex in detail, the regex pattern is a multi-line pattern (?m) that checks for 1 or more newlines which are followed by 0 or more spaces/tab characters (\s*), and then looks ahead (?!=...) to check the subsequent characters are NOT:
+            1. Pattern '- \S+', i.e., a dash followed by a space and then non-space characters, as this would indicate a list element in yaml.
+            2. Pattern '[^:]+:\s*', i.e., any characters followed by a colon and 0 or more whitespace, as this would indicate a new dictionary in yaml.
+            3. Pattern '[^:]+: \S+', i.e., any characters followed by a colon, then a space, and then non-space characters, as this would indicate a kv pair in yaml.
+        Summarized, the regex should not match a line followed by new list elements, new dictionaries, or kv pairs in the yaml file. It is assumed that any other scenario would be a multi-line string and therefore should be concatenated into a single-line value.        
+    #>
+    YamlUtils([string[]]$inputYamlContents ) {    
+        $this.yamlCode = $inputYamlContents -join [Environment]::NewLine -replace (
+            '(?m)((' + [Environment]::NewLine + ')|(\n))+\s*(?!((- \S+)|([^:]+:\s*(' + [Environment]::NewLine + ')|(\n))|([^:]+: \S+)))'
+        ), ' ' -split [Environment]::NewLine
+    }
+    YamlUtils([string[]]$inputYamlContents, [bool]$outAsHashTable ) {    
+        $this.yamlCode = $inputYamlContents -join [Environment]::NewLine -replace (
+                '(?m)((' + [Environment]::NewLine + ')|(\n))+\s*(?!((- \S+)|([^:]+:\s*(' + [Environment]::NewLine + ')|(\n))|([^:]+: \S+)))'
+            ), ' ' -split [Environment]::NewLine
+        If ( $outAsHashTable ) {
+            $this.outType = '@{'
+            $this.outTypeRegex = '@\{'
+        }
+    }
 
     [string[]] Parse() {
         Return $(
@@ -74,24 +74,24 @@ Class YamlUtils {
                         Throw "Document identified first indent uses $($this.indentTypeName) indentation, but current line indentation does not. Please use consistent indentation characters on line $($this.lineCount)"
                     }
 
-					$this.Split_CurrentLine($line)
-	
-					$this.Set_CurrentLineIndentation()                
-					$this.Set_CurrentLineKeyValuePair()
-					$this.Test_KeyValueOrListElement()
-					$outputLine = $this.Get_LineTextToPrint($line)
-	
-					If ( $this.indentCount -lt $this.previousIndentCount -and $this.indentTracker.Count -gt 0) {
-						Write-Output ($this.Write_NewOutdent())
-					}
-					ElseIf ( $this.indentCount -gt $this.previousIndentCount ) {
-						Write-Output ($this.Write_NewIndent($line))
-					}
-	
-					Write-Output $this.Write_NextDictIfOpenDictList($line)
+                    $this.Split_CurrentLine($line)
+    
+                    $this.Set_CurrentLineIndentation()                
+                    $this.Set_CurrentLineKeyValuePair()
+                    $this.Test_KeyValueOrListElement()
+                    $outputLine = $this.Get_LineTextToPrint($line)
+    
+                    If ( $this.indentCount -lt $this.previousIndentCount -and $this.indentTracker.Count -gt 0) {
+                        Write-Output ($this.Write_NewOutdent())
+                    }
+                    ElseIf ( $this.indentCount -gt $this.previousIndentCount ) {
+                        Write-Output ($this.Write_NewIndent($line))
+                    }
+    
+                    Write-Output $this.Write_NextDictIfOpenDictList($line)
 
-					Write-Output $outputLine
-				}
+                    Write-Output $outputLine
+                }
             }
 
             ForEach ( $collection in $this.collectionTracker.ToArray().Clone() ) {
@@ -107,7 +107,7 @@ Class YamlUtils {
     
     [void] Set_IndentationStyle ([string]$line) {
         $testLine = $line -replace '^-(.*)', '$1'
-		If ( $testLine -match '^\t' ) {
+        If ( $testLine -match '^\t' ) {
             $this.indentType        = ([char]9).ToString()
             $this.indentTypeName    = 'tab'
             $this.replaceDash       = ''
@@ -190,17 +190,17 @@ Class YamlUtils {
             }
         }
     }
-	
-	[void] Test_KeyValueOrListElement() {
-		If ( $this.lineKey ) {
+    
+    [void] Test_KeyValueOrListElement() {
+        If ( $this.lineKey ) {
             If ( $this.lineValue -eq $this.lineContent ) { #If the line is a kv-pair, yet the value and original line are all the same, something went wrong.
                 Throw "Cannot parse key:value pair. Attempt to separate left and right of the colon yielded the same value as the original line. Line $($this.lineCount)"
             }
 
             # Define that this line is not a list element for parsing below
             $this.isNotArrayElement = $true
-		}
-	}
+        }
+    }
 
     # Assemble output line to print at the end of line processing (after the indentations have been adjusted for)
     [string] Get_LineTextToPrint([string]$line) {

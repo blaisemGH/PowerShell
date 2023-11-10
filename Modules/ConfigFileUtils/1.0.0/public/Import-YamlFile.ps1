@@ -3,9 +3,9 @@ Function Import-YamlFile {
         [Parameter(Mandatory, ValueFromPipelineByPropertyName)]
         [Alias('PSPath')]
         [string]$Path,
-		[switch]$asHashTable
+        [switch]$asHashTable
     )
     process {
-		[FileParser]::Yaml($Path, $asHashTable)
+        [FileParser]::Yaml($Path, $asHashTable)
     }
 }

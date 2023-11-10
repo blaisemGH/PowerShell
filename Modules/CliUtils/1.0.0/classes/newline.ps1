@@ -1,3 +1,3 @@
 Class Env {
-	static $NL = [Environment]::NewLine
+    static $NL = [Environment]::NewLine
 }

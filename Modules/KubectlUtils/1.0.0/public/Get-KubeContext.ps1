@@ -1,16 +1,16 @@
 Function Get-KubeContext {
-	Param(
-		[ArgumentCompleter(
-			{
-				Param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-				([Kube]::mapGcloudContexts.Keys + '--current') | Where-Object {
-					[string]$_ -like "$wordToComplete*"
-				}
-			}
-		)]
-		[string]$Context = '--current'
-	)
-	$contextMap = [Kube]::mapGcloudContexts
+    Param(
+        [ArgumentCompleter(
+            {
+                Param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+                ([Kube]::mapGcloudContexts.Keys + '--current') | Where-Object {
+                    [string]$_ -like "$wordToComplete*"
+                }
+            }
+        )]
+        [string]$Context = '--current'
+    )
+    $contextMap = [Kube]::mapGcloudContexts
     $targetContext = If ( $Context -eq '--current' ) {
         kubectl config view --minify -o json | ConvertFrom-Json | select -ExpandProperty contexts
     }
