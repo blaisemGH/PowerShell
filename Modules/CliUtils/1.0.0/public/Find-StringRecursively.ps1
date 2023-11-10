@@ -1,12 +1,23 @@
+class ViewGrep {
+    [string]$Filepath
+    [string]$Line
+    [string]$Finding
+    hidden [Microsoft.PowerShell.Commands.MatchInfoContext]$Context
+    hidden [System.Text.RegularExpressions.Match[]]$Matches
+}
 <#
     .DESCRIPTION
-        This is a wrapper function that combines Get-ChildItem and Select-String into a single function. It is intended to emulate the grep command in Unix and is also aliased to grep.
+        This is a wrapper function that combines Get-ChildItem and Select-String into a single function.
+        It is intended to emulate the grep command in Unix and is also aliased to grep.
         
-        Ultimately after a lot of wrangling with this function, the niche I found for it was in output formatting and convience. It is prettier than Select-String and more reponsive to type than gci | sls, which feels somehow disruptive to type out after being used to typing a quick grep in unix.
+        Ultimately after a lot of wrangling with this function, the niche I found for it was in output
+        formatting and convience. It is prettier than Select-String and more reponsive to type than
+        gci | sls, which feels somehow disruptive to type out after being used to typing a quick grep
+        in unix.
 
-        IMPORTANT: Pipe this function into Format-Table in order to wrap the output, so that the line isn't truncated.
-        
-        Future ideas: Include the Matches property from Select-String. Add a switch to filter out compressed/binary files.
+    .NOTES
+        Hint: Pipe this function into Format-Table -Wrap, so that the line isn't truncated.
+
 #>
 Function Find-StringRecursively {
     [CmdletBinding(DefaultParameterSetName='RegExPattern')]
@@ -15,8 +26,7 @@ Function Find-StringRecursively {
             Mandatory=$true,
             ValueFromPipelineByPropertyName=$true,
             ValueFromPipeline,
-            Position=1#,
-            #ParameterSetName = 'dir'
+            Position=1
         )]
         [alias('PSPath')]
         [string]$Path = '.',
@@ -66,8 +76,8 @@ Function Find-StringRecursively {
         [string]$Encoding,
 
         [switch]$List,
-
         [switch]$Quiet,
+        [switch]$NoEmphasis,
 
         # Activate to include binary files.
         [switch]$IncludeBinaryFiles,
@@ -91,7 +101,7 @@ Function Find-StringRecursively {
         If ( $FilterFile ) {
             $GCIparams.Add( 'Filter' , $FilterFile)
         }
-        $binaryFilter = If ( $IncludeBinaryFiles ) { '^.' } Else { '(?<![.]((zip)|(7z)|(.ar)|(dll)|(class)|(t?gz)|(exe)|(png)|(jpe?g)|(svg)|(tiff)|(gif)|(bmp)))$' }
+        $binaryFilter = If ( $IncludeBinaryFiles ) { '^.' } Else { '(?<![.]zip|7z|.ar|dll|class|t?gz|exe|png|jpe?g|svg|tiff|gif|bmp)$' }
         $binaryFilterPattern = [regex]::new($binaryFilter, 'Compiled')
 
         $SLSparams = @{}
@@ -255,7 +265,7 @@ Function Find-StringRecursively {
                     # There must be a better way, but I can't stand spending more time on this right now.
                 }
             }
-            Select-String @SLSparams | ForEach-Object {
+            Select-String @SLSparams | ForEach-Object { If ( $Quiet ) { $_ } Else {
                 If ( $Context ) {
                     $preCount = try {@($_.Context.DisplayPreContext.split([Environment]::NewLine)).Count } catch { $_.Context.DisplayPostContext.Count }
                     $preLineNumber = ''
@@ -277,26 +287,38 @@ Function Find-StringRecursively {
                         if ( !($displayPreContext = $_.Context.DisplayPreContext | Out-String) ) { $displayPreContext = '' }
                         if ( !($displayPostContext = $_.Context.DisplayPostContext | Out-String) ) { $displayPostContext = '' }
                         $emphasizedLine = & {
-                            if ($_.ToEmphasizedString($_.line) -match '(?s).*(?-s)> .*:[0-9]+:(?<line>.+)(?s).*' ) {
-                                $matches.line
+                            if ($NoEmphasis) {
+                                $_.Line
                             }
+                            # For Select-String outputs with -Context, which are multiline with the form
+                            # .*><filename>:<line number>:<preContext><line><postContext>
+                            # This regex captures all of that and keeps only <line>.
+                            elseif ($_.ToEmphasizedString($_.line) -match 
+                                '(?s).*(?-s)> .*:[0-9]+:(?<line>.+)\n?(?s).*'
+                            ) {
+                                $Matches.line
+                            }
+                            # Filter Select-String's output of <filename>:<linenumber>:<line> to just <line>
                             else {
                                 $_.ToEmphasizedString($_.line) -replace ('>? ?' + ([regex]::Escape($_.Path + ':' + $_.LineNumber))  + ':')
                             }
                         }
-                        [PSCustomObject]@{
-                            Filename    = "{0,-$limitPath}" -f ($ansiOrange + $trimmedFilePath + ":$ansiReset")
-                            Line        = '{0,9}' -f ( $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber )
-                            Contents    = '{0}{1}{2}' -f $displayPreContext,
-                            $emphasizedLine, 
-                            $displayPostContext -replace "$([Environment]::NewLine)$"
+                        [ViewGrep]@{
+                            Filepath    = "{0,-$limitPath}" -f ($ansiOrange + $trimmedFilePath + ":$ansiReset")
+                            Line        = '{0,7}' -f ( $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber )
+                            Finding = '{0}{1}{2}{3}' -f $displayPreContext,
+                                $emphasizedLine,
+                                [Environment]::NewLine,
+                                $displayPostContext -replace "$([Environment]::NewLine)$"
+                            Matches = $_.Matches
+                            Context = $_.Context
                         }
                     }
                     else {
                         $_.ToEmphasizedString($_.Line)
                     }
                 }
-            }
+            }}
         }
     }
 }

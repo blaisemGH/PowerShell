@@ -33,7 +33,7 @@ Copyright = '(c) Blaise Mullenix. All rights reserved.'
 Description = 'Diverse functions to streamline commandline functions.'
 
 # Minimum version of the PowerShell engine required by this module
-PowerShellVersion = '7.3.6'
+PowerShellVersion = '5.1'
 
 # Name of the PowerShell host required by this module
 # PowerShellHostName = ''
