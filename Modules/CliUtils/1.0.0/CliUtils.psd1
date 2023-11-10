@@ -64,7 +64,7 @@ ScriptsToProcess = @(
     '.\classes\PSDirTree.ps1',
     '.\public\Replace-StringInFile.ps1',
     '.\public\Out-FileHash.ps1',
-    '.\public\Out-AllMembersAsGridView.ps1',
+    '.\public\Out-AllPropertiesInGridView.ps1',
     '.\public\LockThread.ps1',
     '.\public\Group-ObjectCount.ps1',
     '.\public\Get-ItemSize.ps1',

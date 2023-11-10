@@ -16,7 +16,7 @@ using namespace System.Collections.Generic
     .EXAMPLE
         $object | Out-AllMembersAsGridView -Title 'MyObject' -OutputMode 'Multiple' -SortHeaders -ExcludeProperties '_TechnicalField1', 'Field2'
 #>
-Function Out-AllMembersAsGridView {
+Function Out-AllPropertiesInGridView {
     [Cmdletbinding(DefaultParameterSetName='OutputMode')]
     param(
         [Parameter(ValueFromPipeline, Position=0)]
