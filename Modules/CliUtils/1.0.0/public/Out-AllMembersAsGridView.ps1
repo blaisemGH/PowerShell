@@ -22,7 +22,7 @@ Function Out-AllMembersAsGridView {
         # Sets the name of the GridView window.
         [string]$Title = 'PS GridView',
 
-        # [None|Single|Multiple] Sets the OutputMode parameter for Out-GridView, allowing the user to output a single or multiple rows in the GridView selection. Default: 'None'.
+        # [None|Single|Multiple] Sets the OutputMode parameter for Out-GridView, passing a GridView selection to the output. Default: 'None'.
         [Parameter(ParameterSetName='OutputMode')]
         [Alias('om')]
         [ValidateSet('None', 'Single', 'Multiple')]
