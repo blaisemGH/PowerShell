@@ -6,15 +6,13 @@ using namespace System.Collections.Generic
         
         The reason this is necessary is because PowerShell fixes a property set based on the first item in a collection.
         All subsequent items in the collection with properties not present in the first item will not display these properties in the output.
-        
+
         This function scans the entire collection for all properties and sets them to appear in the output.
         If a given object in the collection does not possess one of the properties added, the value defaults to $null (empty).
         
         Source of code inspiration: https://stackoverflow.com/a/68036424/6076137
-
     .EXAMPLE
         $object | Out-AllMembersAsGridView
-    
     .EXAMPLE
         $object | Out-AllMembersAsGridView -Title 'MyObject' -OutputMode 'Multiple' -SortHeaders -ExcludeProperties '_TechnicalField1', '_TechnicalField2'
 #>
