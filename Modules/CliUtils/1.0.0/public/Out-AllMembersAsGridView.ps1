@@ -59,7 +59,7 @@ Function Out-AllMembersAsGridView {
     }
 
     end {
-        $finalHeaderList = & {
+        $finalHeaderCollection = & {
             If ($SortHeaders) {
                 $propertiesSet | Where { $_ -notin $ExcludeProperties } | Sort-Object
             }
@@ -68,7 +68,7 @@ Function Out-AllMembersAsGridView {
             }
         }
 
-        $outputList[0] = Select-Object -InputObject $outputList[0] -Property $finalHeaderList
+        $outputList[0] = Select-Object -InputObject $outputList[0] -Property $finalHeaderCollection
         $outputList | Out-Gridview @gridViewParameters
     }
 }
