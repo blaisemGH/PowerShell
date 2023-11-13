@@ -31,7 +31,7 @@ Function Sync-HeaderProperties {
 
     begin {
         $outputList = [List[object]]::new()
-        $propertiesSet = [HashSet[string]]::new()
+        $propertiesSet = [HashSet[string]]::new([System.StringComparer]::InvariantCultureIgnoreCase)
     }
 
     process {

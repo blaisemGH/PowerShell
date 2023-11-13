@@ -51,7 +51,7 @@ Function Out-AllPropertiesInGridView {
 
     begin {
         $outputList = [List[object]]::new()
-        $propertiesSet = [HashSet[string]]::new()
+        $propertiesSet = [HashSet[string]]::new([System.StringComparer]::InvariantCultureIgnoreCase)
 
         $gridViewParameters = @{ 'Title' = $Title }
         If ( $PSCmdlet.ParameterSetName -eq 'OutputMode' ) {
