@@ -57,7 +57,7 @@ RequiredModules = @('KubectlUtils')
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = 'private\ContextFileUtils.ps1', 'public\Add-GKECredentials.ps1'
+ScriptsToProcess = 'public\ContextFileUtils.ps1', 'public\Add-GKECredentials.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -69,10 +69,10 @@ ScriptsToProcess = 'private\ContextFileUtils.ps1', 'public\Add-GKECredentials.ps
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Add-GKECredentials'
+FunctionsToExport = '*'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = 'Add-GKECredentials'
+CmdletsToExport = '*'
 
 # Variables to export from this module
 VariablesToExport = '*'

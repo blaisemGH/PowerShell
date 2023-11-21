@@ -1,9 +1,10 @@
 class ViewGrep {
-    [string]$Filepath
+    [string]$Path
+    [string]$Num
     [string]$Line
-    [string]$Finding
     hidden [Microsoft.PowerShell.Commands.MatchInfoContext]$Context
     hidden [System.Text.RegularExpressions.Match[]]$Matches
+    hidden [string]$Filename
 }
 <#
     .DESCRIPTION
@@ -16,7 +17,9 @@ class ViewGrep {
         in unix.
 
     .NOTES
-        Hint: Pipe this function into Format-Table -Wrap, so that the line isn't truncated.
+        Hint: Pipe this function into Format-Table -Wrap to avoid truncated output.
+        As mentioned above, this function is intended to emulate grep, so the parameters Path and Pattern
+        are switched in position like Unix grep (`grep <pattern> <path>`).
 
 #>
 Function Find-StringRecursively {
@@ -82,8 +85,9 @@ Function Find-StringRecursively {
         # Activate to include binary files.
         [switch]$IncludeBinaryFiles,
 
-        # Sets the maximum width for the filename column in the output, assuming a file was searched.
-        [int]$maxFileNameWidth
+        # Sets the maximum width for the path column in the output, assuming a file was searched. 0 = unlimited width and absolute path.
+        [ValidateRange(1)]
+        [int]$MaxFileNameWidth
     )
     begin {
         $odir = Convert-Path (PWD)
@@ -133,6 +137,10 @@ Function Find-StringRecursively {
         }
         If ( $Quiet ) {
             $SLSparams.Add( 'Quiet'    , $true)
+        }
+        $unlimitedWidth = $false
+        If ( $PSBoundParameters.ContainsKey('MaxFileNameWidth') -and $MaxFileNameWidth -eq 0 ) {
+            $unlimitedWidth = $true
         }
         
         $ansi = [char]27
@@ -190,12 +198,19 @@ Function Find-StringRecursively {
                         * if root.length + leaf.length -gt $limitPath, then take near 0.5x $limitPath from
                           the left of the string, and near 0.5x $limitPath from the right.
                           ("near" = subtracting $fakePath.Length, i.e., $limitPath - 2x $fakePath.Length)
-                    Note that $limitPath is set by the input argument $maxFileNameWidth, or if unset then 
+                    Note that $limitPath is set by the input argument $MaxFileNameWidth, or if unset then 
                     via $maxFileLength = min(70, the longest relative filepath in the search path)
                 #>
-                $limitPath = if ( $maxFileNameWidth ) { $maxFileNameWidth } else { $maxFileLength }
+                $limitPath = & {
+                    if ( $MaxFileNameWidth ) { $MaxFileNameWidth }
+                    elseif ( $unlimitedWidth ) {0}
+                    else { $maxFileLength }
+                }
                 $trimmedFilePath = & {
-                    if ( $filepath.Length -gt $limitPath ) {
+                    if ( $unlimitedWidth ) {
+                        Convert-Path $item
+                    }
+                    elseif ( $filepath.Length -gt $limitPath ) {
                         $pathSplit = $filepath.split( [IO.Path]::DirectorySeparatorChar )
                         $pathSplitCount = $pathSplit.Count
                         # Check if directories in between root and leaf (count -gt 2) and prepare to trim them.
@@ -282,7 +297,7 @@ Function Find-StringRecursively {
                         }
                     }
                 }
-                & {
+                . {
                     If ( $isFilePath ) {
                         if ( !($displayPreContext = $_.Context.DisplayPreContext | Out-String) ) { $displayPreContext = '' }
                         if ( !($displayPostContext = $_.Context.DisplayPostContext | Out-String) ) { $displayPostContext = '' }
@@ -304,18 +319,23 @@ Function Find-StringRecursively {
                             }
                         }
                         [ViewGrep]@{
-                            Filepath    = "{0,-$limitPath}" -f ($ansiOrange + $trimmedFilePath + ":$ansiReset")
-                            Line        = '{0,7}' -f ( $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber )
-                            Finding = '{0}{1}{2}{3}' -f $displayPreContext,
+                            Path = "{0,-$limitPath}" -f ($ansiOrange + $trimmedFilePath + ":$ansiReset")
+                            Num  = '{0,-7}' -f ( $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber )
+                            Line = '{0}{1}{2}{3}' -f $displayPreContext,
                                 $emphasizedLine,
                                 [Environment]::NewLine,
                                 $displayPostContext -replace "$([Environment]::NewLine)$"
-                            Matches = $_.Matches
                             Context = $_.Context
+                            Matches = $_.Matches
+                            Filename = $filepath
                         }
                     }
                     else {
-                        $_.ToEmphasizedString($_.Line)
+                        [ViewGrep]@{
+                            Line = $_.ToEmphasizedString($_.Line)
+                            Context = $_.Context
+                            Matches = $_.Matches
+                        }
                     }
                 }
             }}

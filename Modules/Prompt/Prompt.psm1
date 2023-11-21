@@ -16,7 +16,6 @@ Set-PSReadlineKeyHandler    -Key Ctrl+DownArrow	-Function HistorySearchForward
 
 Set-PSReadlineKeyHandler    -Key Ctrl+u 		-Function RevertLine			# Clears command line
 Set-PSReadlineKeyHandler    -Key Ctrl+e 		-Function EndOfLine				# Navigates to end of line
-Set-PSReadlineKeyHandler    -Key Ctrl+w 		-Function BeginningOfLine		# Navigates to beginning of line
 
 #List of default PSReadLine colors
 #CommandColor                           : "$([char]0x1b)[93m"
@@ -56,17 +55,20 @@ If ( (Get-Module PSReadLine | Select-Object -ExpandProperty Version) -ge [Versio
 'Parameter'			=	"$([char]0x1b)[38;2;255;155;195m"	# argument parameters, e.g., gci -Recurse (recurse is colored).
 	}
 
-    # Defining ascii color/formatting variables that are used later
-    $ESC = [char]27
-    $colorForeYellow = "$ESC[93m"
-    $colorForeWhite = "$ESC[1m"
-    $colorForeGray = "$ESC[37m"
-    $colorForeRed = "$ESC[91m"
-    $colorForeGreen = "$ESC[92m"
+    # Defining ansi color/formatting variables that are used later
+    $ANSI = [char]27
+
+    $colorForeYellow = "$ANSI[93m"
+    $colorForeWhite = "$ANSI[1m"
+    $colorForeGray = "$ANSI[37m"
+    $colorForeRed = "$ANSI[91m"
+    $colorForeGreen = "$ANSI[92m"
+    $colorForeOrange = "$ANSI[38;5;202m"
+
+    $colorBackDefault = "$ANSI[1;48;2;10;25;25;0m"
+    $colorBackYellow = "$ANSI[103m"
     
-    $colorBackYellow = "$ESC[103m"
-    
-    $underlineText = "$ESC[4m"
+    $underlineText = "$ANSI[4m"
     
 	<#
         The below colors/formats are divided into the different components of the prompt line:
@@ -81,30 +83,30 @@ If ( (Get-Module PSReadLine | Select-Object -ExpandProperty Version) -ge [Versio
             • "start" is the opening character for that component
             • "end" is the last character for that component.
     #>
-    
-	$markColor = "$ESC[1;48;2;150;30;65;38;2;255;255;255m"
-	$markStart = "$ESC[1;48;2;10;25;25;38;2;150;30;65m"
-	$markEnd = "$ESC[1;48;2;10;25;25;38;2;150;30;65m"
-	
-    $versionColor	= "$ESC[3;48;2;20;90;169;38;2;255;255;255m💪🐚"
-	$versionStart	= "$ESC[1;48;2;20;90;169;38;2;10;25;25m$ESC[0m"
-	$versionEnd	= "$ESC[0m$ESC[1;48;2;10;25;25;38;2;20;90;169m"
 
-	$stampColor	= "$ESC[1;48;2;210;140;40;38;2;255;255;255m"	
-	$stampStart	= "$ESC[1;48;2;210;140;40;38;2;10;25;25m"
-	$stampEnd	= "$ESC[1;48;2;10;25;25;38;2;210;140;40m"
+	$markColor = "$ANSI[1;48;2;150;30;65;38;2;255;255;255m"
+	$markStart = "$colorBackDefault$ANSI[1;38;2;150;30;65m"
+	$markEnd = "$colorBackDefault$ANSI[1;38;2;150;30;65m"
 	
-	$folderColor	= "$ESC[1;48;2;40;169;120;38;2;255;255;255m"
+    $versionColor	= "$ANSI[3;48;2;20;90;169;38;2;255;255;255m💪🐚"
+	$versionStart	= "$ANSI[1;48;2;20;90;169;38;2;10;25;25m$ANSI[0m"
+	$versionEnd	= "$ANSI[0m$colorBackDefault$ANSI[1;38;2;20;90;169m"
+
+	$stampColor	= "$ANSI[1;48;2;210;140;40;38;2;255;255;255m"	
+	$stampStart	= "$ANSI[1;48;2;210;140;40;38;2;10;25;25m"
+	$stampEnd	= "$colorBackDefault$ANSI[1;38;2;210;140;40m"
+	
+	$folderColor	= "$ANSI[1;48;2;40;169;120;38;2;255;255;255m"
 	$folderIcon		= '📂'
-	$folderStart	= "$ESC[1;48;2;40;169;120;38;2;10;25;25m"
-	$folderEnd	= "$ESC[1;48;2;10;25;25;38;2;40;169;120m"
+	$folderStart	= "$ANSI[1;48;2;40;169;120;38;2;10;25;25m"
+	$folderEnd	= "$colorBackDefault$ANSI[1;38;2;40;169;120m"
 
-	$branchColor = "$ESC[1;48;2;170;70;235;38;2;40;255;255m"
-	$branchStart = "$ESC[1;48;2;180;0;255;38;2;10;25;25m"
-	$branchEnd = "$ESC[1;48;2;10;25;25;38;2;180;0;255m"
+	$branchColor = "$ANSI[1;48;2;170;70;235;38;2;40;255;255m"
+	$branchStart = "$ANSI[1;48;2;180;0;255;38;2;10;25;25m"
+	$branchEnd = "$colorBackDefault$ANSI[1;38;2;180;0;255m"
 
     #endPromptColor deactivates all ASCII formatting.
-	$endPromptColor = "$ESC[0m"
+	$endPromptColor = "$ANSI[0m"
 	$lightningBolt = [System.Text.Encoding]::Unicode.GetString(@(231,240))
     
     # A list of symbols from powerline that can be copied for your own customizations.
@@ -162,8 +164,9 @@ $regExDirSep = [Regex]::Escape($dirSep)
 Function prompt {
     # Checks the outcome of the previous command and defines some emojis based on that. These are placed at the start and end of the prompt line later.
 	$lastStatus, $currentConfidenceInProgrammingSkillz = & {
-		If ($?) {	'💰', (' {0}{1}' -f $colorForeGreen, $endPromptColor)}
-		Else { '💔', (' 🚽{0}{1}' -f $colorForeRed, $endPromptColor)}
+		If ($?) {	'🏄', (' {0}{1}' -f $colorForeGreen, $endPromptColor)}
+		Else { '🔥', ('🦨{0}{1}' -f $colorForeOrange, $endPromptColor)}
+        
 	}
     # I count the number of commands entered into a session, because I can.
 	Set-Variable -Name countPSLine -Value ($countPSLine + 1) -Scope global
