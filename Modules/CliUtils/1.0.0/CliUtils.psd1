@@ -76,7 +76,9 @@ ScriptsToProcess = @(
     '.\public\Checkpoint-ModuleVersion.ps1',
     '.\public\Back-Dir.ps1',
     '.\public\Find-StringRecursively.ps1',
-    '.\public\Use-GitCliForBranch.ps1'
+    '.\public\Use-GitCliForBranch.ps1',
+    '.\public\Repair-GitConflictsInFiles.ps1',
+    '.\public\Add-EnvironmentVariable.ps1'
 )
 
 # Type files (.ps1xml) to be loaded when importing this module

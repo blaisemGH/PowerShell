@@ -16,7 +16,10 @@ Function Get-ItemSize {
     process {
         $cleanPath = Convert-Path $Path
         ForEach ( $itemPath in $cleanPath ) {
-            $measure = Get-ChildItem $itemPath -File -Recurse -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum
+            # Checks file or dir, because gci with recurse is very slow on compressed files. This deactivates recurse on files.
+            $recurse = (Get-Item $itemPath).PSIsContainer
+
+            $measure = Get-ChildItem $itemPath -File -Recurse:$recurse -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum
             If ( $Unit ) {
                 [ItemSize]::new($itemPath, $measure.Sum, $Unit)
             }

@@ -1,4 +1,5 @@
 using namespace System.Collections.Generic
+using namespace System.Text.RegularExpressions
 
 # This class is used to parse yaml config files and import them into PowerShell as PS Objects
 
@@ -29,6 +30,20 @@ Class YamlUtils {
     [string]$lineKey
     [string]$lineValue
 
+    # The parser relies on a single line containing a key-value pair or array element to identify valid yaml syntax. Multi-line values are not accounted for.
+    # This regex identifies multi-line values in the yaml code, and in the constructor they are joined into a single line for the parser to work properly.
+    [Regex]$joinMultiLineValuesToSingleLine = ([Regex]::new(
+        '(' + [Environment]::NewLine + '|\n)+^\s*(?!\s*(- .+|[^:\s]+:\s*|[^:\s]+: .+|#+.*)$)',
+        ('Multiline', 'Compiled')
+    ))
+
+    # The above regex is used to replace the newlines in a multiline value (see its description).
+    # The replacement for the newline is a rare unicode character, 0x2561, repeated 3 times, which means it should be safe as a unique marker.
+    # This unique marker is used to tell the parser to increment its line count by 1 to reflect the fact the original input yaml code spanned multiple lines.
+    # The parser tracks the exact line number of the input yaml code for debugging, so that errors output the line number for the user to easily find and fix.
+    [string]$uniqueMarker = ' ' + [string][char]0x2561 * 3
+    [Regex]$regexUniqueMarker = ([Regex]::new($this.uniqueMarker, 'Compiled'))
+
     <#
         The Parse method in this class, which is the main workhorse logic behind reading the yaml file, processes yaml input line-by-line, so it requires single-line values. A key-value (kv) pair must not have a value that spans multiple lines.
         
@@ -44,15 +59,11 @@ Class YamlUtils {
             3. Pattern '[^:]+: \S+', i.e., any characters followed by a colon, then a space, and then non-space characters, as this would indicate a kv pair in yaml.
         Summarized, the regex should not match a line followed by new list elements, new dictionaries, or kv pairs in the yaml file. It is assumed that any other scenario would be a multi-line string and therefore should be concatenated into a single-line value.        
     #>
-    YamlUtils([string[]]$inputYamlContents ) {    
-        $this.yamlCode = $inputYamlContents -join [Environment]::NewLine -replace (
-            '(?m)((' + [Environment]::NewLine + ')|(\n))+\s*(?!((- \S+)|([^:]+:\s*(' + [Environment]::NewLine + ')|(\n))|([^:]+: \S+)))'
-        ), ' ' -split [Environment]::NewLine
+    YamlUtils([string[]]$inputYamlContents ) {
+        $this.yamlCode = $inputYamlContents -join [Environment]::NewLine -replace $this.joinMultiLineValuesToSingleLine, $this.uniqueMarker -split [Environment]::NewLine
     }
     YamlUtils([string[]]$inputYamlContents, [bool]$outAsHashTable ) {    
-        $this.yamlCode = $inputYamlContents -join [Environment]::NewLine -replace (
-                '(?m)((' + [Environment]::NewLine + ')|(\n))+\s*(?!((- \S+)|([^:]+:\s*(' + [Environment]::NewLine + ')|(\n))|([^:]+: \S+)))'
-            ), ' ' -split [Environment]::NewLine
+        $this.yamlCode = $inputYamlContents -join [Environment]::NewLine -replace $this.joinMultiLineValuesToSingleLine, $this.uniqueMarker -split [Environment]::NewLine
         If ( $outAsHashTable ) {
             $this.outType = '@{'
             $this.outTypeRegex = '@\{'
@@ -62,9 +73,17 @@ Class YamlUtils {
     [string[]] Parse() {
         Return $(
             Write-Output ('{0}{1}{2}' -f "$($this.outType)", [Environment]::NewLine, [Environment]::NewLine)
-            ForEach ( $line in $this.yamlCode ) {
+            ForEach ( $rawLine in $this.yamlCode ) {
                 $this.lineCount += 1
-
+                $line = if ( $countAllMatches = $this.regexUniqueMarker.Matches($rawLine).Count ){
+                        $this.lineCount += $countAllMatches
+                        $rawLine -replace $this.uniqueMarker
+                    }
+                    else {
+                        $rawLine
+                    }
+                
+ 
                 If ( $line -match '[\S]' -and $line -notmatch '^[\s]*#' ) {
                 
                     If ( !$this.indentType -and $line -match '^[-\s]') {
@@ -161,10 +180,11 @@ Class YamlUtils {
         $Matches = $null
         
         # Build Matches variable. The regex matches lines of the form <'key': >, <"key": >, <key: >
-        [void]([Regex]::Escape($this.lineContent) -match '(^[''][^'']*['']:)|(^["][^"]*["]:)|(^[^''"]+:) ?')
+        [void]($this.lineContent -match '^([''][^''\s]*['']|["][^"\s]*["]|[^''"\s]+):( .*|\s*)$')
         $this.lineKeyPreFormat = & {
             If ( $Matches ) {
                 (($Matches[0] -split ':')[0] -replace '([^\s]+):(?:([\\ ]|[\\ ][\\ ]))(.*)','$1 = $2').Trim('\ ')
+                #'(.+)(?<!^\s*(?:["][^"]+|[''][^'']+)): ?(.*)', '$1 = $2'
             }
             # when there is no regex match, i.e., it's a <- "list element"> line.
             Else {
@@ -181,9 +201,10 @@ Class YamlUtils {
         $value = ($this.lineContent -replace $this.lineKeyPreFormat).Trim(': ') -replace '^\[(.*)\]$', '@($1)'
 
         $this.lineValue = & {
-            # Wrap quotes on the value if it's not an int or float and doesn't already contain any quotes in its string.
-            If ( $value -isnot [int] -and $value -isnot [double] ) {
-                $value -replace '^([^''"][^''"]*[^''"])$', '''$1'''
+            # Wrap single quotes on the value if it's not an int or float, i.e., is to be treated as a non-empty string. Existing single quotes are escaped.
+            If ( $value -and $value -isnot [int] -and $value -isnot [double]) {
+                #$value -replace '^([^''"][^''"]*[^''"])$', '''$1'''
+                $value -replace "(['])", "''" -replace '^(.*)$', '''$1'''
             }
             Else {
                 $value
@@ -215,9 +236,9 @@ Class YamlUtils {
             $removeDashLine = ($line -replace '^\s*-\s*').Trim()
 
             # If the trimmed line element contains ' or ", but the entire string is not wrapped in ' or ", then throw an error. Validates that ' or " have been correctly applied.
-            If ( $removeDashLine -NotMatch '^[''"].*[''"]$' -and $removeDashLine -Match '[''"]' ) {
-                Throw "Cannot validate line. List element not wrapped in single or double quotes! Line $($this.lineCount)"
-            }
+#            If ( $removeDashLine -NotMatch '^[''"].*[''"]$' -and $removeDashLine -Match '[''"]' ) {
+#                Throw "Cannot validate line. List element not wrapped in single or double quotes! Line number: $($this.lineCount). Line: $line`nAttempt: $removeDashLine"
+#            }
             
             Return $(
                 If ( $removeDashLine -match '^[''"].*[''"]$' ) {
@@ -225,6 +246,9 @@ Class YamlUtils {
                 }
                 ElseIf ( $removeDashLine -notmatch '[''"]' ) {
                     Write-Output ($this.lineIndentation + "'" + $removeDashLine + "'")
+                }
+                Else {
+                    Write-Output ($removeDashLine -replace "(['])", "''" -replace '^(.*)$', '''$1''')
                 }
             )
         }
@@ -250,7 +274,7 @@ Class YamlUtils {
             }
         }
         [void]$this.collectionTracker.Pop()
-    
+  
         Return $out
     }
 

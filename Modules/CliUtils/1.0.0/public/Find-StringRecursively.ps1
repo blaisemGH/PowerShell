@@ -105,8 +105,8 @@ Function Find-StringRecursively {
         If ( $FilterFile ) {
             $GCIparams.Add( 'Filter' , $FilterFile)
         }
-        $binaryFilter = If ( $IncludeBinaryFiles ) { '^.' } Else { '(?<![.]zip|7z|.ar|dll|class|t?gz|exe|png|jpe?g|svg|tiff|gif|bmp)$' }
-        $binaryFilterPattern = [regex]::new($binaryFilter, 'Compiled')
+        $binaryFilter = If ( $IncludeBinaryFiles ) { '^.' } Else { '(?<![.]zip|7z|.ar|dll|class|t?gz|exe|iso|a?vhd|sha1|checksum|vm.{0,2}|png|jpe?g|svg|tiff|gif|bmp|lz4|snappy|zstd)$' }
+        $binaryFilterPattern = [regex]::new($binaryFilter, ('Compiled', 'IgnoreCase'))
 
         $SLSparams = @{}
         If ( $Pattern ) {
@@ -167,6 +167,7 @@ Function Find-StringRecursively {
                 $Path
             }
         }
+        $rdir = Convert-Path ($Path)
         If ( Test-Path $path ) {
             $isFilePath = $true
             Foreach ( $fullPath in Convert-Path $path ) {
@@ -174,18 +175,20 @@ Function Find-StringRecursively {
                     [string[]]$subFolderfileList = [System.IO.Directory]::GetFiles( $fullPath, $FilterFile, $recurse )
                 }
                 catch {
-                    [string[]]$subFolderfileList = ( Get-ChildItem -LiteralPath $fullPath @GCIParams -Recurse:(!$NoRecurse) -Force:$Force ).FullName
+                    [string[]]$subFolderfileList = ( Get-ChildItem -LiteralPath $fullPath @GCIParams -Recurse:(!$NoRecurse) -Force:$Force | Where Mode -notmatch '^l').FullName
                 }
-                $SLSInput.AddRange( [string[]]($subFolderfileList | Where { $binaryFilterPattern.Match($_).Success }) )
+                try {
+                    $SLSInput.AddRange( [string[]]($subFolderfileList | Where { $_ -and $binaryFilterPattern.Match($_).Success }) )
+                } catch [ArgumentNullException] {}
             }
-            $maxFileLength = [Math]::Min(70, ($subFolderfileList | Measure-Object -Property length -Maximum).Maximum)
-            $script:test = $subFolderfileList
+            $maxFileLength = [Math]::Min(100, ($subFolderfileList | Measure-Object -Property length -Maximum).Maximum)
+            $subFolderfileList = $null
         }
         Else {
             $SLSParams.InputObject = $Path
             $SLSInput.Add($Path)
         }
-
+        try { cd $rdir # move to root dir because Resolve-Path -Relative below is ugly when you input grep ../../../ etc.
         Foreach ( $item in $SLSInput ) {
             If ( $isFilePath ) {
                 $SLSParams.LiteralPath = $item
@@ -297,7 +300,7 @@ Function Find-StringRecursively {
                         }
                     }
                 }
-                . {
+                & {
                     If ( $isFilePath ) {
                         if ( !($displayPreContext = $_.Context.DisplayPreContext | Out-String) ) { $displayPreContext = '' }
                         if ( !($displayPostContext = $_.Context.DisplayPostContext | Out-String) ) { $displayPostContext = '' }
@@ -320,7 +323,7 @@ Function Find-StringRecursively {
                         }
                         [ViewGrep]@{
                             Path = "{0,-$limitPath}" -f ($ansiOrange + $trimmedFilePath + ":$ansiReset")
-                            Num  = '{0,-7}' -f ( $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber )
+                            Num  = '{0,-9}' -f ( $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber )
                             Line = '{0}{1}{2}{3}' -f $displayPreContext,
                                 $emphasizedLine,
                                 [Environment]::NewLine,
@@ -339,6 +342,7 @@ Function Find-StringRecursively {
                     }
                 }
             }}
-        }
+        }}
+        finally { cd $odir }
     }
 }

@@ -1,7 +1,7 @@
 ### PowerShell command line changes.
 
 # Sets up tab autocomplete like in Unix
-Set-PSReadlineKeyHandler	-Key Tab			-Function Complete
+Set-PSReadlineKeyHandler	-Key Tab			-Function MenuComplete
 
 # Remove bell sound after tab complete
 Set-PSReadlineOption		-BellStyle None
@@ -55,22 +55,53 @@ If ( (Get-Module PSReadLine | Select-Object -ExpandProperty Version) -ge [Versio
 'Parameter'			=	"$([char]0x1b)[38;2;255;155;195m"	# argument parameters, e.g., gci -Recurse (recurse is colored).
 	}
 
+    $colorTerminal = '2;10;25;25m'
+
+    #symbols
+    
+#    $beginPromptLineConnector = ''
+#    $middlePromptLineConnector = ''
+#    $endPromptLineConnector = ''
+
+	$lightningBolt = [System.Text.Encoding]::Unicode.GetString(@(231,240))
+
+#    $firstBlockColor = '2;150;30;65m'
+#    $firstBlockOpeningSymbol =
+
     # Defining ansi color/formatting variables that are used later
     $ANSI = [char]27
 
+    $colorForeFullWhite = "$ANSI[1;38;2;255;255;255m"
+    $colorForeBrightCyan = "$ANSI[1;38;2;40;255;255m"
     $colorForeYellow = "$ANSI[93m"
-    $colorForeWhite = "$ANSI[1m"
     $colorForeGray = "$ANSI[37m"
     $colorForeRed = "$ANSI[91m"
     $colorForeGreen = "$ANSI[92m"
     $colorForeOrange = "$ANSI[38;5;202m"
-
-    $colorBackDefault = "$ANSI[1;48;2;10;25;25;0m"
+    
     $colorBackYellow = "$ANSI[103m"
     
+    $boldText = "$ANSI[1m"
+    $dimText = "$ANSI[1m"
+    $italicizeText = "$ANSI[3m"
     $underlineText = "$ANSI[4m"
+    $blinkText = "$ANSI[5m"
+    $reverseText = "$ANSI[7m"
+    $hideText = "$ANSI[8m"
+    $strikeText = "$ANSI[9m"
     
-	<#
+    $undoBoldText = $undoDimText = "$ANSI[22m"
+    $undoItalicizeText = "$ANSI[23m"
+    $undoUnderlineText = "$ANSI[24m"
+    $undoBlinkText = "$ANSI[25m"
+    $undoReverseText = "$ANSI[27m"
+    $undoHideText = "$ANSI[28m"
+    $undoStrikeText = "$ANSI[29m"
+
+    #resetPromptColor deactivates all ASCII formatting.
+	$resetPromptColor = "$ANSI[0m"
+	
+    <#
         The below colors/formats are divided into the different components of the prompt line:
             • "mark" component that displays the current line state
             • "version" component that displays the PS version
@@ -84,30 +115,48 @@ If ( (Get-Module PSReadLine | Select-Object -ExpandProperty Version) -ge [Versio
             • "end" is the last character for that component.
     #>
 
-	$markColor = "$ANSI[1;48;2;150;30;65;38;2;255;255;255m"
-	$markStart = "$colorBackDefault$ANSI[1;38;2;150;30;65m"
-	$markEnd = "$colorBackDefault$ANSI[1;38;2;150;30;65m"
+    
+    $defaultColorBack = '{0}{1}' -f "$ANSI[1;48;", $colorTerminal
+    $defaultColorFore = '{0}{1}' -f "$ANSI[1;38;", $colorTerminal
+
+    $markColor = '2;150;30;65m'
+	$markColorBack = '{0}{1}' -f "$ANSI[1;48;", $markColor
+    $markColorFore = '{0}{1}' -f "$ANSI[1;38;", $markColor
+	$markStart  = '{0}{1}{2}'   -f $defaultColorBack, $markColorFore,   ''
+    $markBody   = '{0}{1}'      -f $markColorBack   , $colorForeFullWhite
+	$markEnd    = '{0}{1}{2}'   -f $defaultColorBack, $markColorFore,   ''
 	
-    $versionColor	= "$ANSI[3;48;2;20;90;169;38;2;255;255;255m💪🐚"
-	$versionStart	= "$ANSI[1;48;2;20;90;169;38;2;10;25;25m$ANSI[0m"
-	$versionEnd	= "$ANSI[0m$colorBackDefault$ANSI[1;38;2;20;90;169m"
+    $versionColor = '2;20;90;169m'
+    $versionColorFore = '{0}{1}' -f "$ANSI[1;38;", $versionColor
+    $versionColorBack = '{0}{1}' -f "$ANSI[1;48;", $versionColor
+	$versionStart	= '{0}{1}{2}' -f $versionColorBack, $defaultColorFore, ''
+    $versionBody	= '{0}{1}{2}' -f $versionColorBack, $colorForeFullWhite, '💪🐚'
+	$versionEnd     = '{0}{1}{2}' -f $defaultColorBack, $versionColorFore, ''
 
-	$stampColor	= "$ANSI[1;48;2;210;140;40;38;2;255;255;255m"	
-	$stampStart	= "$ANSI[1;48;2;210;140;40;38;2;10;25;25m"
-	$stampEnd	= "$colorBackDefault$ANSI[1;38;2;210;140;40m"
+    $timestampColor = '2;210;140;40m'
+    $timestampColorFore = '{0}{1}'  -f "$ANSI[1;38;", $timestampColor
+    $timestampColorBack = '{0}{1}'  -f "$ANSI[1;48;", $timestampColor
+	$timestampStart	= '{0}{1}{2}'   -f  $timestampColorBack, $defaultColorFore, ''
+	$timestampBody	= '{0}{1}'      -f  $timestampColorBack, $colorForeFullWhite	
+    $timestampEnd	= '{0}{1}{2}'   -f $defaultColorBack, $timestampColorFore, ''
 	
-	$folderColor	= "$ANSI[1;48;2;40;169;120;38;2;255;255;255m"
-	$folderIcon		= '📂'
-	$folderStart	= "$ANSI[1;48;2;40;169;120;38;2;10;25;25m"
-	$folderEnd	= "$colorBackDefault$ANSI[1;38;2;40;169;120m"
+    $locationColor = '2;40;169;120m'
+    $locationColorBack = '{0}{1}' -f "$ANSI[1;48;", $locationColor
+    $locationColorFore = '{0}{1}' -f "$ANSI[1;38;", $locationColor
+	$locationStart  = '{0}{1}{2}'   -f $locationColorBack, $defaultColorFore, ''
+    $locationBodyColor   = '{0}{1}'   -f $locationColorBack, $colorForeFullWhite
+    $locationBody   = '{0}{1}{2}'   -f $locationColorBack, $colorForeFullWhite, '📂'
+	$locationEnd    = '{0}{1}{2}'   -f $defaultColorBack, $locationColorFore,  ''
 
-	$branchColor = "$ANSI[1;48;2;170;70;235;38;2;40;255;255m"
-	$branchStart = "$ANSI[1;48;2;180;0;255;38;2;10;25;25m"
-	$branchEnd = "$colorBackDefault$ANSI[1;38;2;180;0;255m"
+    $branchColor = '2;170;70;235m'
+	$branchColorBack = '{0}{1}' -f "$ANSI[1;48;", $branchColor
+    $branchColorFore = '{0}{1}' -f "$ANSI[1;38;", $branchColor
 
-    #endPromptColor deactivates all ASCII formatting.
-	$endPromptColor = "$ANSI[0m"
-	$lightningBolt = [System.Text.Encoding]::Unicode.GetString(@(231,240))
+	$branchStart  = '{0}{1}{2}' -f $branchColorBack , $defaultColorFore,   ''
+    $branchBody   = '{0}{1}'    -f $branchColorBack , $colorForeBrightCyan
+	$branchEnd    = '{0}{1}{2}' -f $defaultColorBack, $branchColorFore,    ''
+
+
     
     # A list of symbols from powerline that can be copied for your own customizations.
 	$powerlineSymbols = @'
@@ -164,8 +213,8 @@ $regExDirSep = [Regex]::Escape($dirSep)
 Function prompt {
     # Checks the outcome of the previous command and defines some emojis based on that. These are placed at the start and end of the prompt line later.
 	$lastStatus, $currentConfidenceInProgrammingSkillz = & {
-		If ($?) {	'🏄', (' {0}{1}' -f $colorForeGreen, $endPromptColor)}
-		Else { '🔥', ('🦨{0}{1}' -f $colorForeOrange, $endPromptColor)}
+		If ($?) {	'🏄', (' {0}{1}' -f $colorForeGreen, $resetPromptColor)}
+		Else { '🔥', ('🦨{0}{1}' -f $colorForeOrange, $resetPromptColor)}
         
 	}
     # I count the number of commands entered into a session, because I can.
@@ -191,7 +240,7 @@ Function prompt {
             # checks for the string prod and highlights it.
             # I use this with git as a reminder, so I don't accidentally edit prod code.
 			If ( $pwdAsDirArray -Contains 'prod' ) {
-				$forceShowDir = '{0}{1}{2}{3}prod{4}{5}' -f $colorForeWhite, $underlineText, $colorBackYellow, $colorForeRed, $endPromptColor, $folderColor
+				$forceShowDir = '{0}{1}{2}{3}prod{4}{5}' -f $colorForeFullWhite, $underlineText, $colorBackYellow, $colorForeRed, $resetPromptColor, $locationBodyColor
 				If ( $thirdLast -ne 'prod' ) {
 					$forceShowDir = $forceShowDir + '/🦆'
 				}
@@ -234,24 +283,37 @@ Function prompt {
         If ( $? ) {
             $branchState = & {
                 If ( $branchName -in 'main', 'master' ) {
-                    '{0}  {1}{2}{3}{4}{5}{6}' -f $colorForeYellow, $endPromptColor, $branchColor, $colorForeWhite, $underlineText, $branchName.ToUpper(), $endPromptColor
+                    '{0}  {1}{2}{3}{4}{5}{6}' -f $colorForeYellow, $resetPromptColor, $branchBody, $colorForeBrightCyan, $underlineText, $branchName.ToUpper(), $resetPromptColor
                 }
-                Else {'{0}  {1}{2}{3}{4}{5}' -f $colorForeGray, $endPromptColor, $branchColor, $colorForeWhite, $branchName, $endPromptColor}
+                Else {'{0}  {1}{2}{3}{4}{5}' -f $colorForeGray, $resetPromptColor, $branchBody, $colorForeBrightCyan, $branchName, $resetPromptColor}
             }
-            $promptBranch = '{0}{1}{2}{3}' -f $branchStart, $branchColor, $branchState, $branchEnd
+            $promptBranch = '{0}{1}{2}{3}' -f $branchStart, $branchBody, $branchState, $branchEnd
         }
         Else { $promptBranch = $null }
     }
     else { $promptBranch = $null }
     # The remaining components are finalized here. Their logic has already been derived in code further up.
-	$promptMark		= '{0}{1}{2}{3}' -f $markStart, $markColor, $lastStatus, $markEnd
-	$promptVersion	= '{0}{1}{2}{3}' -f $versionStart, $versionColor, $pwshVersion, $versionEnd
-	$promptStamp	= '{0}{1}{2} {3}{4}' -f $stampStart, $stampColor, $timestamp, $mood, $stampEnd
-	$promptFolder	= ('{0}{1}{2} {3}{4}' -f $folderStart, $folderColor, $folderIcon, $currentLoc, $folderEnd) -replace '\\','/'
-	
+	$promptMark		= '{0}{1}{2}{3}' -f $markStart, $markBody, $lastStatus, $markEnd
+    $promptVersion	= '{0}{1}{2}{3}' -f $versionStart, $versionBody, $pwshVersion, $versionEnd
+    $promptStamp	= '{0}{1}{2} {3}{4}' -f $timestampStart, $timestampBody, $timestamp, $mood, $timestampEnd
+    $promptFolder	= ('{0}{1} {2}{3}' -f $locationStart, $locationBody, $currentLoc, $locationEnd) -replace '\\','/'
+
+    $length = ($promptMark + $promptVersion + $promptStamp + $promptFolder + $promptBranch + $resetPromptColor + $currentConfidenceInProgrammingSkillz).length
     # The final prompt line design, concatenating all the prompt variables together.
-	[Environment]::NewLine + $promptMark + $promptVersion + $promptStamp + $promptFolder + $promptBranch + $endPromptColor + $currentConfidenceInProgrammingSkillz
-	
+	[Environment]::NewLine + $promptMark + $promptVersion + $promptStamp + $promptFolder + $promptBranch + $resetPromptColor + $currentConfidenceInProgrammingSkillz 
+
+    $area = (gkc).Name
+    $ns = (gkc).Namespace
+    if ( $area ) {
+        $originalHostForegroundColor = $host.UI.RawUI.ForegroundColor
+        $startposx = $Host.UI.RawUI.windowsize.width - ($area.length + $ns.length + 2)
+        $startposy = $Host.UI.RawUI.CursorPosition.Y
+        $host.UI.RawUI.ForegroundColor = 'Red'
+        $Host.UI.RawUI.CursorPosition = New-Object System.Management.Automation.Host.Coordinates $startposx,$startposy
+        $Host.UI.Write("${area}: $ns")
+        $host.UI.RawUI.ForegroundColor = $originalHostForegroundColor
+    }
+    
     # Adds an extra empty line after the output of every command.
     return ' '
 }

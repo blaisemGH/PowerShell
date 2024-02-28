@@ -5,17 +5,18 @@
 
 Function Test-ReadHost {
     Param(
-        [Parameter(Mandatory,Position=0)]
+        [Parameter(Mandatory)]
         [string]$Query,
         [string[]]$ValidationStrings,
         [string]$DefaultResponse,
         [int]$Retries = 0
     )
-    If ( $Retries -ge 5 ) {
+    $maxRetries = 5
+    If ( $Retries -ge $maxRetries ) {
         If ( $DefaultResponse ) {
             return $DefaultResponse
         }
-        Throw "Failed to provide a valid response after 10 tries! Parameters: $($PSBoundParameters | Out-String)"
+        Throw "Failed to provide a valid response after $maxRetries tries! Parameters: $($PSBoundParameters | Out-String)"
     }
     $response = Read-Host $Query
 

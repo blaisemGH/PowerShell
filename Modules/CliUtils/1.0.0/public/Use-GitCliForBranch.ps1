@@ -73,3 +73,9 @@ Function Use-GitCliForBranch {
         Invoke-Expression $cmd
     }
 }
+
+#git reset --hard origin/develop
+#git rebase
+#git rename branch?
+#git merge
+#git diff (need to create a hashtable of commits to reference by index with first line of commit message as description on tab completion)
