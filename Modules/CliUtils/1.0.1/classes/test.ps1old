@@ -1,0 +1,5 @@
+class test {
+	test () {
+		[ItemSize]::new('abc',123)
+	}
+}

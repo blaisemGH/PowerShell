@@ -19,6 +19,7 @@ Set-Alias -Name gkp	-Value Get-KubePodList			-Scope Global -Option AllScope
 Set-Alias -Name gkr	-Value Get-KubeResource			-Scope Global -Option AllScope
 Set-Alias -Name gkc	-Value Get-KubeContext			-Scope Global -Option AllScope
 Set-Alias -Name skc	-Value Set-KubeContext			-Scope Global -Option AllScope
+Set-Alias -Name gkm	-Value Get-KubeMetrics			-Scope Global -Option AllScope
 
 try {
 	iex ([Kube]::Initialize_KubeApiAutocomplete($false))

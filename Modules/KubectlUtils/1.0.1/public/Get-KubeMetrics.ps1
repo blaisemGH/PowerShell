@@ -1,3 +1,5 @@
+using namespace System.Collections.Generic
+
 Function Get-KubeMetrics {
     [CmdletBinding(DefaultParameterSetName = 'defaultContainers')]
     Param(
@@ -76,12 +78,13 @@ Function Get-AllKubeMetrics {
         #[string[]]$Namespaces = ( kubectl get serviceaccounts default -o jsonpath='{.metadata.namespace}' )
     )
 
-    $filterNamespaces = if ( $Namespaces -contains '-A' ) {
-        [Kube]::Namespaces()
-    }
-    else {
-        $Namespaces
-    }
+    $filterNamespaces = @(
+        if ( $Namespaces -contains '-A' ) {
+            [Kube]::Namespaces()
+        } else {
+            $Namespaces
+        }
+    )
 
     $date = Get-Date
     $metrics = & {
@@ -131,7 +134,6 @@ Function Get-AllKubeMetrics {
                 $metrics | ForEach-Object {
                     $ns = $_.metadata.namespace
                     $pod = $_.metadata.name
-                    $defaultContainer = $_.metadata.annotations.'kubectl.kubernetes.io/default-container'
                     $_.containers | where {
                         ([HashSet[string]]$_.name).Overlaps(
                             [Kube]::relevantContainers
