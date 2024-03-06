@@ -1,99 +1,108 @@
 <#
-    .SYNOPSIS
-        This is one of my first functions and is a helper function to emulate the "find" command from Unix. It is aliased to find.
+    .DESCRIPTION
+        This is one of my first functions and is a helper function to emulate the "find" command from Unix.
+        I originally included -Delete and sorting options and considered -exec, but ultimately it was making
+        the function worse to force in the Linux find syntax when PS performs these tasks differently.
         
-        In PowerShell terms, it is like a Get-ChildItem with auto recurse, the possibility to specify a max depth on recursion, and a delete option built in.
-#>
-Function Find-FileRecursively {
+        In PowerShell terms, it is like a Get-ChildItem with auto recurse, but it uses .NET by default to be faster.
+        You may also think of it as a wrapper to access the faster .NET search using familiar Get-ChildItem params,
+        which are mapped to the EnumerationOptions of the .NET method.
 
-    [CmdletBinding(DefaultParameterSetName='PathAndFile')]
+        On Windows, it is aliased to find.
+
+#>
+function Find-FileRecursively {
     Param (
         [Parameter(Mandatory, ValueFromPipeline, Position=0)]
         [Alias('PSPath')]
         [string]$Path,
 
-        [Alias('regExFilter')]
-        [Parameter(Position=1)]
-        [string]$Name = '.*',
-
-        [Parameter()]
         [alias('depth','d')]
+        [ValidatePattern(1)]
         [int]$MaxDepth,
 
+        [Alias('name')]
         [string]$Filter,
 
         [alias('nr')]
         [switch]$NoRecurse,
 
-        [Parameter(ParameterSetName = 'PathAndFile')]
+        [alias('f')]
+        [switch]$Force,
+
+        [alias('cs')]
+        [switch]$CaseSensitive,
+
+        [Parameter(ParameterSetName = 'File')]
         [switch]$File,
 
-        [Parameter(ParameterSetName = 'PathAndDirectory')]
+        [Parameter(ParameterSetName = 'Directory')]
         [switch]$Directory,
 
-        [switch]$SortOutput,
+        [Parameter(ParameterSetName = 'LinuxFindType')]
+        [ValidateSet('d','f')]
+        [char]$Type,
 
-        [switch]$Delete,
-
-        [Alias('fast')]
-        [switch]$dotNet
+        # Fall back to Get-ChildItem instead of using the faster .NET EnumerateFileSystemEntries.
+        # Left in here for Windows PS users who wouldn't have the .NET workaround for AccessDenied.
+        [switch]$useGCI
     )
     begin {
         $GCIParams = @{}
-        
-        If ( $NoRecurse ) {
-            $Recurse = 'TopDirectoryOnly'
-        }
-        Else {
-            $gciRecurse = $True
-            $Recurse = 'AllDirectories'
+        $enumerationOptions = [System.IO.EnumerationOptions]::new()
+        if ( ! $NoRecurse ) {
+            $gciRecurse = $true
+            $enumerationOptions.RecurseSubdirectories = $true
         }
 
-        If ( $MaxDepth ) {
-            $GCIParams.Depth = $MaxDepth - 1
+        if ( $MaxDepth ) {
+            $GCIParams.Depth = $MaxDepth
+            $enumerationOptions.MaxRecursionDepth = $MaxDepth
         }
+
+        if ( ! $Force ) {
+            $enumerationOptions.AttributesToSkip = @('Hidden', 'System')
+        }
+        if ( $CaseSensitive ) {
+            $enumerationOptions.MatchCasing = 'CaseSensitive'
+            $likeOperator = {$_.Name -clike $Name }
+        } else {
+            $enumerationOptions.MatchCasing = 'CaseInsensitive'
+            $likeOperator = {$_.Name -like $Name }
+        }
+
         $GCIParams.Recurse = $gciRecurse
         $GCIParams.Filter = $Filter
-        $GCIParams.File = $File
-        $GCIParams.Directory = $Directory
+        $GCIParams.Force = $Force
+        
+        if ( $Directory -or $Type -eq 'd' ) {
+            $GCIParams.Directory = $Directory
+            $FileSystemType = 'file'
+        }
+        elseif ( $File -or $Type -eq 'f' ) {
+            $GCIParams.File = $File
+            $FileSystemType = 'directory'
+        }
     }
     process {
         $cleanPath = Convert-Path -LiteralPath $Path
-        
-        If ( !$dotNet ) {
-            $Name = $Name -replace '([^.])[*]','$1.*' -replace '^[*]','.*'
-            $fileList = (Get-ChildItem -LiteralPath $cleanPath @GCIParams).Where({$_.Name -match "^${Name}$"}) 
-        }
-        Else {
-            If ( $Filter ) {
-                $Name = $Filter
-            }
-            $Name = $Name -replace '[.][*]','*' 
-            if ( $Name -match '[?+\[\]\(\)^$\{\}]' ) { Write-Warning 'The dotnet (fast) switch does not support RegEx!'; ''}
-            if ( $File ) {
-                [System.IO.FileInfo[]]$fileList = [System.IO.Directory]::GetFiles( $cleanPath,$Name,$Recurse)
-            }
-            elseIf ( $Directory ) {
-                [System.IO.DirectoryInfo[]]$fileList = [System.IO.Directory]::GetDirectories( $cleanPath,$Name,$Recurse)
-            }
-            else {
-                $fileList = [System.IO.Directory]::EnumerateFileSystemEntries( $cleanPath,$Name,$Recurse)
-            }
-        }
-    }
-    end {
-        If ( $SortOutput ) {
-            $fileList | Resolve-Path -Relative | Sort-Object
-        }
-        Else {
-            $fileList | Resolve-Path -Relative
-        }
 
-        If ( $fileList -and $Delete ) {
-            $msg = 'You have activated the -delete switch. Do you really wish to delete the above files? [yes/no]'
-            $validation = @('yes','no')
-            $prompt = Test-ReadHost -Query $msg -ValidationStrings $validation
-            If ( $prompt -eq 'yes' ) { $fileList | Remove-Item -Force }
+        if ( $useGCI ) {
+            <#
+            The Where-Object is to allow the CaseSensitive argument to work with GCI.
+            Even though it's already been filtered left, the case sensitivity wouldn't have been applied.
+            I'm aware this is slower in 99.99% of cases where you don't use $CaseSensitive, but otherwise there's no
+            reason to use this function over GCI, so either use GCI instead in that case or don't call this with $useGCI.
+            #>
+          Get-ChildItem -LiteralPath $cleanPath @GCIParams | Where-Object $likeOperator
+        }
+        else {
+            switch ($FileSystemType) {
+                'directory' {[System.IO.Directory]::EnumerateDirectories( $cleanPath,$Filter,$enumerationOptions)}
+                'file' {[System.IO.Directory]::EnumerateFiles( $cleanPath,$Filter,$enumerationOptions)}
+                DEFAULT {
+                    [System.IO.Directory]::EnumerateFileSystemEntries( $cleanPath,$Filter,$enumerationOptions)
+                }
         }
     }
 }
