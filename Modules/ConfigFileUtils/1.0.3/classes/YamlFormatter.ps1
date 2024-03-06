@@ -1,7 +1,7 @@
 using namespace System.Collections.Generic
 using namespace System.Text
 
-# This class is a required complement to the YamlImport class. It reformats raw yaml code into an easier-to-parse input.
+# This class is a required complement to the YamlConverter class. It reformats raw yaml code into a suitable input for parsing by YamlConverter.
 class YamlFormatter {
     [string[]]$inputYaml
     [string]$multilineBeginsWithQuote
@@ -15,8 +15,6 @@ class YamlFormatter {
     static [Regex]$Test_IsNewYamlDocument = [Regex]::new( '(?m)^---', 'Compiled' )
     static [Regex]$Test_SkipLine = [Regex]::new( '^(\s*#|\s*$)', 'Compiled' )
     static [Regex]$Test_IsLineKV = [Regex]::new( '^\s*(- )?[^\s]+:($| .+$)', 'Compiled' )
-    # This version also checks if the entire line is quoted in either single or double quotes.
-    #static [Regex]$Test_IsLineKV = [Regex]::new( '^\s*([''"]?(?![^\s]+: .*\1\s*$))[^\s]+: (?!.*\1\s*).*$', 'Compiled')
     static [Regex]$Test_IsLineListElement = [Regex]::new( '^\s*- \S', 'Compiled' )
     static [Regex]$FindIndentation = [Regex]::new( '^(\s*).*', 'Compiled' )
     static [Regex]$RemoveIndentation = [Regex]::new( '^\s*(.*)', 'Compiled' )

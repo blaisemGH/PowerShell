@@ -140,8 +140,8 @@ Class YamlConverter {
                     
                     # Some Yaml files don't define a value for their key, even though they are not a dictionary.
                     # PowerShell can't parse a hashtable/object with a key that has no value. This method inserts an empty value.
-
-                    If ( ($this.indentCount -le $this.previousIndentCount -and $this.indentType -or ( !$this.indentpeek -and $this.indentCount -eq 0 -and !$this.indentType) -and (! $this.previousLineValue -or $this.previousLineValue -match '^\s*#') )) {
+                    # The reason the conditions are so messy is because of documents that can start off with multiple empty keys with no indentation.
+                    if ( ($this.indentCount -le $this.previousIndentCount -and $this.indentType -or ( !$this.indentpeek -and $this.indentCount -eq 0 -and !$this.indentType) -and (! $this.previousLineValue -or $this.previousLineValue -match '^\s*#') )) {
                         Write-Output "''"
                         $this.Update_DebugInputLineMap($this.previousLineValue)
                     }
