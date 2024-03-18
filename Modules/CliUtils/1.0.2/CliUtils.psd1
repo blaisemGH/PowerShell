@@ -59,17 +59,18 @@ PowerShellVersion = '5.1'
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 ScriptsToProcess = '.\enums\enums.ps1', '.\classes\ItemSize.ps1', 
                '.\classes\newline.ps1', '.\classes\PSDirTree.ps1', 
-               '.\public\Replace-StringInFile.ps1', '.\public\Out-FileHash.ps1', 
-               '.\public\Out-AllPropertiesInGridView.ps1', 
-               '.\public\LockThread.ps1', '.\public\Group-ObjectCount.ps1', 
-               '.\public\Get-ItemSize.ps1', '.\public\Get-Dir.ps1', 
-               '.\public\Find-FileRecursively.ps1', '.\public\env.ps1', 
-               '.\public\Convert-Base64.ps1', '.\public\Compare-FileDiff.ps1', 
-               '.\public\Checkpoint-ModuleVersion.ps1', '.\public\Back-Dir.ps1', 
-               '.\public\Find-StringRecursively.ps1', 
-               '.\public\Use-GitCliForBranch.ps1', 
-               '.\public\Repair-GitConflictsInFiles.ps1', 
-               '.\public\Add-EnvironmentVariable.ps1'
+               '.\public\Add-EnvironmentVariable.ps1', '.\public\Back-Dir.ps1',
+               '.\public\Checkpoint-ModuleVersion.ps1', '.\public\Compare-FileDiff.ps1',
+               '.\public\Convert-Base64.ps1', '.\public\env.ps1',
+               '.\public\Find-FileRecursively.ps1', '.\public\Find-StringRecursively.ps1',
+               '.\public\Get-Dir.ps1', '.\public\Get-ItemSize.ps1',
+               '.\public\Get-ObjectLength.ps1', '.\public\Get-ObjectType.ps1',
+               '.\public\Group-ObjectCount.ps1', '.\public\Invoke-JoinOperator.ps1',
+               '.\public\Invoke-MatchOperator.ps1', '.\public\Invoke-ReplaceOperator.ps1',
+               '.\public\Invoke-SplitOperator.ps1', '.\public\LockThread.ps1',
+               '.\public\Out-AllPropertiesInGridView.ps1', '.\public\Out-FileHash.ps1',
+               '.\public\Repair-GitConflictsInFiles.ps1', '.\public\Replace-StringInFile.ps1',
+               '.\public\Select-NestedObject.ps1', '.\public\Use-GitCliForBranch.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -83,16 +84,11 @@ FormatsToProcess = 'ps1xml/Find-StringRecursivelyViews.Format.ps1xml',
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'cd-', '..', '...', '....', '.....', '......', '.......', '........', '.........', 
-               'Replace-StringInFile', 'Out-FileHash', 'Out-AllPropertiesInGridView', 
-               'Start-LockThread', 'Stop-LockThread', 'Group-ObjectCount', 
-               'Get-ItemSize', 'Get-Dir', 'Find-FileRecursively', 'env', 
-               'Convert-Base64', 'ConvertFrom-Base64', 'ConvertTo-Base64', 
-               'Compare-FileDiff', 'Checkpoint-ModuleVersion', 'Back-Dir', 
-               'Find-StringRecursively', 'Use-GitCliForBranch', 
-               'Repair-GitConflictsInFiles', 'Edit-GitConflictsInFile', 
-               'Add-EnvironmentVariable', 'Test-HasAdminPrivileges', 
-               'Set-EnvironmentVariableValue', 'Export-EnvironmentVariable', 
-               'Format-UniqueWindowsPaths'
+'Add-EnvironmentVariable', 'Back-Dir', 'Checkpoint-ModuleVersion', 'Compare-FileDiff',
+'Convert-Base64', 'env', 'Find-FileRecursively', 'Find-StringRecursively', 'Get-Dir', 'Get-ItemSize',
+'Get-ObjectLength', 'Get-ObjectType', 'Group-ObjectCount', 'Invoke-JoinOperator', 'Invoke-MatchOperator',
+'Invoke-ReplaceOperator', 'Invoke-SplitOperator', 'LockThread', 'Out-AllPropertiesInGridView', 'Out-FileHash',
+'Repair-GitConflictsInFiles', 'Replace-StringInFile', 'Select-NestedObject', 'Use-GitCliForBranch'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'

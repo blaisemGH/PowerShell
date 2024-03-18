@@ -5,12 +5,19 @@ Function Trace-KubeMetrics {
         [Parameter(Mandatory)]
         [alias('path')]
         [string]$outputFile,
+        
         [Parameter(ParameterSetName='minutes')]
         [int]$minutesDuration,
+        
         [Parameter(ParameterSetName='hours')]
         [int]$hoursDuration,
+        
         [switch]$ForceNewFile,
-        [string[]]$Namespaces = (kubectl get serviceaccounts default -o jsonpath='{.metadata.namespace}')
+        
+        [string[]]$Namespaces = (kubectl get serviceaccounts default -o jsonpath='{.metadata.namespace}'),
+
+        [ValidateSet('Default','All','Custom')]
+        [string]$ViewFilter = 'Default'
     )
     If ( (Test-Path $outputFile) -and $ForceNewFile ) {
         Remove-Item $outputFile -Force -ErrorAction Stop
@@ -22,7 +29,7 @@ Function Trace-KubeMetrics {
         Else {
             Add-Content -Path $outputFile -Value ','
         }
-        Get-KubeMetrics $Namespaces | ConvertTo-Json -Depth 10 | Add-Content -Path $outputFile
+        Get-KubeMetrics -Namespaces $Namespaces -ViewFilter $viewFilter | ConvertTo-Json -Depth 10 | Add-Content -Path $outputFile
         Start-Sleep -Seconds 20
     }
     
@@ -48,7 +55,7 @@ Function Trace-KubeMetrics {
     Else {
         Write-Host "Streaming kube metrics to output file... Press ctrl + C to cancel when done"
         While ( $true ) {
-            & $lambdaGetMetrics    $outputFile
+            & $lambdaGetMetrics $outputFile
         }
     }
 }

@@ -71,7 +71,8 @@ ScriptsToProcess = 'classes\kube.ps1', 'classes\KubeNodesByPod.ps1',
 
 # Format files (.ps1xml) to be loaded when importing this module
 FormatsToProcess = 'ps1xml/KubeMetricsViews.Format.ps1xml',
-                    'ps1xml/KubeNodesByPodViews.Format.ps1xml'
+                    'ps1xml/KubeNodesByPodViews.Format.ps1xml',
+                    'ps1xml/KubeMaxPodMetricsViews.Format.ps1xml'
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 # NestedModules = @()

@@ -4,6 +4,19 @@ function Copy-KubeFile {
     [CmdletBinding(DefaultParameterSetName='inferDirection')]
     Param(
         [Parameter(Mandatory, Position=0)]
+        <# Add this later. It works now but need to remove argument register from Update-KubeCompletions.
+           Probably refactor [kube] class instead to create a hashtable for lookups via $ns.$resource
+        [ArgumentCompleter(
+            {
+                param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+                $namespace = $fakeBoundParameters.Namespace
+                if ( $namespace ) { $ns = "-n=$namespace"}
+
+                kubectl $ns get pods -o name | Where-Object {
+                    $_ -like "$wordToComplete*"
+                }
+            }
+        )]#>
         [alias('pod', 'p')]
         [string]$PodName,
         [Parameter(Mandatory, Position=1)]
@@ -100,27 +113,66 @@ function Copy-KubeFile {
         }
     }
 
+    $doUpload = $doDownload = $false
+    if ( $Upload -or  $direction -in 'upload', 'u' ) {
+        $doUpload = $true
+    } elseif  ( $Download -or $direction -in 'download', 'd') {
+        $doDownload = $true
+    } else {
+        $errMsg = 'Could not resolve whether it''s a download or upload. Try specifying either -u or -d as an input argument'
+        $err = [ErrorRecord]::new($errMsg, $null, 'InvalidOperation', $null)
+        $PSCmdlet.ThrowTerminatingError($err)
+    }
+
     # Need to use resolve path on Windows to transform it into a relative path and avoid the ':' in full paths, e.g., 'C:/', which breaks kubectl.
-    $resolvedLocalBasePath = try {
-        Resolve-Path -LiteralPath $LocalPath -Relative -ErrorAction Stop
-    } catch [System.Management.Automation.ItemNotFoundException] {
-        Resolve-Path -LiteralPath (Split-Path $LocalPath -Parent) -Relative -ErrorAction Stop
-    }    
-    $resolvedLocalFullPath = & {
-        if ( $LocalPath -eq '.' ) {
+    $resolvedLocalPath = & {
+        if ( $doUpload ) {
+            try {
+                Resolve-Path -LiteralPath $LocalPath -Relative -ErrorAction Stop
+            }
+            catch [System.Management.Automation.ItemNotFoundException] {
+                $errMsg = "File to upload not found! Does $LocalPath exist? Resolve-Path error: $($_)"
+                $err = [ErrorRecrd]::new($errMsg, $null, 'ObjectNotFound', $null)
+                $PSCmdlet.ThrowTerminatingError($err)
+            }
+        }
+        # kubectl cp expects a filename to be provided as the destination of a download. Must explicitly derive it here.
+        elseif ( $LocalPath -eq '.' -or (Get-Item $LocalPath -ErrorAction SilentlyContinue).PSIsContainer ) {
             $localFilename = Split-Path $RemotePath -Leaf
-            Join-Path $resolvedLocalBasePath $localFilename
+            Join-Path (Resolve-Path -LiteralPath $LocalPath -Relative -ErrorAction Stop) $localFilename
         }
         else {
-            $resolvedLocalBasePath
+            # Need Resolve-Path for windows to remove drive letter, but the cmdlet errors if the target path doesn't exist.
+            # This fails if you are downloading a file and setting its destination to a new file name, for example. The catch handles this.
+            try {
+                Resolve-Path -LiteralPath $LocalPath -Relative -ErrorAction Stop
+            }
+            catch [System.Management.Automation.ItemNotFoundException] {
+                $parentLocalPath = & {
+                    if ( Split-Path $LocalPath -Parent ) {
+                        Split-Path $LocalPath -Parent
+                    } else { (pwd).Path }
+                }
+
+                if ( ! (Test-Path $parentLocalPath )) {
+                    if ( (Test-ReadHost "Directory $parentLocalPath does not exist. Create it?" -ValidationStrings 'yes','y','no','n') -in 'yes','y') {
+                        mkdir $parentLocalPath
+                    } else {
+                        Write-Host "Exiting script. Reason: Nonexistent directory in target local path $LocalPath" -Fore Red
+                        break
+                    }
+                }
+                $fileLocalPath = Split-Path $LocalPath -Leaf
+                Join-Path (Resolve-Path $parentLocalPath -Relative) $LocalPath
+            }
         }
     }
 
     if ( $Upload -or $direction -in 'upload', 'u') {
-        $cmd = "kubectl cp $resolvedLocalFullPath $podPath --retries $retries"
+        $cmd = "kubectl cp $resolvedLocalPath $podPath --retries $retries"
         
         # Get the full remote filepath for the progress tracker
-        $localPathFileName = Split-Path $resolvedLocalFullPath -Leaf
+        $localPathFileName = Split-Path $resolvedLocalPath -Leaf
         $remoteFullPath = $(
             if ( (Split-Path $remotePath -Leaf) -ne $localPathFileName -and $remotePath -notmatch '[.][a-z]{2,5}$') {
                 Join-Path $RemotePath $localPathFileName
@@ -129,14 +181,14 @@ function Copy-KubeFile {
             }
         ) -replace [Regex]::Escape([System.IO.Path]::DirectorySeparatorChar), '/'
 
-        $progressEnd = Get-Item $resolvedLocalFullPath | Select-Object -ExpandProperty Length
+        $progressEnd = Get-Item $resolvedLocalPath | Select-Object -ExpandProperty Length
         $progressTracker = "return 1000 * ((kubectl $ns exec $PodName -- du -k $remoteFullPath) -split '\s' | Select-Object -first 1) / $progressEnd"
     }
     if ( $Download -or $direction -in 'download', 'd') {
-        $cmd = "kubectl cp $podPath $resolvedLocalFullPath --retries $retries"
+        $cmd = "kubectl cp $podPath $resolvedLocalPath --retries $retries"
         
         $progressEnd = (kubectl $ns exec $PodName -- du -k $RemotePath) -split '\s' | Select-Object -First 1
-        $progressTracker = "return (Get-Item $resolvedLocalFullPath | Select-Object -ExpandProperty Length) / (1000 * $progressEnd)"
+        $progressTracker = "return (Get-Item $resolvedLocalPath | Select-Object -ExpandProperty Length) / (1000 * $progressEnd)"
     }
 
     if ( $ShowProgress ) {
@@ -144,6 +196,7 @@ function Copy-KubeFile {
         [ProcessHelper]::new($cmd).Run($ScriptTrackProgress)
     }
     else {
+        Write-Verbose "Executing command: $cmd"
         Invoke-Expression $cmd
     }
 }
