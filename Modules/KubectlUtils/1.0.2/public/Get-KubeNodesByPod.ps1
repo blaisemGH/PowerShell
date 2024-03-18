@@ -1,4 +1,12 @@
 function Get-KubeNodesByPod {
+    <#
+        .SYNOPSIS
+        Displays each pod in the current namespace according to which node it currently resides on
+        .EXAMPLE
+        Get-KubeNodesByPod
+        .EXAMPLE
+        gknp
+    #>
     $nodes = kubectl get nodes -o json | 
         ConvertFrom-Json |
         Select-Object -ExpandProperty Items |

@@ -14,7 +14,22 @@ Function Trace-KubeMetrics {
         
         [switch]$ForceNewFile,
         
-        [string[]]$Namespaces = (kubectl get serviceaccounts default -o jsonpath='{.metadata.namespace}'),
+        [ArgumentCompleter(
+            {
+                # See Get-KubeMetrics for a description of what this is doing, as it uses the same ArgumentCompleter.
+                Param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+                $lastElement = $commandAst.CommandElements[-1]
+                $paramTokens = $lastElement.Value + $LastElement.Elements.Value | Where-Object {$_}
+                $lastTokenToComplete = $paramTokens | Select-Object -Last 1
+                $alreadyUsedTokens = $paramTokens + $LastElement.NestedAst.Value | Where-Object {$_}
+
+                [Kube]::Get_Namespaces() + "'--all-namespaces'" + "'-A'" | Where-Object {
+                    $_ -like "$lastTokenToComplete*" -and
+                    $_ -notin $alreadyUsedTokens
+                }
+            }
+        )]
+        [string[]]$Namespaces = (kubectl config view --minify -o json | ConvertFrom-Json).contexts.context.namespace,
 
         [ValidateSet('Default','All','Custom')]
         [string]$ViewFilter = 'Default'

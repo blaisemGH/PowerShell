@@ -17,6 +17,46 @@ class KubeMetricsViewCustom : KubeMetrics {}
 class KubeMetricsViewDefault : KubeMetrics {}
 
 function Get-KubeMetrics {
+<#
+    .SYNOPSIS
+        A wrapper for retrieving metrics from the kube api and formatting them
+    
+    .DESCRIPTION
+        This function makes a call to the kube metrics api `kubectl get --raw "/apis/metrics.k8s.io/v1beta1/pods"`.
+        The output is formatted and filters containers according to the following views:
+            Default: checks the automatic kubectl annotation for default containers and filters each pod to this container.
+            All: All containers
+            Custom: A custom-defined set of containers. By specifying a list of strings, any container in that list will be included.
+
+        The view is specified via the -ViewFilter parameter.
+        If the custom ViewFilter is selected, the parameter -FilterContainerNames becomes available.
+            Specify a list of strings in this parameter to filter for these containers specifically.
+            If none are provided, the function will import from the file [Kube]::relevantContainersFile a hashtable. Example file:
+                @{filterMetricContainers = 'main', 'sidecar-logging'}
+
+        Note that the default/custom views do not display the DateTime of the metrics call or the Namespace of the pods, but
+        you can still select them by piping into a select command. The All view will include the namespace.
+        
+        Alias: gkm
+    
+    .EXAMPLE
+        Get-KubeMetrics
+
+        Outputs the current kube metrics for the default container in each pod in the current namespace
+    .EXAMPLE
+        Get-KubeMetrics -Namespaces <ns>
+        
+        Outputs the current kube metrics for the default container in each pod in the specified namespace
+    .EXAMPLE
+        gkm -Namespaces '<ns 1>', '<ns 2>' -ViewFilter All
+        
+        Outputs the current kube metrics for ALL containers in each pod in both <ns 1> and <ns 2>
+
+    .PARAMETER Namespaces
+        Select 1 or multiple namespaces, comma-delimited and quoted to be strings. Defaults to current namespace in kubeconfig.
+    .PARAMETER ViewFilter
+        Select the ViewFilter on which containers to get. All = all containers, Default = kubectl default containers. Custom = custom list
+#>
     [CmdletBinding()]
     Param(
         [Parameter(ValueFromRemainingArguments)]
@@ -33,7 +73,7 @@ function Get-KubeMetrics {
                 # Previously used tokens are in NestedAst.Value
                 $alreadyUsedTokens = $paramTokens + $LastElement.NestedAst.Value | Where-Object {$_}
 
-                [Kube]::Get_Namespaces() + "'--all-namespaces'" | Where-Object {
+                [Kube]::Get_Namespaces() + "'--all-namespaces'" + "'-A'" | Where-Object {
                     $_ -like "$lastTokenToComplete*" -and
                     $_ -notin $alreadyUsedTokens
                 }
@@ -60,7 +100,7 @@ function Get-KubeMetrics {
     # Must use begin/process blocks because of DynamicParam, even though this function is not pipeline compatible.
     begin {
         $filterNamespaces = @(
-            if ( $Namespaces -contains '--all-namespaces') {
+            if ( $Namespaces -contains '--all-namespaces' -or $Namespaces -contains '-A' ) {
                 [Kube]::Get_Namespaces()
             } else {
                 $Namespaces
