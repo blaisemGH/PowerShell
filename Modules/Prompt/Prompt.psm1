@@ -302,19 +302,20 @@ Function prompt {
     # The final prompt line design, concatenating all the prompt variables together.
 	[Environment]::NewLine + $promptMark + $promptVersion + $promptStamp + $promptFolder + $promptBranch + $resetPromptColor + $currentConfidenceInProgrammingSkillz 
 
-    $area = (gkc).Name
-    $ns = (gkc).Namespace
-    [string]$nsNumber = [Kube]::MapIntsToNamespaces.GetEnumerator() | Where-Object Value -eq $ns | Select -exp Name 
-    if ( $area ) {
-        $originalHostForegroundColor = $host.UI.RawUI.ForegroundColor
-        $startposx = $Host.UI.RawUI.windowsize.width - ($area.length + $ns.length + 2 + $nsNumber.length + 3 )
-        $startposy = $Host.UI.RawUI.CursorPosition.Y
-        $host.UI.RawUI.ForegroundColor = 'Red'
-        $Host.UI.RawUI.CursorPosition = New-Object System.Management.Automation.Host.Coordinates $startposx,$startposy
-        $Host.UI.Write("${area}: $ns ($nsNumber)")
-        $host.UI.RawUI.ForegroundColor = $originalHostForegroundColor
-    }
-    
+    try {
+        $area = (gkc).Name
+        $ns = (gkc).Namespace
+        [string]$nsNumber = [Kube]::MapIntsToNamespaces.GetEnumerator() | Where-Object Value -eq $ns | Select -exp Name 
+        if ( $area ) {
+            $originalHostForegroundColor = $host.UI.RawUI.ForegroundColor
+            $startposx = $Host.UI.RawUI.windowsize.width - ($area.length + $ns.length + 2 + $nsNumber.length + 3 )
+            $startposy = $Host.UI.RawUI.CursorPosition.Y
+            $host.UI.RawUI.ForegroundColor = 'Red'
+            $Host.UI.RawUI.CursorPosition = New-Object System.Management.Automation.Host.Coordinates $startposx,$startposy
+            $Host.UI.Write("${area}: $ns ($nsNumber)")
+            $host.UI.RawUI.ForegroundColor = $originalHostForegroundColor
+        }
+    } catch {}
     # Adds an extra empty line after the output of every command.
     return ' '
 }

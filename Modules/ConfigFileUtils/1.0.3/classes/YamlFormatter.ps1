@@ -13,7 +13,7 @@ class YamlFormatter {
     [string]$savedIndentation
 
     static [Regex]$Test_IsNewYamlDocument = [Regex]::new( '(?m)^---', 'Compiled' )
-    static [Regex]$Test_SkipLine = [Regex]::new( '^(\s*#|\s*$)', 'Compiled' )
+    static [Regex]$Test_SkipLine = [Regex]::new( '^\s*(#|$)', 'Compiled' )
     static [Regex]$Test_IsLineKV = [Regex]::new( '^\s*(- )?[^\s]+:($| .+$)', 'Compiled' )
     static [Regex]$Test_IsLineListElement = [Regex]::new( '^\s*- \S', 'Compiled' )
     static [Regex]$FindIndentation = [Regex]::new( '^(\s*).*', 'Compiled' )
@@ -29,12 +29,12 @@ class YamlFormatter {
     static [string]$UniqueMarker = ' ' + [string][char]0x2561 * 3
     static [string]$smartQuotesForRegexMatch = (
         ([psobject].Assembly.GetType('System.Management.Automation.Language.SpecialChars').DeclaredFields.
-            Where{ $_.Name -like 'Quote*'}.GetValue($null), '"', "'" | Write-Output
+            Where{ $_.Name -like 'Quote*'}.GetValue($null) | Write-Output
         ) -join '|'
     )
 
     YamlFormatter([string[]]$inputYaml) {
-        $this.inputYaml = $inputYaml -replace [YamlFormatter]::smartQuotesForRegexMatch, "'"
+        $this.inputYaml = $inputYaml -replace [YamlFormatter]::smartQuotesForRegexMatch, '{smartquote}'
     }
 
     # The workhorse method to format everything. All the remaining methods are children of this.

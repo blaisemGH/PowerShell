@@ -1,3 +1,5 @@
+using namespace System.Collections.Generic
+
 Function Join-ObjectLinq {
     Param(
         [object[]]$inputObjectLeft,
@@ -88,7 +90,7 @@ Function Join-ObjectLinq {
                 }
             )
             $join = 'GroupJoin'
-            $fullouterJoin = Join-Object $inputObjectLeft $inputObjectRight $joinColsLeft $joinColsRight 'right'
+            $fullouterJoin = Join-ObjectLinq $inputObjectLeft $inputObjectRight $joinColsLeft $joinColsRight 'right'
         }
     }
 

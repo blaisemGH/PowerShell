@@ -75,6 +75,7 @@ ScriptsToProcess = '.\enums\enums.ps1', '.\classes\ItemSize.ps1',
                '.\public\Repair-GitConflictsInFiles.ps1', 
                '.\public\Replace-StringInFile.ps1', 
                '.\public\Select-NestedObject.ps1', 
+               '.\public\Search-ObjectProperties.ps1',
                '.\public\Use-GitCliForBranch.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
@@ -96,7 +97,7 @@ FunctionsToExport = 'cd-', '..', '...', '....', '.....', '......', '.......', '.
                'Invoke-MatchOperator', 'Invoke-ReplaceOperator', 
                'Invoke-SplitOperator', 'LockThread', 'Out-AllPropertiesInGridView', 
                'Out-FileHash', 'Repair-GitConflictsInFiles', 'Replace-StringInFile', 
-               'Select-NestedObject', 'Use-GitCliForBranch'
+               'Select-NestedObject', 'Use-GitCliForBranch', 'Search-ObjectProperties'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'
