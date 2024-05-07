@@ -31,6 +31,28 @@ if ( !(Get-Item "${psDriveGoogleProjects}:" -ErrorAction SilentlyContinue) ) {
     New-PSDrive -Name $psDriveGoogleProjects -Root ([GCloud]::ProjectRoot) -PSProvider FileSystem -Description 'Folder structure of projects in Google Cloud' -Scope Global
 }
 
+Register-EngineEvent -SourceIdentifier 'Set-KubeContext' -Action { 
+    $newProject = $Args[0] -replace '^.*_gke-'
+    gcloud config set project $newProject
+    [GCloud]::CurrentProject = $newProject
+}
+if ( (Get-Module PSPrompt) -and !(Get-Module GCloudUtils) ) {
+    $LineToPrintOn = if ( [PSPromptConfig]::PromptConfigsRight.values.label -contains 'KubectlUtils') { 2 } else { 1 }
+    $getGCloudContext = { ':' + [GCloud]::CurrentProject }
+    $promptTemplateGetGCloudContext = @{
+        'Alignment' = 'Right'
+        'ItemSeparator' = ' '
+        'LineToPrintOn' = $LineToPrintOn
+        'ForegroundColor' = 'DarkKhaki'
+        'ContentFunction' = $getGCloudContext
+        label = 'GCloudUtils'
+    }
+    [PSPromptConfig]::AddTemplate($promptTemplateGetGCloudContext)
+}
+Start-ThreadJob -ScriptBlock {
+    gcloud config set survey/disable_prompts True
+    gcloud config set disable_usage_reporting true
+}
 #Removing private functions that were loaded via ScriptsToProcess.
 #Get-ChildItem (Join-Path $PSScriptRoot private) | Foreach {
 #	(

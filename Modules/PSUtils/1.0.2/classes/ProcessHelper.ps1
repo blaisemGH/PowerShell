@@ -85,7 +85,7 @@ class ProcessHelper {
     	# Invokes the actual process start and submission to the executable.
 	[Process] Start_Process ( [Process]$Process, [scriptblock]$TrackProgress) {
 		try {
-			Write-Debug ('Activating async logging{0}' -f [Env]::NewLine)
+			Write-Debug ('Activating async logging{0}' -f [Environment]::NewLine)
 			[ProcessHelper]::Initialize_ProcessOutputWatcher($Process)
 			$Process.Start()
 			$Process.BeginErrorReadline()  #Asynchronous streaming of stderr from the process

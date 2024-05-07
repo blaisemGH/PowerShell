@@ -113,6 +113,9 @@ Function Get-GCloudProjectLineageAsFilepath {
             ConvertFrom-Json | 
             Select-Object -ExpandProperty DisplayName
     }
+    if ( !$folderNames ) {
+        return $null
+    }
     [Array]::Reverse($folderNames) # reverse so the -join below in $childPath orders ascending to descending in the folder hierarchy.
 
     # Get the project type's display name and its parent's display name. These will be appended to the end of the final path.

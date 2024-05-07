@@ -2,17 +2,17 @@
 #>
 Function Sync-GCloudProjectsAsJob {
     Param(
-        [switch]$WaitOnMinimumFrequency
+        [int]$WaitOnMinimumFrequency = 0
     )
 
     $lastSyncDate = Get-Item ([GCloud]::PathToProjectCSV) | Select-Object -ExpandProperty LastWriteTime
-    $thresholdToNextSync = (Get-Date).AddSeconds(-[GCloud]::MinimumSyncFrequency)
+    $thresholdToNextSync = (Get-Date).AddSeconds(-$WaitOnMinimumFrequency)
     $timeRemaining = $lastSyncDate - $thresholdToNextSync
     if ( $WaitOnMinimumFrequency -and $lastSyncDate -gt $thresholdToNextSync) {
         Write-Verbose "Previous sync occurred more recently than the minimum sync frequency specified in the GCloud class. Canceling sync. Time remaining until next allowed sync: $($timeRemaining | Out-String)"
         return
     }
-    Write-Warning 'Syncing gcloud projects in a background thread. If this is the first time, it may take a while and will consume some CPU from gcloud calls.
+    Write-Warning 'Syncing gcloud projects in a background thread. If this is the first time, it may take a while and will consume bandwith from gcloud calls.
     Monitor the progress with Receive-Job -ID n [-Keep] to view the logging output. The ID can be obtained from Get-Job.
     Alternatively, Receive-Job GCloudSyncProjects [-Keep] will always locate this job.
     Note: -Keep will display the output without consuming it. Otherwise, future Receive-Jobs will only show new output since the previous Receive-Job.'
