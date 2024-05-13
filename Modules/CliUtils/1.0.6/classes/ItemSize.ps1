@@ -1,24 +1,25 @@
+using namespace System.IO
 class ItemSize {
-    [string]$Item
     [string]$Size
+    [string]$Item
     [int64]$Length
     [string]$FullName
     [string]$Name
 
-    ItemSize([string]$fullPath, [int64]$rawLength) {
-        $this.Construct_Paths($fullPath)
+    ItemSize([FileSystemInfo]$fileItem, [int64]$rawLength) {
+        $this.Construct_Paths($fileItem)
         $this.Construct_Length($rawLength)
     }
-    ItemSize([string]$fullPath, [int64]$rawLength, [string]$unit) {
-        $this.Construct_Paths( $fullPath )
-        $this.Construct_Length( $rawLength, $unit)
+    ItemSize([FileSystemInfo]$fileItem, [int64]$rawLength, [string]$unit) {
+        $this.Construct_Paths($fileItem)
+        $this.Construct_Length($rawLength, $unit)
     }
 
-    [void]Construct_Paths ( [string]$fullPath ) {
+    [void]Construct_Paths ( [FileSystemInfo]$fileItem ) {
         $currentDir = $PWD.Path
-        $this.Item = (Get-Item $fullPath).FullName -Replace [Regex]::Escape($currentDir),'.'
-        $this.FullName = $fullPath
-        $this.Name = Split-Path $fullPath -Leaf
+        $this.Item = $fileItem.FullName -Replace [Regex]::Escape($currentDir),'.'
+        $this.FullName = $fileItem.FullName
+        $this.Name = $fileItem.Name
     }
 
     [void]Construct_Length ( [int64]$rawLength ) {

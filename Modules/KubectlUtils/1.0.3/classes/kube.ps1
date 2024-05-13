@@ -62,18 +62,22 @@ Class Kube {
         $resources = [Kube]::Import_APIResourceList()
         [Kube]::ArrayOfApiResources = $resources.NAME + ( $resources.SHORTNAMES | Where {$_} | ForEach { $_ -split ',' } )
 # Does dynamickube do anything?        
+        <#
         [StringBuilder]$dynamicClass = 'class DynamicKube { static [string]$CurrentNamespace' + [Environment]::NewLine
         $usedResources = @()
         Foreach ( $r in $resources ) {
             $rName = $r.Name
             
             If ( $rName -notin $usedResources ) {
-                $dynamicClass.AppendLine("static [string[]] Get_$rName (){ return ((kubectl -n `$([DynamicKube]::CurrentNamespace) get $rName -o name) | %{ `$_ -split '/' | select -last 1}) }")
+                $dynamicClass.AppendLine("static [string[]] Get_$rName (){ return ((kubectl -n `$([Kube]::CurrentNamespace) get $rName -o name) | %{ `$_ -split '/' | select -last 1}) }")
             }
             $usedResources += $rName # check
         }
         $dynamicClass.AppendLine('}')
+        #write-host $dynamicClass.ToString()
         return $dynamicClass
+        #>
+        return 'Sleep -Milliseconds 1'
     }
 
     static [string[]] Get_Pods (){

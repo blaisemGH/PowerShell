@@ -18,7 +18,7 @@
             <Label>Size</Label>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>Path</Label>
+            <Label>SubPath</Label>
           </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
@@ -36,7 +36,7 @@
               </TableColumnItem>
               <TableColumnItem>
                 <Alignment>Left</Alignment>
-                <PropertyName>Path</PropertyName>
+                <PropertyName>SubPath</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

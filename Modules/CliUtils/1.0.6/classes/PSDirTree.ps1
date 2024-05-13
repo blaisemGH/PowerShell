@@ -6,15 +6,20 @@ Class PSDirTree {
     ### This class outputs 4 attributes by default. The 5 remaining are hidden so as not to clutter the output but accessible if explicitly called.
     [string]$Attributes
     [string]$Size
-    [string]$Path
+    [string]$SubPath
     [int64]$Length
     [DateTime]$CreationTime
     [DateTime]$LastAccessTime
     [DateTime]$LastWriteTime
-    [string]$DirectoryName
-    [string]$FileName
+    [string]$ParentDirPath
+    [string]$Name
+    [string]$RootSearchPath
+    [string]$Path
     Hidden static [Hashtable]$subDirSizeMap = @{}
     Hidden static [Regex]$appendCharacter = [Regex]::new('$','Compiled')
+    Hidden static [string]$CornerArrow = [Encoding]::UTF8.GetString(@('226','148','148','226','148','128','226','148','128'))
+    Hidden static [string]$TJunction = [Encoding]::UTF8.GetString(@('226','148','156','226','148','128','226','148','128'))
+    Hidden static [string]$VerticalBar = [Encoding]::UTF8.GetString(@('226','148','130'))
 
     ### Default constructor for the PSDirTree class
     PSDirTree(
@@ -24,7 +29,7 @@ Class PSDirTree {
         [string]$name,
         [DateTime]$creation,
         [DateTime]$LastAccess,
-        [String]$directoryName,
+        [String]$parentDirPath,
         [string]$rootPath,
         [string]$childPath,
         [bool]$tree,
@@ -32,7 +37,7 @@ Class PSDirTree {
         [bool]$noCalcSize
     ) {
         $this.Attributes    =    $attributes -Replace 'Archive','File'
-        $this.LastWriteTime     =    $LastWriteTime
+        $this.LastWriteTime =    $LastWriteTime
         If ( $noCalcSize -or (
                 $noDir -and $attributes -Contains 'Directory'
             )
@@ -46,7 +51,7 @@ Class PSDirTree {
             $unit         =    $arrSize[2].replace('0','')
             $this.Size    =    '{0,7} {1,2}   '    -f $rawLength, $unit
         }
-        $this.Path = & {
+        $this.SubPath = & {
             If ( $tree ) {
                 $this.setTree($path, $name, $rootPath, $childPath)
             }
@@ -54,10 +59,12 @@ Class PSDirTree {
                 $childPath
             }
         }
-        $this.creationTime    =    $creation
-        $this.LastAccessTime  =    $LastAccess
-        $this.DirectoryName   =    $DirectoryName
-        $this.FileName        =    $name
+        $this.creationTime   = $creation
+        $this.LastAccessTime = $LastAccess
+        $this.RootSearchPath = $rootPath
+        $this.ParentDirPath  = $parentDirPath
+        $this.Name = $name
+        $this.Path = Join-Path $rootPath $childPath
     }
 
     static [list[string]]ConvertSize ( [int64]$byteSize ) {
@@ -140,15 +147,16 @@ Class PSDirTree {
                     $output.Append('    ') ### define indent as 4 spaces (parent dir is the last in its directory)
                 }
                 Else {
-                    $output.Append([Encoding]::UTF8.GetString(@('226','148','130')) + '   ') ### Define indent as a | + 3 spaces
+                    $output.Append( [PSDirTree]::VerticalBar + '   ') ### Define indent as a | + 3 spaces
                 }
             }
         }
+
         If ( $this.TestIfLastItemInDir($path) ) {
-            $output.Append([Encoding]::UTF8.GetString(@('226','148','148','226','148','128','226','148','128')) + ' ' + $name ) ### Use a corner arrowsymbol
+            $output.Append( [PSDirTree]::CornerArrow + ' ' + $name ) ### Use a corner arrowsymbol
         }
         Else {
-            $output.Append([Encoding]::UTF8.GetString(@('226','148','156','226','148','128','226','148','128')) + ' ' + $name ) ### Use a T-junction symbol
+            $output.Append( [PSDirTree]::TJunction + ' ' + $name ) ### Use a T-junction symbol
         }
         return $output.ToString()
     }

@@ -1,3 +1,5 @@
+using namespace System.IO
+
 Function Trace-KubeMetrics {
     [CmdletBinding(DefaultParameterSetName='unlimitedDuration')]
     Param(
@@ -34,18 +36,27 @@ Function Trace-KubeMetrics {
         [ValidateSet('Default','All','Custom')]
         [string]$ViewFilter = 'Default'
     )
+
     If ( (Test-Path $outputFile) -and $ForceNewFile ) {
         Remove-Item $outputFile -Force -ErrorAction Stop
     }
-    $lambdaGetMetrics = { Param ($outputFile)
+
+    $lambdaWriteMetricsEntry = { Param ($outputFile)
         If ( ! (Test-Path $outputFile) ) {
             Set-Content -Path $outputFile -value '['
         }
         Else {
-            Add-Content -Path $outputFile -Value ','
+            $f = [File]::ReadAllLines($outputFile)
+            $f[-1] = ','
+            Set-Content -Path $outputFile -Value $f -ErrorAction Stop
         }
-        Get-KubeMetrics -Namespaces $Namespaces -ViewFilter $viewFilter | ConvertTo-Json -Depth 10 | Add-Content -Path $outputFile
-        Start-Sleep -Seconds 20
+        (Get-KubeMetrics -Namespaces $Namespaces -ViewFilter $viewFilter |
+            ConvertTo-Json -Depth 10 |
+            Foreach-Object ToCharArray |
+            Select-Object -Skip 1
+        ) -join '' | Add-Content -Path $outputFile
+        
+        Start-Sleep -Seconds $IntervalOfOutputInSeconds
     }
     
     $endTime = If ( $minutesDuration ) {
@@ -64,13 +75,13 @@ Function Trace-KubeMetrics {
     If ($endTime -is [datetime]) {
         Write-Host "Streaming kube metrics to output file until $($endTime -as [datetime]). Press ctrl + C to cancel early."
         While ( (Get-Date) -lt $endTime ) {
-            & $lambdaGetMetrics $outputFile
+            & $lambdaWriteMetricsEntry $outputFile
         }
     }
     Else {
         Write-Host "Streaming kube metrics to output file... Press ctrl + C to cancel when done"
         While ( $true ) {
-            & $lambdaGetMetrics $outputFile
+            & $lambdaWriteMetricsEntry $outputFile
         }
     }
 }

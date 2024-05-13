@@ -26,6 +26,9 @@ function Find-MaxPodMetric {
         $out = [list[object]]@()
     }
     process {
+        if ( !$InputObject ) {
+            continue
+        }
         ForEach ($row in $InputObject) {
             $out.Add($row)
         }

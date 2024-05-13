@@ -172,7 +172,7 @@ function Copy-KubeFile {
     }
 
     if ( $Upload -or $direction -in 'upload', 'u') {
-        $cmd = "kubectl cp $resolvedLocalPath $podPath $containerArg --retries $retries"
+        $cmd = "cp $resolvedLocalPath $podPath $containerArg --retries $retries" -replace ' {2,}', ' ' -split ' '
         
         # Get the full remote filepath for the progress tracker
         $localPathFileName = Split-Path $resolvedLocalPath -Leaf
@@ -185,24 +185,23 @@ function Copy-KubeFile {
         ) -replace [Regex]::Escape([System.IO.Path]::DirectorySeparatorChar), '/'
 
         $progressEnd = Get-Item $resolvedLocalPath | Select-Object -ExpandProperty Length
-        $progressTracker = "return 1000 * ((kubectl $ns exec $PodName -- du -k $remoteFullPath) -split '\s' | Select-Object -first 1) / $progressEnd"
+        $progressTracker = "try {return 1000 * ((kubectl $ns exec $PodName $containerArg -- du -k $remoteFullPath) -split '\s' | Select-Object -first 1) / $progressEnd} catch [DivideByZeroException] { return 0 }"
     }
     if ( $Download -or $direction -in 'download', 'd') {
-        $cmd = "kubectl cp $podPath $containerArg $resolvedLocalPath --retries $retries" -replace ' {2,}', ' ' -split ' '
+        $cmd = "cp $podPath $containerArg $resolvedLocalPath --retries $retries" -replace ' {2,}', ' ' -split ' '
         
-        $progressEnd = (kubectl $ns exec $PodName -- du -k $RemotePath) -split '\s' | Select-Object -First 1
-        $progressTracker = "if ( Test-Path $resolvedLocalPath ) {return (Get-Item $resolvedLocalPath | Select-Object -ExpandProperty Length) / (1000 * $progressEnd)} else { return 0 }"
+        $progressEnd = (kubectl $ns exec $PodName $containerArg -- du -k $RemotePath) -split '\s' | Select-Object -First 1
+        $progressTracker = "try {return (Get-Item $resolvedLocalPath | Select-Object -ExpandProperty Length) / (1000 * $progressEnd)} catch { return 0 }"
     }
+
+    Write-Verbose "Executing command: $cmd"
 
     if ( $ShowProgress ) {
-        write-host $progressTracker
-        write-host $cmd
+        Write-Debug $progressTracker
         $ScriptTrackProgress = [ScriptBlock]::Create($progressTracker)
-        [ProcessHelper]::new($cmd).Run($ScriptTrackProgress)
+        [ProcessHelper]::new('kubectl', $cmd).Run($ScriptTrackProgress)
     }
     else {
-        Write-Verbose "Executing command: $cmd"
-
-        kubectl cp $cmd
+        kubectl $cmd
     }
 }

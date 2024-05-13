@@ -9,21 +9,21 @@
       <TableControl>
         <TableHeaders>
           <TableColumnHeader>
-            <Label>Item</Label>
+            <Label>Size</Label>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>Size</Label>
+            <Label>Item</Label>
           </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
           <TableRowEntry>
-            <Wrap />
+            <Wrap/>
             <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>Item</PropertyName>
+                <PropertyName>Size</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>Size</PropertyName>
+                <scriptblock>'{0, -80}' -f $_.Item</scriptblock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

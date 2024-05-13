@@ -20,6 +20,7 @@ Function Get-ItemSize {
     begin {
         $enumerationOptions = [EnumerationOptions]::new()
         $enumerationOptions.AttributesToSkip = @('ReparsePoint')
+        $enumerationOptions.RecurseSubdirectories = $true
     }
     process {
         $cleanPath = Get-Item $Path -Force | Where-Object {($_.Attributes -band 'ReparsePoint') -ne 'ReparsePoint'}
@@ -28,13 +29,24 @@ Function Get-ItemSize {
             # Checks file or dir, because gci with recurse is very slow on compressed files. This deactivates recurse on files.
             #$recurse = (Get-Item $itemPath).PSIsContainer
             #$measure = Get-ChildItem $itemPath -File -Recurse:$recurse -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum
-            $enumerationOptions.RecurseSubdirectories = (Get-Item $itemPath -Force).PSIsContainer
-            $measure = ([List[FileInfo]][Directory]::GetFiles( $itemPath, '*', $enumerationOptions)).Length | Measure-object -Sum
+            $item = Get-Item $itemPath -Force
+
+            $byteSize = & {
+                if ( $item.PSIsContainer ) {
+                    ([List[FileInfo]][Directory]::GetFiles( $itemPath, '*', $enumerationOptions)).Length |
+                        Measure-object -Sum |
+                        Select-Object -ExpandProperty Sum
+                }
+                else {
+                    $item.Length
+                }
+            }
+            
             If ( $Unit ) {
-                [ItemSize]::new($itemPath, $measure.Sum, $Unit)
+                [ItemSize]::new($itemPath, $byteSize, $Unit)
             }
             Else {
-                [ItemSize]::new($itemPath, $measure.Sum)
+                [ItemSize]::new($itemPath, $byteSize)
             }
         }
     }
