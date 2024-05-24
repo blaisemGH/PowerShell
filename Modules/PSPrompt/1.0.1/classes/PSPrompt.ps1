@@ -73,7 +73,7 @@ class PSPrompt {
                 [PSPromptConfig]::MultiLineConnectorOpenFirstLine
             } elseif ( $line -eq $maxItemLine -and ![PSPromptConfig]::NoItemsOnLastLine ) { 
                 [PSPromptConfig]::MultiLineConnectorOpenLastLine
-                $setLastLine = $null #Set it to null because the OpenLastLine connector will already be used here in $lineConnector.
+                $setLastLine = $null #Set it to null because the OpenLastLine will have already been used here in $lineConnector.
             } else {
                 [PSPromptConfig]::MultiLineConnectorOpenMiddleLine
             }

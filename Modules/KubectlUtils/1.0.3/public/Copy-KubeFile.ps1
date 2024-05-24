@@ -191,7 +191,7 @@ function Copy-KubeFile {
         $cmd = "cp $podPath $containerArg $resolvedLocalPath --retries $retries" -replace ' {2,}', ' ' -split ' '
         
         $progressEnd = (kubectl $ns exec $PodName $containerArg -- du -k $RemotePath) -split '\s' | Select-Object -First 1
-        $progressTracker = "try {return (Get-Item $resolvedLocalPath | Select-Object -ExpandProperty Length) / (1000 * $progressEnd)} catch { return 0 }"
+        $progressTracker = "try {return (Get-Item $resolvedLocalPath -ErrorAction Stop | Select-Object -ExpandProperty Length) / (1000 * $progressEnd)} catch { return 0 }"
     }
 
     Write-Verbose "Executing command: $cmd"

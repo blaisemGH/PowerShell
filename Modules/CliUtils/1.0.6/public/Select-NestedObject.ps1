@@ -24,29 +24,37 @@ class PSObjectSelector {
             
             $splitNodePath = $cleanSegment -split "(?<!\*)$noRegexDelimiter", 2
             $maybeWildCardNode = $splitNodePath[0]
-            $noWildCardNodes = $this.UnlockQuotedNodes($splitNodePath[1], $delimiter)
+            $nonWildCardNodes = $this.UnlockQuotedNodes($splitNodePath[1], $delimiter)
 
             # Each segment loop is liable to return multiple results. The remaining nodepath should be applied to each result individually.
             foreach ($kvPair in $this.IntermediateSelectResults.Clone().GetEnumerator()) {
-                $intermediateResults =  & {
-                    if ( $maybeWildCardNode -and $maybeWildCardNode -ne '*') {
+                [SearchObjectDTO[]]$intermediateResults =  & {
+                    if ( $maybeWildCardNode -match '^\*.+' ) {
                         $this.Resolve_Wildcard($kvPair.Value, $maybeWildCardNode)
                     } else {
-                        $this.Resolve_Wildcard($kvPair.Value)
+                        $index = -1
+                        foreach ( $object in $kvPair.Value.$maybeWildCardNode) {
+                            [SearchObjectDTOFull]@{
+                                Idx = ($index += 1)
+                                Value = $object
+                                NodePath = $maybeWildCardNode
+                            }
+                        }
+                        #$this.Resolve_Wildcard($kvPair.Value)
                     }
                 }
                 
                 # Once the wildcard has been expanded, there could be remaining nodes in the input nodepath. Each result should append this.
                 foreach ($result in $intermediateResults) {
                     $completeIntermediateSelection = & {
-                        if ( $noWildCardNodes ) {
+                        if ( $nonWildCardNodes ) {
                             $this.Select_RemainingPropertyPath($result.Value, $splitNodePath[1], $delimiter, $noRegexDelimiter)
                         } else {
                             $result.Value
                         }
                     }
                     
-                    $iteratedNodePath = ($kvPair.Key + $result.NodePath + $noWildCardNodes | 
+                    $iteratedNodePath = ($kvPair.Key + $result.NodePath + $nonWildCardNodes | 
                         Where-Object {$_}
                     ) -join '.' | ForEach-Object TrimStart('.') 
                     
@@ -146,24 +154,3 @@ function Select-NestedObject {
         }
     }
 }
-
-<#
-function Find-NestedObject {
-    param(
-        [Parameter(Mandatory, ValueFromPipeline)]
-        [object]$InputObject,
-
-        [Parameter(Position=0, ValueFromRemainingArguments)]
-        [string[]]$PropertyNodes
-    )
-    begin {
-        $selectExpression = '($InputObject)'
-        ForEach ($node in ($PropertyNodes -split ('\s*\.\s*') | Where {$_})) {
-            $selectExpression += ".'$node'"
-        }
-    }
-    process {
-        Invoke-Expression $selectExpression
-    }
-}
-#>

@@ -7,6 +7,7 @@ class FSRView {
     [Microsoft.PowerShell.Commands.MatchInfoContext]$Context
     [System.Text.RegularExpressions.Match[]]$Matches
     [string]$Filename
+    [string]$PSPath
 }
 <#
     .DESCRIPTION
@@ -255,6 +256,7 @@ Function Find-StringRecursively {
                             Context = $_.Context
                             Matches = $_.Matches
                             Filename = Split-Path $filepath -Leaf
+                            PSPath = $filePath
                         }
                     }
                     # The output for raw string input

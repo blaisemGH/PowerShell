@@ -20,20 +20,24 @@ class ProcessHelper {
     [bool]$UseShellExecute
 
     ProcessHelper([string]$FullCommand) {
-        $this.executable, $this.submitArgs = $FullCommand -split ' ', 2
-        $this.Set_ShellExecute($this.executable)
+        $getExecutable, $this.submitArgs = $FullCommand -split ' ', 2
+        $this.SetExecutionParameters($getExecutable)
         $this.Command = $FullCommand
     }
     ProcessHelper([string]$executable, [string[]]$submitArgs) {
-        $this.Set_ShellExecute($executable)
-        $this.Executable = $executable
-        $this.SubmitArgs = $submitArgs -join ' '
+        $this.SetExecutionParameters($executable)
+        $this.SubmitArgs = $submitArgs# -join ' '
         $this.Command = "$($this.Executable) $($this.SubmitArgs)"
     }
 
-    [void]Set_ShellExecute([string]$executable) {
-        if ( (Test-Path $executable) -or (Test-Path (Get-Command $executable).Source )) {
+    [void]SetExecutionParameters([string]$executable) {
+        if ( Test-Path $executable ) {
             $this.UseShellExecute = $false
+            $this.Executable = $executable
+        }
+        elseif ( Test-Path (Get-Command $executable).Source ) {
+            $this.UseShellExecute = $false
+            $this.Executable = (Get-Command $executable).Source
         }
         elseif ( Get-Command $executable ) {
             $this.UseShellExecute = $true

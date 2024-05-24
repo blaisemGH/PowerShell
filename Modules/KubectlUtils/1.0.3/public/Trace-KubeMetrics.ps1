@@ -1,18 +1,19 @@
 using namespace System.IO
 
 Function Trace-KubeMetrics {
-    [CmdletBinding(DefaultParameterSetName='unlimitedDuration')]
+    [CmdletBinding(DefaultParameterSetName='unlimitedDurationNoRollover')]
     Param(
         [int]$IntervalOfOutputInSeconds = 20,
         [Parameter(Mandatory)]
         [alias('path')]
-        [string]$outputFile,
+        [ConvertToFullPathTransform()]
+        [string]$OutputFile,
         
         [Parameter(ParameterSetName='minutes')]
-        [int]$minutesDuration,
+        [int]$MinutesDuration,
         
         [Parameter(ParameterSetName='hours')]
-        [int]$hoursDuration,
+        [int]$HoursDuration,
         
         [switch]$ForceNewFile,
         
@@ -34,7 +35,17 @@ Function Trace-KubeMetrics {
         [string[]]$Namespaces = (kubectl config view --minify -o json | ConvertFrom-Json).contexts.context.namespace,
 
         [ValidateSet('Default','All','Custom')]
-        [string]$ViewFilter = 'Default'
+        [string]$ViewFilter = 'Default',
+
+        
+        [ValidateScript({
+            ($_ -as [double]) -gt 500 -or
+            $_ -match '(?i)^[0-9.]+[a-z]?[b]$'
+        })]
+        [string]$RolloverSize,
+
+        [int]$RolloverHours
+
     )
 
     If ( (Test-Path $outputFile) -and $ForceNewFile ) {
@@ -69,12 +80,31 @@ Function Trace-KubeMetrics {
         $true
     }
 
+    $fmtRolloverSize = & {
+        $sizes = $RolloverSize -split '(?=[a-zA-Z]+$)'
+        if ( $sizes.count -gt 1 ) {
+            $sizes[0] / ('1' + $sizes[1])
+        }
+        else { $sizes[0] }
+    }
+
     Write-Host ([Environment]::NewLine + 'Output file: ') -NoNewLine; Write-Host ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($outputFile)) -Fore Cyan
     Write-Host 'Streaming interval: ' -NoNewLine; Write-Host $IntervalOfOutputInSeconds -Fore Yellow -NoNewline; Write-Host ' seconds'
 
     If ($endTime -is [datetime]) {
         Write-Host "Streaming kube metrics to output file until $($endTime -as [datetime]). Press ctrl + C to cancel early."
         While ( (Get-Date) -lt $endTime ) {
+            if ( $RolloverSize -or $RolloverHours ) {
+                $statsOutputFile = Get-Item $outputFile
+                if ( $statsOutputFile.Length -gt $fmtRolloverSize -or (Get-Date) -gt (Get-Date).AddHours($RolloverHours) ) {
+                    $increment = [int]($statsOutputFile.Basename -split '[.]')[-1] + 1
+                    $rolledoverFilename = Join-Path $statsOutputFile.DirectoryName ( $statsOutputFile.Basename + '.' + $increment + $statsOutputFile.Extension)
+                    try {
+                        Move-Item $outputFile -Destination $rolledoverFilename -ErrorAction Stop
+                        Set-Content -Path $outputFile -value '['
+                    } catch {}
+                }
+            }
             & $lambdaWriteMetricsEntry $outputFile
         }
     }
