@@ -74,7 +74,9 @@ Function Find-ValueInObject {
             ElseIf ( $objectToSearch -is [PSCustomObject] ) {
                 ForEach ( $prop in $objectToSearch.psobject.properties.name ) {
                     $UtilDTO.TrackNodePath.Push(($prop -replace $UtilDTO.matchIfSpaceSlashOrDotAndNoQuoteWrap, '''$1'''))
-                    Find-ValueInObject -InputObject $objectToSearch.$prop -Pattern $Pattern -UtilDTO $UtilDTO
+                    if ( $objectToSearch.$prop ) {
+                        Find-ValueInObject -InputObject $objectToSearch.$prop -Pattern $Pattern -UtilDTO $UtilDTO
+                    }
                     [void]$UtilDTO.TrackNodePath.Pop()
                 }
             }

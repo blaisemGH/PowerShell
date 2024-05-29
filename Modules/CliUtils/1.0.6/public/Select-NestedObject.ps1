@@ -8,7 +8,7 @@ class PSObjectSelector {
         $this.IntermediateSelectResults.Add('.', $inputObject)
     }
 
-    [void]Set_NestedObjectResults([string]$delimiter, [string[]]$searchSegments){
+    [void]SetNestedObjectResults([string]$delimiter, [string[]]$searchSegments){
         $noRegexDelimiter = [Regex]::Escape($delimiter)
         # Each instance of a wildcard needs to be handled separately, hence a foreach loop through each segment partitioned by a wildcard.
         foreach ( $segment in $searchSegments ) {
@@ -28,34 +28,21 @@ class PSObjectSelector {
 
             # Each segment loop is liable to return multiple results. The remaining nodepath should be applied to each result individually.
             foreach ($kvPair in $this.IntermediateSelectResults.Clone().GetEnumerator()) {
-                [SearchObjectDTO[]]$intermediateResults =  & {
-                    if ( $maybeWildCardNode -match '^\*.+' ) {
-                        $this.Resolve_Wildcard($kvPair.Value, $maybeWildCardNode)
-                    } else {
-                        $index = -1
-                        foreach ( $object in $kvPair.Value.$maybeWildCardNode) {
-                            [SearchObjectDTOFull]@{
-                                Idx = ($index += 1)
-                                Value = $object
-                                NodePath = $maybeWildCardNode
-                            }
-                        }
-                        #$this.Resolve_Wildcard($kvPair.Value)
-                    }
-                }
+                # Resolves the first node, resolving out a possible wildcard.
+                $intermediateResults = $this.ResolveNestedObject($kvPair.Value, $maybeWildCardNode)
                 
-                # Once the wildcard has been expanded, there could be remaining nodes in the input nodepath. Each result should append this.
+                # Once the first node has been expanded, there could be remaining nodes in the input nodepath. Each result should append this.
                 foreach ($result in $intermediateResults) {
                     $completeIntermediateSelection = & {
                         if ( $nonWildCardNodes ) {
-                            $this.Select_RemainingPropertyPath($result.Value, $splitNodePath[1], $delimiter, $noRegexDelimiter)
+                            $this.SelectRemainingPropertyPath($result.Value, $splitNodePath[1], $delimiter, $noRegexDelimiter)
                         } else {
                             $result.Value
                         }
                     }
                     
-                    $iteratedNodePath = ($kvPair.Key + $result.NodePath + $nonWildCardNodes | 
-                        Where-Object {$_}
+                    $iteratedNodePath = (
+                        $kvPair.Key + $result.NodePath + $nonWildCardNodes | Where-Object {$_}
                     ) -join '.' | ForEach-Object TrimStart('.') 
                     
                     # Remove the previous entry and add the updated object as each segment is parsed.
@@ -70,13 +57,25 @@ class PSObjectSelector {
         }
     }
 
-    [SearchObjectDTO[]] Resolve_Wildcard([PSCustomObject]$inputObject){
-        return Search-ObjectProperties -InputObject $inputObject
+    [SearchObjectDTO[]] ResolveNestedObject([PSCustomObject]$inputObject, [string]$node){
+        if ( $node -match '^\*.+' ) {
+            return Search-ObjectProperties -InputObject $inputObject -PropertiesToFind ($node -replace '^\*\.')    
+        }
+        
+        $index = -1
+        
+        return $(
+            foreach ( $object in $inputObject.$node) {
+                [SearchObjectDTOFull]@{
+                    Idx = ($index += 1)
+                    Value = $object
+                    NodePath = $node
+                }
+            }
+        )
     }
-    [SearchObjectDTO[]] Resolve_Wildcard([PSCustomObject]$inputObject, [string]$node){
-        return Search-ObjectProperties -InputObject $inputObject -PropertiesToFind ($node -replace '^\*\.')
-    }
-    [PSCustomObject] Select_RemainingPropertyPath ([PSCustomObject]$inputObject, [string]$propertyNodes, [string]$delimiter, [string]$noRegexDelimiter) {
+
+    [PSCustomObject] SelectRemainingPropertyPath ([PSCustomObject]$inputObject, [string]$propertyNodes, [string]$delimiter, [string]$noRegexDelimiter) {
         $selectExpression = '($inputObject)'
 
         $protectQuotedNodes = $this.LockQuotedNodes($propertyNodes, $noRegexDelimiter )
@@ -89,11 +88,17 @@ class PSObjectSelector {
         $finalNodePath = $this.UnlockQuotedNodes($selectExpression, $delimiter)
         return Invoke-Expression $finalNodePath
     }
+
+    # "Locks" any nodes that are quoted by replacing the delimiter with an impossible delimiter.
+    # This makes it safe to split on the delimiter without splitting literal delimiter characters, i.e., prevent splitting on delimiters inside quotes.
+    # This is the logic that allows the function to support nodepaths containing, e.g., literal delimiters like node1.'node2.prop'.node3 without having
+    # to write node1/node2.prop/node3 (i.e., avoiding '.' as a delimiter when it's present as a literal character in quotes, a syntax normal PS supports)
     [string] LockQuotedNodes([string]$nodes, [string]$noRegexDelimiter) {
         return $nodes -replace
             "('[^'.]+)$noRegexDelimiter([^'.]+')", ('$1' + ([string][char]0x2561 * 3) + '$2') -replace
             "('[^"".]+)$noRegexDelimiter([^"".]+')", ('$1' + ([string][char]0x2561 * 3) + '$2')
     }
+    # Once splitting on the delimiter has been performed, restore the original nodepath string by replacing the impossible delimiter with the actual delimiter.
     [string] UnlockQuotedNodes([string]$nodes, $delimiter) {
         return $nodes -replace ([string][char]0x2561 * 3), $delimiter
     }
@@ -142,7 +147,7 @@ function Select-NestedObject {
     process {
         foreach ($object in $InputObject) { 
             $PSObjectSelector = [PSObjectSelector]::new($object)
-            $PSObjectSelector.Set_NestedObjectResults($delimiter, $searchSegments)
+            $PSObjectSelector.SetNestedObjectResults($delimiter, $searchSegments)
             
             if ( !$ExpandProperties ) {
                 $PSObjectSelector.IntermediateSelectResults.Values | Write-Output

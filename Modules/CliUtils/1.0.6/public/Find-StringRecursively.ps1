@@ -1,14 +1,15 @@
 using namespace System.Management.Automation
 
-class FSRView {
-    [string]$Path
+class FindStringDTO {
+    [string]$FSRPath
     [string]$LineNo
     [string]$Line
     [Microsoft.PowerShell.Commands.MatchInfoContext]$Context
-    [System.Text.RegularExpressions.Match[]]$Matches
+    [string]$Matches
+    [string]$LP
     [string]$Filename
-    [string]$PSPath
 }
+
 <#
     .DESCRIPTION
         This is a wrapper function that combines Get-ChildItem and Select-String into a single function.
@@ -35,7 +36,8 @@ Function Find-StringRecursively {
             Position=1
         )]
         [alias('PSPath', 'LP', 'Path')]
-        [string]$InputObject = '.',
+        [IfPathStringTransformToFileSystemInfo()]
+        [object]$InputObject = '.',
         
         [Parameter(Mandatory, ParameterSetName = 'RegExPattern', Position=0)]
         [Parameter(Mandatory, ParameterSetName = 'SimplePattern', Position=0)]
@@ -133,7 +135,7 @@ Function Find-StringRecursively {
         }
         If ( $Context ) {
             $SLSparams.Add( 'Context' , $Context)
-            $preContextSkip        = [Environment]::NewLine * $Context[0]
+            $preContextSkip = [Environment]::NewLine * $Context[0]
         }
         If ( $Encoding ) {
             $SLSparams.Add( 'Encoding'    , $Encoding)
@@ -154,13 +156,14 @@ Function Find-StringRecursively {
         $ansiReverseOff = "$ansi[27m"
         $ansiStrikeOff  = "$ansi[29m"
         $ansiStrike     = "$ansi[9m"
-
+        
+        $noFileSLSInput = [Collections.Generic.List[string]]@()
     }
     process {
         $SLSInput = [Collections.Generic.List[string]]@()
 
         # Process path if it was input as only a * or .
-        $path = & {
+        $inputItem = & {
             If ( $InputObject -in '*','.' ) {
                 $PWD
             }
@@ -169,9 +172,9 @@ Function Find-StringRecursively {
             }
         }
         # get full paths of all files to be searched
-        If ( Test-Path $path ) {
+        If ( $inputItem -is [IO.FilesystemInfo] ) {
             $isFilePath = $true
-            Foreach ( $fullPath in Convert-Path $path ) {
+            Foreach ( $fullPath in Convert-Path $inputItem ) {
                 try {
                     [string[]]$subFolderfileList = [System.IO.Directory]::GetFiles( $fullPath, $FilterFile, $enumerationOptions )
                 }
@@ -190,17 +193,19 @@ Function Find-StringRecursively {
         }
         # If not searching for a file, then prepare to Select-String on raw text.
         Else {
-            $SLSParams.InputObject = $path
-            $SLSInput.Add($path)
+            #$SLSParams.InputObject = $inputItem
+            $noFileSLSInput.Add($inputItem)
         }
         # Run Select-String
         Foreach ( $item in $SLSInput ) {
+            $pathEscapeRegex = [regex]::Escape($item)
             # Last param building for Select-String and output as a relative filepath.
             If ( $isFilePath ) {
                 $SLSParams.LiteralPath = $item
                 $filePath = Resolve-Path -LiteralPath $item -Relative
             }
 
+            #Select-String @SLSparams | ForEach-Object { If ( $Quiet ) { $_ } Else {
             Select-String @SLSparams | ForEach-Object { If ( $Quiet ) { $_ } Else {
                 If ( $Context ) {
                     # Get the right lines to display in the output when Select-String's -Context parameter is used.
@@ -221,7 +226,7 @@ Function Find-StringRecursively {
                         }
                     }
                 }
-                & {
+                #& {
                     If ( $isFilePath ) {
                         # handle empty context attributes, such as if the parameter isn't selected.
                         if ( !($displayPreContext = $_.Context.DisplayPreContext | Out-String) ) { $displayPreContext = '' }
@@ -246,8 +251,8 @@ Function Find-StringRecursively {
                             }
                         }
                         # The output for file input
-                        [FSRView]@{
-                            Path = $ansiOrange + $filePath + ":$ansiReset"
+                        [FindStringDTO]@{
+                            FSRPath = $ansiOrange + $filePath + $ansiReset
                             LineNo  = $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber
                             Line = '{0}{1}{2}{3}' -f $displayPreContext,
                                 $emphasizedLine,
@@ -255,20 +260,22 @@ Function Find-StringRecursively {
                                 $displayPostContext -replace "$([Environment]::NewLine)$"
                             Context = $_.Context
                             Matches = $_.Matches
+                            LP = $item
                             Filename = Split-Path $filepath -Leaf
-                            PSPath = $filePath
                         }
                     }
                     # The output for raw string input
-                    else {
-                        [FSRView]@{
-                            Line = $_.ToEmphasizedString($_.Line)
-                            Context = $_.Context
-                            Matches = $_.Matches
-                        }
-                    }
-                }
+                    #else {
+                    #    write-host $SLSParams.Context
+                    #    $_
+                    #}
+               # }
             }}
+        }
+    }
+    end {
+        if ( !$isFilePath ) {
+            $noFileSLSInput | Select-String @SLSParams
         }
     }
 }

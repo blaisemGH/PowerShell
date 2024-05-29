@@ -45,7 +45,6 @@ Function Trace-KubeMetrics {
         [string]$RolloverSize,
 
         [int]$RolloverHours
-
     )
 
     If ( (Test-Path $outputFile) -and $ForceNewFile ) {
@@ -69,7 +68,7 @@ Function Trace-KubeMetrics {
         
         Start-Sleep -Seconds $IntervalOfOutputInSeconds
     }
-    
+
     $endTime = If ( $minutesDuration ) {
         (Get-Date).AddMinutes($minutesDuration)
     }
@@ -90,28 +89,29 @@ Function Trace-KubeMetrics {
 
     Write-Host ([Environment]::NewLine + 'Output file: ') -NoNewLine; Write-Host ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($outputFile)) -Fore Cyan
     Write-Host 'Streaming interval: ' -NoNewLine; Write-Host $IntervalOfOutputInSeconds -Fore Yellow -NoNewline; Write-Host ' seconds'
+    
+    $fileStartDatetime = Get-Date
 
     If ($endTime -is [datetime]) {
-        Write-Host "Streaming kube metrics to output file until $($endTime -as [datetime]). Press ctrl + C to cancel early."
-        While ( (Get-Date) -lt $endTime ) {
-            if ( $RolloverSize -or $RolloverHours ) {
-                $statsOutputFile = Get-Item $outputFile
-                if ( $statsOutputFile.Length -gt $fmtRolloverSize -or (Get-Date) -gt (Get-Date).AddHours($RolloverHours) ) {
-                    $increment = [int]($statsOutputFile.Basename -split '[.]')[-1] + 1
-                    $rolledoverFilename = Join-Path $statsOutputFile.DirectoryName ( $statsOutputFile.Basename + '.' + $increment + $statsOutputFile.Extension)
-                    try {
-                        Move-Item $outputFile -Destination $rolledoverFilename -ErrorAction Stop
-                        Set-Content -Path $outputFile -value '['
-                    } catch {}
-                }
-            }
-            & $lambdaWriteMetricsEntry $outputFile
-        }
+        Write-Host "Streaming kube metrics to output file until $($endTime -as [datetime]). Press ctrl + C to stop stream early."
+    } Else {
+        Write-Host "Streaming kube metrics to output file. Press ctrl + C to stop stream."
     }
-    Else {
-        Write-Host "Streaming kube metrics to output file... Press ctrl + C to cancel when done"
-        While ( $true ) {
-            & $lambdaWriteMetricsEntry $outputFile
+
+    While ( $true ) {
+        If (
+            ($RolloverSize -and $statsOutputFile.Length -gt $fmtRolloverSize) -or
+            ($RolloverHours -and (Get-Date) -gt $fileStartDatetime.AddHours($RolloverHours))
+        ) {
+            $fileStartDatetime = Get-Date
+            Move-FileToDatedFile -FilePath $outputFile -Date $fileStartDatetime
+            Set-Content -Path $outputFile -value '['
+        }
+
+        & $lambdaWriteMetricsEntry $outputFile
+
+        If ( $endTime -is [datetime] -and (Get-Date -ge $endTime) ) {
+            break
         }
     }
 }

@@ -3,6 +3,10 @@ class colorRGB {
     [int]$R
     [int]$G
     [int]$B
+    static [hashtable] $intToHex = @{
+        0=0; 1=1; 2=2; 3=3; 4=4; 5=5; 6=6; 7=7; 8=8; 9=9
+        10='A'; 11='B'; 12='C'; 13='D'; 14='E'; 15='F'
+    }
     
     colorRGB([int]$red, [int]$green, [int]$blue) {
         $this.R = $red
@@ -62,6 +66,22 @@ class colorRGB {
         $blue   = $this.B
         
         return "`e[1;$ground;2;$red;$green;${blue}m"
+    }
+
+    [string] ConvertColorIntToHexCode ([int]$int) {
+        $leftHex = [Math]::Floor($int / 16)
+        $rightHex = $int % 16
+        
+        return '#{0}{1}' -f [ColorRGB]::mapIntToHex.$leftHex, [ColorRGB]::mapIntToHex.$rightHex
+    }
+    [string] ConvertColorIntToHexCode ([int]$red, [int]$green, [int]$blue) {
+        $hexString = '#'
+        $red, $green, $blue | Foreach {
+            [int]$leftHex = [Math]::Floor($_ / 16)
+            [int]$rightHex = $_ % 16
+            $hexString += '{0}{1}' -f [ColorRGB]::mapIntToHex.$leftHex, [ColorRGB]::mapIntToHex.$rightHex
+        }
+        return $hexString
     }
 
     [string] ToString() {

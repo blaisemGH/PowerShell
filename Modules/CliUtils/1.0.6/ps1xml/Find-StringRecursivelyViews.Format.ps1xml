@@ -2,16 +2,16 @@
 <Configuration>
   <ViewDefinitions>
     <View>
-      <Name>FindString</Name>
+      <Name>FindStringView</Name>
       <ViewSelectedBy>
-        <TypeName>FSRView</TypeName>
+        <TypeName>FindStringDTO</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
           <TableColumnHeader>
             <Label>Path</Label>
             <Alignment>Left</Alignment>
-            <Width>60</Width>
+            <!--Width>60</Width-->
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>LineNo</Label>
@@ -28,7 +28,7 @@
             <Wrap />
             <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>Path</PropertyName>
+                <PropertyName>FSRPath</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>LineNo</PropertyName>

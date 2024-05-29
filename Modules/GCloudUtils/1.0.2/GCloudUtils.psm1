@@ -36,9 +36,10 @@ Register-EngineEvent -SourceIdentifier 'Set-KubeContext' -Action {
     gcloud config set project $newProject
     [GCloud]::CurrentProject = $newProject
 }
+
 if ( (Get-Module PSPrompt) -and !(Get-Module GCloudUtils) ) {
     $LineToPrintOn = if ( [PSPromptConfig]::PromptConfigsRight.values.label -contains 'KubectlUtils') { 2 } else { 1 }
-    $getGCloudContext = { ':' + [GCloud]::CurrentProject }
+    $getGCloudContext = { ': ' + [GCloud]::CurrentProject }
     $promptTemplateGetGCloudContext = @{
         'Alignment' = 'Right'
         'ItemSeparator' = ' '

@@ -1,3 +1,5 @@
+using namespace System.Management.Automation
+
 class ConvertToFullPathTransform : System.Management.Automation.ArgumentTransformationAttribute {
     [object] Transform([EngineIntrinsics]$engineIntrinsics, [object] $inputData) {
         try {

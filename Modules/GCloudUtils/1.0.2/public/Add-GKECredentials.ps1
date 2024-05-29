@@ -57,6 +57,13 @@ function Add-GKECredentials {
         $err = [System.Management.Automation.ErrorRecord]::new("Empty output from command: gcloud container clusters list --project $selectedProjectID", $null, 'ObjectNotFound', $null)
         $PSCmdlet.ThrowTerminatingError($err)
     }
+    
     gcloud container clusters get-credentials $clusterGKEInfo.Name --location $clusterGKEInfo.Location --project $selectedProjectID
-    Update-ContextFileMap -ProjectID $selectedProjectID -NewMapKey $NewMapKey -ErrorAction Stop | Export-ContextFileAsPSD1
+    
+    if ( $? ) {
+        Update-ContextFileMap -ProjectID $selectedProjectID -NewMapKey $NewMapKey -ErrorAction Stop | Export-ContextFileAsPSD1
+        
+        gcloud config set project $selectedProjectID
+        [GCloud]::CurrentProject = $selectedProjectID
+    }
 }
