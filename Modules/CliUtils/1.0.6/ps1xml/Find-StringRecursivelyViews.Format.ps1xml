@@ -41,5 +41,45 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>FindStringShortPathView</Name>
+      <ViewSelectedBy>
+        <TypeName>FindStringShortPathDTO</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Path</Label>
+            <Alignment>Left</Alignment>
+            <Width>35</Width>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>LineNo</Label>
+            <Alignment>Right</Alignment>
+            <Width>7</Width>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Line</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <Wrap />
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>FSRPath</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>LineNo</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Line</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

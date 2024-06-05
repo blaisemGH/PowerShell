@@ -10,6 +10,16 @@ class FindStringDTO {
     [string]$Filename
 }
 
+class FindStringShortPathDTO {
+    [string]$FSRPath
+    [string]$LineNo
+    [string]$Line
+    [Microsoft.PowerShell.Commands.MatchInfoContext]$Context
+    [string]$Matches
+    [string]$LP
+    [string]$Filename
+}
+
 <#
     .DESCRIPTION
         This is a wrapper function that combines Get-ChildItem and Select-String into a single function.
@@ -89,7 +99,9 @@ Function Find-StringRecursively {
         [switch]$NoEmphasis,
 
         # Activate to include binary files.
-        [switch]$IncludeBinaryFiles
+        [switch]$IncludeBinaryFiles,
+        # Limits the file path displayed output to 35 characters (wraps longer filepaths).
+        [switch]$ShortenFilePath
     )
     begin {
         $Pattern  = $Pattern -Replace '^([*])$','.$1' # replaces wildcard * to a regex .*, as only regex is allowed.
@@ -250,8 +262,8 @@ Function Find-StringRecursively {
                                 $_.ToEmphasizedString($_.line) -replace ('>? ?' + ([regex]::Escape($_.Path + ':' + $_.LineNumber))  + ':')
                             }
                         }
-                        # The output for file input
-                        [FindStringDTO]@{
+                        # The output for file input                        
+                        $out = @{
                             FSRPath = $ansiOrange + $filePath + $ansiReset
                             LineNo  = $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber
                             Line = '{0}{1}{2}{3}' -f $displayPreContext,
@@ -263,6 +275,9 @@ Function Find-StringRecursively {
                             LP = $item
                             Filename = Split-Path $filepath -Leaf
                         }
+
+                        if ( $ShortenFilePath ) { [FindStringShortPathDTO]$out }
+                        else {[FindStringDTO]$out}
                     }
                     # The output for raw string input
                     #else {
