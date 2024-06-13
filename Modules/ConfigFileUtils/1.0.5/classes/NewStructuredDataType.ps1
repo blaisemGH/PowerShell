@@ -1,3 +1,4 @@
+using namespace System.IO
 class NewStructuredDataType {
 
     static [IStructuredData] GetDataTypeByFileExtension([string]$filePath) {

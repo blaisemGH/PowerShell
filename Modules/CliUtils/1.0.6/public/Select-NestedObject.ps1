@@ -3,7 +3,8 @@ using namespace System.Management.Automation
 
 class PSObjectSelector {
     [Hashtable]$IntermediateSelectResults = @{}
-
+    [object]$FinalResults
+    
     PSObjectSelector ([PSCustomObject]$inputObject) {
         $this.IntermediateSelectResults.Add('.', $inputObject)
     }
@@ -53,6 +54,21 @@ class PSObjectSelector {
                         $this.IntermediateSelectResults.Add($iteratedNodePath, $completeIntermediateSelection)
                     }
                 }
+            }
+        }
+    }
+    [object] GetFinalResults([bool]$ExpandProperties) {
+        $this.IntermediateSelectResults.Remove('.')
+
+        if ( !$ExpandProperties ) {
+            return $this.IntermediateSelectResults.Values | Write-Output
+        }
+        return $this.IntermediateSelectResults.GetEnumerator() | ForEach-Object { 
+            if ( $_.Value -is [ValueType] ) {
+                $_.Value 
+            }
+            else {
+                [string[]]$_.Value
             }
         }
     }
@@ -117,7 +133,7 @@ function Select-NestedObject {
         [ValidateScript({
             if ($_ -match '\*') {throw '* is reserved for wildcards and cannot be input for this parameter.'} else { $true }
         })]
-        [string]$NodeSeparator,
+        [string]$NodeSeparator = '.',
         [switch]$ExpandProperties
     )
     begin {
@@ -149,13 +165,7 @@ function Select-NestedObject {
             $PSObjectSelector = [PSObjectSelector]::new($object)
             $PSObjectSelector.SetNestedObjectResults($delimiter, $searchSegments)
             
-            if ( !$ExpandProperties ) {
-                $PSObjectSelector.IntermediateSelectResults.Values | Write-Output
-            } else {
-                $PSObjectSelector.IntermediateSelectResults.GetEnumerator() | ForEach-Object { 
-                    if ( $_.Value -is [ValueType] ) { $_.Value } else { [string[]]$_.Value }
-                }
-            }
+            $PSObjectSelector.GetFinalResults($ExpandProperties)
         }
     }
 }

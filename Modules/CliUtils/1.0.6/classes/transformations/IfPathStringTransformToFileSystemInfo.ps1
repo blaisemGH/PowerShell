@@ -2,20 +2,26 @@ using namespace System.Management.Automation
 
 class IfPathStringTransformToFileSystemInfo : ArgumentTransformationAttribute {
     [object] Transform([EngineIntrinsics]$engineIntrinsics, [object] $inputData) {
-        $pathToTest = & {
-            if ( !$inputData ) {
-                $PWD.Path
-            }
-            elseif ($inputData -match '^[.]|[*]$') {
-                Convert-Path -LiteralPath $inputData -ErrorAction Stop
-            }
-            else {
-                $inputData
-            }
+        if ( !$inputData ) {
+            return $PWD.Path
         }
-        if ( Test-Path -LiteralPath $inputData ) {
-            return Get-Item $inputData -Force
+
+        if ($inputData -match '^[.]|[*]$') {
+            try { $paths = Convert-Path -Path $inputData -ErrorAction Stop } catch {return [string]$inputData}
+            return $(
+                foreach ( $item in $paths ) {
+                    if ( Test-Path -LiteralPath $item ) {
+                        Get-Item -LiteralPath $item -Force
+                    }
+                }
+            )
+            
         }
+
+        if ( !(Test-Path $inputData) ) {
+            return [string]$inputData
+        }
+
         return $inputData
     }
 }

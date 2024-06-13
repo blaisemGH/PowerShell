@@ -175,38 +175,33 @@ Function Find-StringRecursively {
         $SLSInput = [Collections.Generic.List[string]]@()
 
         # Process path if it was input as only a * or .
-        $inputItem = & {
-            If ( $InputObject -in '*','.' ) {
-                $PWD
-            }
-            Else {
-                $InputObject
-            }
-        }
-        # get full paths of all files to be searched
-        If ( $inputItem -is [IO.FilesystemInfo] ) {
-            $isFilePath = $true
-            Foreach ( $fullPath in Convert-Path $inputItem ) {
-                try {
-                    [string[]]$subFolderfileList = [System.IO.Directory]::GetFiles( $fullPath, $FilterFile, $enumerationOptions )
-                }
-                catch {
-                    [string[]]$subFolderfileList = (Get-ChildItem -LiteralPath $fullPath @GCIParams -Recurse:(!$NoRecurse) -Force:$Force -Attributes !ReparsePoint).FullName
-                }
-                try {
-                    if ( $binaryFilter ) {
-                        $SLSInput.AddRange( [string[]]($subFolderfileList | Where { $_ -and $binaryFilterPattern.Match($_).Success }) )
-                    } else {
-                        $SLSInput.AddRange( [string[]]$subFolderfileList )
+        foreach ($inputItem in $InputObject) {
+    
+            # get full paths of all files to be searched
+            If ( $inputItem -is [IO.FilesystemInfo] ) {
+                $isFilePath = $true
+                Foreach ( $fullPath in Convert-Path $inputItem ) {
+                    try {
+                        [string[]]$subFolderfileList = [System.IO.Directory]::GetFiles( $fullPath, $FilterFile, $enumerationOptions )
                     }
-                } catch [ArgumentNullException] {}
+                    catch {
+                        [string[]]$subFolderfileList = (Get-ChildItem -LiteralPath $fullPath @GCIParams -Recurse:(!$NoRecurse) -Force:$Force -Attributes    !ReparsePoint).FullName
+                    }
+                    try {
+                        if ( $binaryFilter ) {
+                            $SLSInput.AddRange( [string[]]($subFolderfileList | Where { $_ -and $binaryFilterPattern.Match($_).Success }) )
+                        } else {
+                            $SLSInput.AddRange( [string[]]$subFolderfileList )
+                        }
+                    } catch [ArgumentNullException] {}
+                }
+                $subFolderfileList = $null
             }
-            $subFolderfileList = $null
-        }
-        # If not searching for a file, then prepare to Select-String on raw text.
-        Else {
-            #$SLSParams.InputObject = $inputItem
-            $noFileSLSInput.Add($inputItem)
+            # If not searching for a file, then prepare to Select-String on raw text.
+            Else {
+                #$SLSParams.InputObject = $inputItem
+                $noFileSLSInput.Add($inputItem)
+            }
         }
         # Run Select-String
         Foreach ( $item in $SLSInput ) {

@@ -1,7 +1,4 @@
-# Defines a Function equivalent to Unix's 'cd -'. We set the alias to 'cd-' for PowerShell.
-Function cd- {
-	Push-Location (Get-Location -stack).Path[0]
-}
+using namespace System.Management.Automation
 
 # cd has been redefined to pushd.
 If ( [System.Environment]::OSVersion.Platform -notmatch 'unix' -and [System.Environment]::OSVersion.Platform -match 'Win' ) {
@@ -47,6 +44,12 @@ if ( $env:OS -match 'Windows' ) {
     Set-Alias -Name base64	-Value Convert-Base64			-Scope Global -Option AllScope
 }
 
+# Defines a Function equivalent to Unix's 'cd -'. We set the alias to 'cd-' for PowerShell.
+Function cd- {
+	Push-Location (Get-Location -stack).Path[0]
+}
+
+
 # Faster backtracking up directory trees
 Function .. 		{ Push-Location ..							}
 Function ...		{ Push-Location ../..						}
@@ -58,6 +61,60 @@ Function ........	{ Push-Location ../../../../../../..		}
 Function .........	{ Push-Location ../../../../../../../..		}
 $bullet = [char]::ConvertFromUtf32(0x2022)
 
+<#
+if ( (Get-PSReadLineKeyHandler -Chord Tab).Function -eq 'MenuComplete' ) {
+
+	function TabExpansion2 {
+
+	    [CmdletBinding(DefaultParameterSetName = 'ScriptInputSet')]
+	    [OutputType([Management.Automation.CommandCompletion])]
+	    param (
+	        [Parameter(ParameterSetName = 'ScriptInputSet', Mandatory, Position = 0)]
+	        [AllowEmptyString()]
+	        [string] $inputScript,
+
+	        [Parameter(ParameterSetName = 'ScriptInputSet', Position = 1)]
+	        [int] $cursorColumn = $inputScript.Length,
+
+	        [Parameter(ParameterSetName = 'AstInputSet', Mandatory, Position = 0)]
+	        [Language.Ast] $ast,
+
+	        [Parameter(ParameterSetName = 'AstInputSet', Mandatory, Position = 1)]
+	        [Language.Token[]] $tokens,
+
+	        [Parameter(ParameterSetName = 'AstInputSet', Mandatory, Position = 2)]
+	        [Language.IScriptPosition] $positionOfCursor,
+
+	        [Parameter(ParameterSetName = 'ScriptInputSet', Position = 2)]
+	        [Parameter(ParameterSetName = 'AstInputSet', Position = 3)]
+	        [Hashtable] $options = $null
+	    )
+
+	    $completions = if ($PSCmdlet.ParameterSetName -eq 'ScriptInputSet') {
+	        [CommandCompletion]::CompleteInput(
+	            <#inputScript#>  #$inputScript,
+	            <#cursorColumn#> #$cursorColumn,
+	            <#options#>      #$options
+<#	        )
+	    } else {
+	        [CommandCompletion]::CompleteInput(
+	            <#ast#>              #$ast,
+	            <#tokens#>           #$tokens,
+	            <#positionOfCursor#> #$positionOfCursor,
+	            <#options#>          #$options
+<#	        )
+	    }
+
+		$completions.CompletionMatches = switch ($completions.CompletionMatches.Count) {
+			1 { if ( $completions.CompletionMatches.ResultType -eq [CompletionResultType]::ProviderContainer ) { $completions.CompletionMatches + '/'; break } else {$completions.CompletionMatches} }
+			0 { ''; break }
+			DEFAULT { $completions.CompletionMatches}
+		}
+
+		return $completions | Write-Output
+	}
+}
+#>
 if ( $env:OS -match 'Windows' ) {
 	Write-Host @"
 
