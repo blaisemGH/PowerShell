@@ -1,4 +1,0 @@
-function prompt {
-    [PSPrompt]::GetPrompt()
-}
-    
