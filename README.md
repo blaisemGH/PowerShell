@@ -1,5 +1,7 @@
 # PowerShell
-My repository of PowerShell modules.
+My repository of PowerShell modules. This is not released yet and all officially WIP, especially the comment helps. As the modules finish, I'll upload them to PSGallery (probably).
+
+Otherwise, I use these every day at work, some for years, some for only a few months. I guess that's how I am field testing it all.
 
 Before using these, I recommend installing Windows Terminal, the latest PowerShell Core version, and using this as your default in Windows Terminal. If you use my PSPrompt module, then Windows Terminal and also a nerd font are required (https://www.nerdfonts.com/font-downloads).
 
