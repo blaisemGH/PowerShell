@@ -40,7 +40,9 @@ function Add-GKECredentials {
         [string]$IDFromFS,
 
         [Alias('key')]
-        [string]$NewMapKey
+        [string]$NewMapKey,
+
+        [switch]$SkipAddMapKey
     )
 
     $selectedProjectID = & {
@@ -61,7 +63,9 @@ function Add-GKECredentials {
     gcloud container clusters get-credentials $clusterGKEInfo.Name --location $clusterGKEInfo.Location --project $selectedProjectID
     
     if ( $? ) {
-        Update-ContextFileMap -ProjectID $selectedProjectID -NewMapKey $NewMapKey -ErrorAction Stop | Export-ContextFileAsPSD1
+        if ( !$SkipAddMapKey ) {
+            Update-ContextFileMap -ProjectID $selectedProjectID -NewMapKey $NewMapKey -ErrorAction Stop | Export-ContextFileAsPSD1
+        }
         
         gcloud config set project $selectedProjectID
         [GCloud]::CurrentProject = $selectedProjectID

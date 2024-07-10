@@ -3,7 +3,7 @@ using namespace System.Management.Automation.Language
 using namespace System.Collections
 using namespace System.Collections.Generic
 
-class KubeNamespaceCompleter : IArgumentCompleter {
+class KubeMappedContextsCompleter : IArgumentCompleter {
 
     [IEnumerable[CompletionResult]] CompleteArgument(
         [string] $CommandName,
@@ -12,17 +12,18 @@ class KubeNamespaceCompleter : IArgumentCompleter {
         [CommandAst] $commandAst,
         [IDictionary] $currentBoundParameters
     ) {
-        return (
-            ((kubectl get namespaces -o name) -split '/')[1] + '-A' + '--all-namespaces' | foreach {
-                [CompletionResult]::new($_)
+        $resultList = [List[CompletionResult]]::new()
+        #return (
+            [Kube]::MappedContexts.Keys | foreach {
+                $resultList.Add([CompletionResult]::new($_))
             }
-        )
+        return $resultList
     }
 }
 
-class KubeNamespaceCompletionsAttribute : ArgumentCompleterAttribute, IArgumentCompleterFactory {
+class KubeMappedContextsCompletionsAttribute : ArgumentCompleterAttribute, IArgumentCompleterFactory {
 
     [IArgumentCompleter] Create() {
-        return [KubeNamespaceCompleter]::new()
+        return [KubeMappedContextsCompleter]::new()
     }
 }

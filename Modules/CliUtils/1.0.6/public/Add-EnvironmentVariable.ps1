@@ -25,9 +25,36 @@ function Add-EnvironmentVariable {
     $currentEnvVarValue = [Environment]::GetEnvironmentVariable($Name, $setEnvParams.Scope)
 
     # Setup things for Path environment variables
-    if ( $Name -match 'Path') {
-        [string[]]$currentPaths = $currentEnvVarValue -split ([Path]::PathSeparator) | where {$_}
-
+    $isPathVariable = if ( $Name -match 'Path' -and $Name -ne 'PATH' ) {
+            Test-ReadHost -Query 'Is this a PATH variable?' -ValidationStrings 'Y','N'
+        } else { $true }
+    
+    if ( $isPathVariable ) {
+        
+        [string[]]$currentPaths = & {
+            if ( $env:OS -match 'Windows' -and $Scope -ne 'Process') {
+                try {
+                    $key = switch ($Scope) {
+                        Machine {
+                            [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(
+                                'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 
+                                $true # Write access
+                            )
+                        }
+                        User { [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey( 'Environment', $true ) }
+                    }
+                     
+                    $key.GetValue('Path', $null, 'DoNotExpandEnvironmentNames').TrimEnd([IO.Path]::PathSeparator)
+                } finally {
+                    if ($null -ne $key) { 
+                        $key.Dispose() 
+                    }
+                }
+            }
+            else {
+                $currentEnvVarValue -split ([Path]::PathSeparator) | where {$_}
+            }
+        }
         # Account for a $Value that contains multiple paths and the OS-specific path delimiter 
         $setEnvParams.Value = & {
             if ( $Value -match [Path]::PathSeparator ) {
@@ -84,14 +111,16 @@ function Test-HasAdminPrivileges {
 }
 
 function Get-EnvironmentVariableValue {
-    param(    
+    [CmdletBinding(DefaultParameterSetName='NotPathVariable')]
+    param(
         [Parameter(Mandatory)]
         [string]$Name,
         [Parameter(Mandatory)]
         [string[]]$Value,
+        [Parameter(Mandatory,ParameterSetName='PathVariable')]
         [string[]]$currentPaths
     )
-    if ( $Name -match 'Path' ) {
+    if ( $PSCmdlet.ParameterSetName -eq 'PathVariable' ) {
         return $Value + $currentPaths -join [Path]::PathSeparator
     }
     else {
@@ -131,15 +160,35 @@ function Export-EnvironmentVariable {
     }
 
     if ( $env:OS -match 'Windows' ) {
+        
         [Environment]::SetEnvironmentVariable($Name, $Value, $Scope)
-        $updateSessionValue = & {
-            if ( $WindowsCompanionScopePathValues -and $Scope -eq 'Machine' ) {
-                $WindowsCompanionScopePathValues + [Path]::PathSeparator + $Value
+        if ( $WindowsCompanionScopePathValues -and $Scope -eq 'Machine' ) {
+            try {
+                $key = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(
+                    'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 
+                    $true # Write access
+                )
+                $key.SetValue('Path', $Value, 'ExpandString')
+            } finally {
+                if ($null -ne $key) { 
+                    $key.Dispose() 
+                }
             }
-            elseif ($WindowsCompanionScopePathValues -and $Scope -eq 'User') {
-                $Value + [Path]::PathSeparator + $WindowsCompanionScopePathValues
+            $updateSessionValue = $WindowsCompanionScopePathValues + [Path]::PathSeparator + $Value
+        }
+        elseif ($WindowsCompanionScopePathValues -and $Scope -eq 'User') {
+            try {
+                $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment', $true)
+                $key.SetValue('Path', $Value, 'ExpandString')
+            } finally {
+                if ($null -ne $key) { 
+                    $key.Dispose() 
+                }
             }
-            else { $Value }
+            $updateSessionValue = $Value + [Path]::PathSeparator + $WindowsCompanionScopePathValues
+        }
+        else {
+            $updateSessionValue = $Value
         }
         [Environment]::SetEnvironmentVariable($Name, $updateSessionValue, 'Process')
     }

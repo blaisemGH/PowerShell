@@ -2,6 +2,7 @@
 #>
 Function Sync-GCloudProjectsAsJob {
     Param(
+        [ValidateRange(1)]
         [int]$WaitOnMinimumFrequency = 0
     )
 
@@ -13,8 +14,7 @@ Function Sync-GCloudProjectsAsJob {
         return
     }
     Write-Warning 'Syncing gcloud projects in a background thread. If this is the first time, it may take a while and will consume bandwith from gcloud calls.
-    Monitor the progress with Receive-Job -ID n [-Keep] to view the logging output. The ID can be obtained from Get-Job.
-    Alternatively, Receive-Job GCloudSyncProjects [-Keep] will always locate this job.
+    Monitor the progress with `Receive-Job -Name GCloudSyncProjects [-Keep]`.
     Note: -Keep will display the output without consuming it. Otherwise, future Receive-Jobs will only show new output since the previous Receive-Job.'
 
     $GCloudParams = [GCloud]::Config
@@ -34,6 +34,10 @@ Function Sync-GCloudProjectsAsJob {
         [GCloud]::Set_GCloudProperties($using:GCloudParams)
         Update-GCloudProjectRecord
         Update-GCloudProjectFS
+        Sync-GCloudStandardGkeContextMappings
+        $projectsToKeep = Get-ChildItem -LiteralPath ([GCloud]::ProjectRoot) -Recurse -File | Select-Object -ExpandProperty Name
+        Remove-KubeContextsIfUnused -PatternsToKeep $projectsToKeep -PSDataFilePath ([Kube]::ContextFile)
+        Remove-KubeContextsIfUnused -PatternsToKeep $projectsToKeep -PSDataFilePath ([GCloud]::PathToProjectGkeMappings)
     }
 
     If ( $PSVersionTable.PSEdition -eq 'Core' ) {

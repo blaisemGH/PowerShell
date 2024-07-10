@@ -101,7 +101,11 @@ Function Find-StringRecursively {
         # Activate to include binary files.
         [switch]$IncludeBinaryFiles,
         # Limits the file path displayed output to 35 characters (wraps longer filepaths).
-        [switch]$ShortenFilePath
+        [switch]$ShortenFilePath,
+
+        [Parameter(ParameterSetName = 'RegExPattern')]
+        [Parameter(ParameterSetName = 'RegExNotMatch')]
+        [switch]$OnlyOutputMatches
     )
     begin {
         $Pattern  = $Pattern -Replace '^([*])$','.$1' # replaces wildcard * to a regex .*, as only regex is allowed.
@@ -120,7 +124,7 @@ Function Find-StringRecursively {
         }
         $binaryFilter = If ( !$IncludeBinaryFiles ) {  
             $AttributesToSkip += 'Compressed'
-            '(?<![.]zip|7z|.ar|dll|class|t?gz|exe|iso|a?vhd|sha1|checksum|vm.{0,2}|png|jpe?g|svg|tiff|gif|bmp|lz4|snappy|zstd)$'
+            '(?<![.]zip|7z|.ar|dll|class|t?gz|exe|iso|a?vhd|sha1|checksum|vm.{0,2}|png|jpe?g|svg|tiff|gif|bmp|lz4|snappy|zstd|nxt)$'
         }
         
         $binaryFilterPattern = [regex]::new($binaryFilter, ('Compiled', 'IgnoreCase'))
@@ -136,7 +140,7 @@ Function Find-StringRecursively {
         If ( $NotMatch ) {
             $SLSparams.Add( 'NotMatch'        , $NotMatch)
         }
-        If ( $AllMatches ) {
+        If ( $AllMatches -or $OnlyOutputMatches ) {
             $SLSparams.Add( 'AllMatches'    , $true)
         }
         If ( $SimpleMatch ) {
@@ -147,7 +151,6 @@ Function Find-StringRecursively {
         }
         If ( $Context ) {
             $SLSparams.Add( 'Context' , $Context)
-            $preContextSkip = [Environment]::NewLine * $Context[0]
         }
         If ( $Encoding ) {
             $SLSparams.Add( 'Encoding'    , $Encoding)
@@ -233,58 +236,60 @@ Function Find-StringRecursively {
                         }
                     }
                 }
-                #& {
-                    If ( $isFilePath ) {
-                        # handle empty context attributes, such as if the parameter isn't selected.
-                        if ( !($displayPreContext = $_.Context.DisplayPreContext | Out-String) ) { $displayPreContext = '' }
-                        if ( !($displayPostContext = $_.Context.DisplayPostContext | Out-String) ) { $displayPostContext = '' }
-                        
-                        # Implement emphasis highlighting here.
-                        $emphasizedLine = & {
-                            if ($NoEmphasis) {
-                                $_.Line
-                            }
-                            # For Select-String outputs with -Context, which are multiline with the form
-                            # .*><filename>:<line number>:<preContext><line><postContext>
-                            # This regex captures all of that and keeps only <line>.
-                            elseif ($_.ToEmphasizedString($_.line) -match 
-                                '(?s).*(?-s)> .*:[0-9]+:(?<line>.+)\n?(?s).*'
-                            ) {
-                                $Matches.line
-                            }
-                            # Filter Select-String's output of <filename>:<linenumber>:<line> to just <line>
-                            else {
-                                $_.ToEmphasizedString($_.line) -replace ('>? ?' + ([regex]::Escape($_.Path + ':' + $_.LineNumber))  + ':')
-                            }
+                If ( $isFilePath ) {
+                    # handle empty context attributes, such as if the parameter isn't selected.
+                    if ( !($displayPreContext = $_.Context.DisplayPreContext | Out-String) ) { $displayPreContext = '' }
+                    if ( !($displayPostContext = $_.Context.DisplayPostContext | Out-String) ) { $displayPostContext = '' }
+                    
+                    # Implement emphasis highlighting here.
+                    $formattedLineOutput = & {
+                        if ( $OnlyOutputMatches ) {
+                            $_.Matches.Value
                         }
-                        # The output for file input                        
-                        $out = @{
-                            FSRPath = $ansiOrange + $filePath + $ansiReset
-                            LineNo  = $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber
-                            Line = '{0}{1}{2}{3}' -f $displayPreContext,
-                                $emphasizedLine,
-                                [Environment]::NewLine,
-                                $displayPostContext -replace "$([Environment]::NewLine)$"
-                            Context = $_.Context
-                            Matches = $_.Matches
-                            LP = $item
-                            Filename = Split-Path $filepath -Leaf
+                        elseif ($NoEmphasis) {
+                            $_.Line
                         }
+                        # For Select-String outputs with -Context, which are multiline with the form
+                        # .*><filename>:<line number>:<preContext><line><postContext>
+                        # This regex captures all of that and keeps only <line>.
+                        elseif ($_.ToEmphasizedString($_.line) -match 
+                            '(?s).*(?-s)> .*:[0-9]+:(?<line>.+)\n?(?s).*'
+                        ) {
+                            $Matches.line
+                        }
+                        # Filter Select-String's output of <filename>:<linenumber>:<line> to just <line>
+                        else {
+                            $_.ToEmphasizedString($_.line) -replace ('>? ?' + ([regex]::Escape($_.Path + ':' + $_.LineNumber))  + ':')
+                        }
+                    }
+                    # The output for file input                        
+                    $out = @{
+                        FSRPath = $ansiOrange + $filePath + $ansiReset
+                        LineNo  = $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber
+                        Line = '{0}{1}{2}{3}' -f $displayPreContext,
+                            $formattedLineOutput,
+                            [Environment]::NewLine,
+                            $displayPostContext -replace "$([Environment]::NewLine)$"
+                        Context = $_.Context
+                        Matches = $_.Matches
+                        LP = $item
+                        Filename = Split-Path $filepath -Leaf
+                    }
 
                         if ( $ShortenFilePath ) { [FindStringShortPathDTO]$out }
                         else {[FindStringDTO]$out}
-                    }
-                    # The output for raw string input
-                    #else {
-                    #    write-host $SLSParams.Context
-                    #    $_
-                    #}
-               # }
+                }
             }}
         }
     }
     end {
         if ( !$isFilePath ) {
+            if ( $OnlyOutputMatches ) {
+                return $noFileSLSInput |
+                    Select-String @SLSParams |
+                    Select-Object -ExpandProperty Matches |
+                    Select-Object -ExpandProperty Value
+            }
             $noFileSLSInput | Select-String @SLSParams
         }
     }

@@ -12,6 +12,7 @@ Function Use-GitCliForBranch {
         [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='create')]
         [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='delete')]
         [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='checkout')]
+        [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='rename')]
         [Parameter(ValueFromPipeline, Position = 0, ParameterSetName='push')]
         [ArgumentCompleter(
             {
@@ -38,7 +39,15 @@ Function Use-GitCliForBranch {
         [switch]$Push,
         [Parameter(Mandatory, ParameterSetName='commit')]
         [Alias('c')]
-        [string]$CommitMessage
+        [string]$CommitMessage,
+        [Parameter(Mandatory, ParameterSetName='rename')]
+        [switch]$Rename,
+        [Parameter(Mandatory, ParameterSetName='rename')]
+        [string]$RenamedBranchName,
+        [Parameter(Mandatory, ParameterSetName='squash')]
+        [switch]$Squash,
+        [Parameter(Mandatory, ParameterSetName='squash')]
+        [int]$HowManyCommits
     )
     DynamicParam {
         if ( !$NewBranch, !$DeleteBranch, !$List, !$Push, !$CommitMessage ) {
@@ -59,6 +68,43 @@ Function Use-GitCliForBranch {
         else {
             $BranchName
         }
+        $squashLogic = {
+            param($BranchName, $LimitIterations)
+            $count = $LimitIterations
+            $logEntries = foreach ( $logEntry in (git log --pretty=format:'%H | %D') ) {
+                if ( $count -lt 0 ) {
+                    break
+                }
+                $hash, $refNames = $logEntry -split '\s*\|\s*', 2
+                if ( $refNames.Trim() -notmatch '^HEAD' -and !$startIndexingAfterHead ) {
+                    continue
+                }
+                elseif ( $refNames.Trim() -match '^HEAD' ) {
+                    $startIndexingAfterHead = $true
+                }
+                $parentBranch = ($refNames -split ',')[-1]
+                [PSCustomObject]@{
+                    hash = $hash
+                    parentBranch = $parentBranch
+                }
+                
+                $count -= 1
+
+                if ( $parentBranch -and $refNames.Trim() -notmatch '^HEAD' -and $LimitIterations -eq 0) {
+                    break
+                }
+            }
+            $lastHash = $logEntries[-1].hash
+            $tempBranchName = $BranchName + [guid]::NewGuid().Guid.Substring(0,8)
+            try {
+                git branch -B $tempBranchName
+                git reset --hard $lastHash
+                git merge --squash $BranchName
+            } finally {
+                git checkout $BranchName
+                git branch -D $tempBranchName
+            }
+        }
     }
     process {
         $cmd = Switch ($PSCmdlet.ParameterSetName) {
@@ -68,6 +114,8 @@ Function Use-GitCliForBranch {
             'list'        { "git branch"                        }
             'commit'    { 'git commit -a -m "{0}"' -f $CommitMessage }
             'push'        { "git push --set-upstream origin $currentBranch" }
+            'rename'    { "git branch -m $BranchName $RenamedBranchName"}
+            'squash'    { & $squashLogic $BranchName $HowManyCommits }
         }
         Write-Host "Executing: $cmd"
         Invoke-Expression $cmd
@@ -76,6 +124,5 @@ Function Use-GitCliForBranch {
 
 #git reset --hard origin/develop
 #git rebase
-#git rename branch?
 #git merge
 #git diff (need to create a hashtable of commits to reference by index with first line of commit message as description on tab completion)

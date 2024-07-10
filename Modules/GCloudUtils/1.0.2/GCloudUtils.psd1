@@ -61,7 +61,9 @@ ScriptsToProcess = 'classes\GCloud.ps1', 'public\ContextFileUtils.ps1',
                'public\Add-GKECredentials.ps1', 
                'public\Update-GCloudProjectRecord.ps1', 
                'public\Update-GCloudProjectFS.ps1', 
-               'public\Sync-GCloudProjectsAsJob.ps1'
+               'public\Sync-GCloudProjectsAsJob.ps1',
+               'public\Sync-GCloudStandardGkeContextMappings.ps1',
+               'public\Remove-GCloudUnusedContexts.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -76,7 +78,9 @@ ScriptsToProcess = 'classes\GCloud.ps1', 'public\ContextFileUtils.ps1',
 FunctionsToExport = 'Remove-GCloudContextKey', 'Update-ContextFileMap', 
                'Export-ContextFileAsPSD1', 'Add-GKECredentials', 
                'Update-GCloudProjectRecord', 'Update-GCloudProjectFS', 
-               'Sync-GCloudProjectsAsJob'
+               'Sync-GCloudProjectsAsJob', 'Sync-GCloudStandardGkeContextMappings',
+               'Get-GCloudStandardGkeMappingsUpToDate', 'Export-GCloudStandardGkeContextMappings',
+               'New-GCloudStandardGkeContextMapping', 'Remove-GCloudUnusedContexts'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'

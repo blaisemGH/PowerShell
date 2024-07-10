@@ -23,8 +23,8 @@ Function Join-ObjectLinq {
         $joinColsB = $joinColsRight
         $dupFieldName = 'right'
     }
-    [hashset[string]]$colA = $inpObja | Get-Member -MemberType NoteProperty | Select -exp Name
-    [hashset[string]]$colb = $inpObjb | Get-Member -MemberType NoteProperty | Select -exp Name
+    [hashset[string]]$colA = $inpObja | Get-Member -MemberType Properties | Select -exp Name
+    [hashset[string]]$colb = $inpObjb | Get-Member -MemberType Properties | Select -exp Name
     [hashset[string]]$cols = $colA.clone()
     $cols.UnionWith($colb)
     

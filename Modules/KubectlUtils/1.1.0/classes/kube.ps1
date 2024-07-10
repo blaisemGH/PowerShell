@@ -6,8 +6,13 @@ Class Kube {
     static [string[]]$ArrayOfApiResources
     static [pscustomobject[]]$FullApiResources
     static [string]$CurrentNamespace
+    static [string]$CurrentCluster
     static [HashSet[String]]$SyncNamespacePrefixesToInts = @()
     static [hashtable]$MapIntsToNamespaces = @{}
+    static [scriptblock]$AddContext = {
+        param($ContextName)
+        kubectl config use-context $contextName
+    }
     static [hashtable]$MapDefaultApiVersions = @{
         pods = 'v1'
         nodes = 'v1'
@@ -25,13 +30,38 @@ Class Kube {
     })
 
     static [string] $ContextFile = "$HOME/.pwsh/KubectlUtils/contexts.psd1"
-    static [hashtable] $MapGCloudContexts = ( & {
+    static [string] $ModularContextFile = ""
+    static [hashtable] $MappedContexts = ( & {
         try {
-            return Import-PowerShellDataFile ([Kube]::contextFile)#& { $o = [ordered]@{}; ($ht = Import-PowerShellDataFile $HOME\Documents\tenants\contexts.psd1) | Select -exp Keys | Sort | % { $o.Add($_,$ht[$_])}; $o }
+            $contexts = Import-PowerShellDataFile ([Kube]::ContextFile)#& { $o = [ordered]@{}; ($ht = Import-PowerShellDataFile $HOME\Documents\tenants\contexts.psd1) | Select -exp Keys | Sort | % { $o.Add($_,$ht[$_])}; $o }
         } catch {
             Write-Verbose "No contextFile map found. This is used by the `Get-KubeContext` function to shortcut access to different contexts. Checked [Kube]::contextFile for a PowerShellDataFile and found path: $([Kube]::contextFile)"
-            return [HashSet[string]]@($null)
+            $contexts = @{}
         }
+        $modularContexts = if ( [Kube]::ModularContextFile -and (Test-Path [Kube]::ModularContextFile) ) {
+            try {
+                Import-PowerShellDataFile ([Kube]::ModularContextFile)
+            } catch {
+                @{}
+            }
+        } else { @{} }
+        return $contexts + $modularContexts
+    })
+    static [hashtable] $MapGCloudContexts = ( & {
+        try {
+            $contexts = Import-PowerShellDataFile ([Kube]::ContextFile)#& { $o = [ordered]@{}; ($ht = Import-PowerShellDataFile $HOME\Documents\tenants\contexts.psd1) | Select -exp Keys | Sort | % { $o.Add($_,$ht[$_])}; $o }
+        } catch {
+            Write-Verbose "No contextFile map found. This is used by the `Get-KubeContext` function to shortcut access to different contexts. Checked [Kube]::contextFile for a PowerShellDataFile and found path: $([Kube]::contextFile)"
+            $contexts = @{}
+        }
+        $modularContexts = if ( [Kube]::ModularContextFile -and (Test-Path [Kube]::ModularContextFile) ) {
+            try {
+                Import-PowerShellDataFile ([Kube]::ModularContextFile)
+            } catch {
+                @{}
+            }
+        } else { @{} }
+        return $contexts + $modularContexts
     })
 
     static [string[]] Get_APIResourceList() {
@@ -46,7 +76,7 @@ Class Kube {
     static [object] Import_APIResourceList() {
         return (
             kubectl api-resources -o wide | Select-Object -skip 1 |
-                Foreach {
+                Foreach-Object {
                     Write-Output -NoEnumerate ($_ -replace 
                     '^ *' -replace 
                     '^(\S+)\s+(\S)(?<=.{50,})' , '$1  $2' -replace
@@ -143,7 +173,7 @@ Class Kube {
         }
 
         $resources = [Kube]::Import_APIResourceList()
-        [Kube]::ArrayOfApiResources = $resources.NAME + ( $resources.SHORTNAMES | Where {$_} | ForEach { $_ -split ',' } ) | Sort-Object -Unique
+        [Kube]::ArrayOfApiResources = $resources.NAME + ( $resources.SHORTNAMES | Where-Object {$_} | ForEach-Object { $_ -split ',' } ) | Sort-Object -Unique
         [Kube]::FullApiResources = $resources
 # Does dynamickube do anything?        
         <#
@@ -179,7 +209,7 @@ Class Kube {
         $prefixesToInclude = [Kube]::SyncNamespacePrefixesToInts -join '|'
 
         $namespaces = if ( $prefixesToInclude ) {
-            [Kube]::Get_Namespaces() | Where { $_ -match "^$prefixesToInclude" }
+            [Kube]::Get_Namespaces() | Where-Object { $_ -match "^$prefixesToInclude" }
         } else {
             [Kube]::Get_Namespaces()
         }
@@ -192,7 +222,7 @@ Class Kube {
             $count += 1
         })
         if ( $prefixesToInclude ) {
-            [Kube]::Get_Namespaces() | Where {$_ -notmatch "^$prefixesToInclude"} | ForEach {
+            [Kube]::Get_Namespaces() | Where-Object {$_ -notmatch "^$prefixesToInclude"} | ForEach-Object {
                 [Kube]::MapIntsToNamespaces.$count = $_
                 $count += 1
             }

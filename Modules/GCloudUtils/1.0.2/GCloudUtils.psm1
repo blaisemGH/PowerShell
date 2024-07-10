@@ -1,4 +1,5 @@
 Set-Alias -Name gkecred -Value Add-GKECredentials -Scope Global -Option AllScope
+Set-Alias -Name agc -Value Add-GKECredentials -Scope Global -Option AllScope
 
 if ( !(Test-Path $HOME/.pwsh/gcloud/projects.csv ) ) { New-Item $HOME/.pwsh/gcloud/projects.csv -ItemType File -Force }
 $psDriveGoogleProjects = 'gcp'
@@ -38,15 +39,15 @@ Register-EngineEvent -SourceIdentifier 'Set-KubeContext' -Action {
 }
 
 if ( (Get-Module PSPrompt) -and !(Get-Module GCloudUtils) ) {
-    $LineToPrintOn = if ( [PSPromptConfig]::PromptConfigsRight.values.label -contains 'KubectlUtils') { 2 } else { 1 }
+    $LineToPrintOn = if ( [PSPromptConfig]::PromptConfigsRight.values.Label -match 'KubectlUtils' ) { 2 } else { 1 }
     $getGCloudContext = { ': ' + [GCloud]::CurrentProject }
     $promptTemplateGetGCloudContext = @{
-        'Alignment' = 'Right'
-        'ItemSeparator' = ' '
-        'LineToPrintOn' = $LineToPrintOn
-        'ForegroundColor' = 'DarkKhaki'
-        'ContentFunction' = $getGCloudContext
-        label = 'GCloudUtils'
+        Alignment = 'Right'
+        ItemSeparator = ' '
+        LineToPrintOn = $LineToPrintOn
+        ForegroundColor = 'DarkKhaki'
+        ContentFunction = $getGCloudContext
+        label = 'GCloudUtilsSetContext'
     }
     [PSPromptConfig]::AddTemplate($promptTemplateGetGCloudContext)
 }
@@ -54,6 +55,9 @@ Start-ThreadJob -ScriptBlock {
     gcloud config set survey/disable_prompts True
     gcloud config set disable_usage_reporting true
 }
+[Kube]::ModularContextFile = [GCloud]::PathToProjectGkeMappings
+[Kube]::AddContext = {param([ValidateNotNullOrEmpty()]$ContextName) Add-GKECredentials -SkipAddMapKey -ProjectID ($ContextName -split '_gke-' | Select-Object -Last 1)}
+
 #Removing private functions that were loaded via ScriptsToProcess.
 #Get-ChildItem (Join-Path $PSScriptRoot private) | Foreach {
 #	(

@@ -35,7 +35,9 @@ class colorRGB {
             $red    = $c[0]
             $green  = $c[1]
             $blue   = $c[2]
-
+            if ( ! ($red -as [int] -and $green -as [int] -and $blue -as [int])) {
+                Write-Host "Failed to parse string to int for input string: $colors"
+            }
             try {
                 return [ColorRGB]::new($red, $green, $blue)
             }

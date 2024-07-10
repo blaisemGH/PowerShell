@@ -26,7 +26,7 @@ Set-Alias -Name kcp     -Value Copy-KubeFile	    	-Scope Global -Option AllScope
 Set-Alias -Name kns     -Value Set-KubeNamespace	    -Scope Global -Option AllScope
 Set-Alias -Name skn     -Value Set-KubeNamespace	    -Scope Global -Option AllScope
 Set-Alias -Name gkr     -Value Get-KubeResource			-Scope Global -Option AllScope
-Set-Alias -Name gkc     -Value Get-KubeContext			-Scope Global -Option AllScope
+Set-Alias -Name gkc     -Value Get-KubeContextInfo		-Scope Global -Option AllScope
 Set-Alias -Name skc     -Value Set-KubeContext			-Scope Global -Option AllScope
 Set-Alias -Name gkm     -Value Get-KubeMetrics			-Scope Global -Option AllScope
 Set-Alias -Name gknp    -Value Get-KubeNodesByPod		-Scope Global -Option AllScope
@@ -49,10 +49,13 @@ if ( (Get-Module PSPrompt) -and ! (Get-Module KubectlUtils) ) {
         } catch {}
     }
     $kubePromptTemplate = @{
-        'Alignment' = 'Right'
-        'ForegroundColor' = 'Crimson'
-        'ContentFunction' = $getItemKubernetes
-        label = 'KubectlUtils'
+        Alignment = 'Right'
+        ForegroundColor = 'Crimson'
+        ContentFunction = $getItemKubernetes
+        label = 'KubectlUtilsSetContext'
     }
     [PSPromptConfig]::AddTemplate($kubePromptTemplate)
 }
+
+# Define PatternsToKeep and use this function to housekeep your kubectl config file + local mappings
+#Remove-KubeContextsIfUnused -PatternsToKeep <>

@@ -57,15 +57,17 @@ RequiredModules = @('PSUtils')
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = 'classes\kube.ps1', 'classes\KubeNodesByPod.ps1', 
+ScriptsToProcess = 'classes\kube.ps1', 'classes/completions/KubeMappedContextCompleter.ps1', 'classes\KubeNodesByPod.ps1', 
                'private\Measure-KubeContainers.ps1', 'public\Copy-KubeFile.ps1', 
                'public\Enter-KubePod.ps1', 'public\Find-MaxPodMetric.ps1', 
-               'public\Get-KubeContext.ps1', 'public\Get-KubeMetrics.ps1', 
+               'public\Get-KubeContextInfo.ps1', 'public\Get-KubeMetrics.ps1', 
                'public\Get-KubeNodesByPod.ps1', 'public\Get-KubeResource.ps1', 
                'public\Measure-DiskIO.ps1', 'public\Set-KubeContext.ps1', 
                'public\Set-KubeNamespace.ps1', 'public\Trace-KubeMetrics.ps1', 
-               'public\Update-KubeCompletions.ps1', 
-               'public\ConvertFrom-StringTable.ps1'
+               'public\Update-KubeCompletions.ps1', 'public\Remove-KubeContextsIfUnused.ps1', 
+               'public\ConvertFrom-StringTable.ps1', 'public/Get-KubeMappedContext',
+               'public/Remove-KubeMappedContext', 'public/Rename-KubeMappedContext',
+               'public/Set-KubeMappedContexts'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -80,11 +82,13 @@ FormatsToProcess = 'ps1xml/KubeMetricsViews.Format.ps1xml',
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Measure-KubeContainers', 'Copy-KubeFile', 'Enter-KubePod', 
-               'Find-MaxPodMetric', 'Get-KubeContext', 'Get-AllKubeMetrics', 
+               'Find-MaxPodMetric', 'Get-KubeContextInfo', 'Get-AllKubeMetrics', 
                'Get-KubeMetrics', 'Get-KubeNodesByPod', 'Get-KubeResource', 
                'Measure-DiskIO', 'Set-KubeContext', 'Set-KubeNamespace', 
                'Trace-KubeMetrics', 'Update-KubeCompletions', 
-               'ConvertFrom-StringTable'
+               'ConvertFrom-StringTable', 'Remove-KubeContextsIfUnused',
+               'Get-KubeMappedContext', 'Remove-KubeMappedContext',
+               'Rename-KubeMappedContext', 'Set-KubeMappedContexts'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'

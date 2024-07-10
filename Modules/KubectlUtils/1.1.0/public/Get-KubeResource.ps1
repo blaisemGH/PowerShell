@@ -56,6 +56,8 @@ Function Get-KubeResource {
 
     $o = $out = Invoke-Expression ( $cmd.ToString() -replace [Environment]::NewLine, ' ' )
 
+    if ( !$out ) { break }
+
     If ($out | Get-Member -Membertype NoteProperty -Name items) {
         $o = $out.items
     }

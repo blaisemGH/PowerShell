@@ -8,17 +8,17 @@ function Update-ContextFileMap {
         [string]$NewMapKey
     )
     
-    $contextMap = [Kube]::mapGCloudContexts
+    $contextMap = [Kube]::MappedContexts
 
     $kubeContext = kubectl config view -o json |
         ConvertFrom-Json |
-        select -ExpandProperty Contexts |
-        where name -match $ProjectID |
-        select -ExpandProperty Name
+        Select-Object -ExpandProperty Contexts |
+        Where-Object name -match $ProjectID |
+        Select-Object -ExpandProperty Name
     
     if ($contextMap.Values -contains $kubeContext ) {
-        $confirm = Test-ReadHost -Query "Context map already contains a matching context. Would you like to replace it? [y/n]" -ValidationStrings 'y','yes','yeah','yea','ja','why are you still reading this?'
-        if ( $confirm -and $confirm -ne 'why are you still reading this') {
+        $confirm = Test-ReadHost -Query "Context map already contains a matching context. Would you like to replace it? [y/n]" -ValidationStrings 'y', 'n'
+        if ( $confirm -eq 'y') {
             $oldKey = $contextMap.GetEnumerator() | Foreach { if ( $_.Value -eq $kubeContext ) { $_.Key }}
             $contextMap.Remove($oldKey)
         }
@@ -76,7 +76,7 @@ function Export-ContextFileAsPSD1 {
         try {
             Copy-Item -Path $pathContextFile -Destination $pathBackupContextFile -ErrorAction Stop
             $newContent | Set-Content $pathContextFile -Force -ErrorAction Stop
-            [Kube]::mapGCloudContexts = Import-PowerShellDatafile ([Kube]::contextFile)
+            [Kube]::MappedContexts = Import-PowerShellDatafile ([Kube]::contextFile)
         }
         catch {
             $pathFailedContextFile = Join-Path $contextParent ($contextLeaf -replace '^', 'failed_')
@@ -102,18 +102,18 @@ function Remove-GCloudContextKey {
         [Alias('key')]
         [ArgumentCompleter({
             param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-            [Kube]::mapGCloudContexts | Where-Object {
+            [Kube]::MappedContexts | Where-Object {
                 $_ -like "$wordToComplete*"
             }
         })]
         [string]$ContextKey
     )
-    $contextMap = [Kube]::mapGCloudContexts
+    $contextMap = [Kube]::MappedContexts
     if ( $contextMap.ContainsKey($ContextKey) ) {
-        [Kube]::mapGCloudContexts.Remove($ContextKey)
+        [Kube]::MappedContexts.Remove($ContextKey)
     }
     else {
-        $err = [ErrorRecord]::new("Input key '$ContextKey' not found in current map! Available keys: $([Kube]::mapGCloudContexts)", $null, 'InvalidArgument', $null)
+        $err = [ErrorRecord]::new("Input key '$ContextKey' not found in current map! Available keys: $([Kube]::MappedContexts)", $null, 'InvalidArgument', $null)
         $PSCmdlet.ThrowTerminatingError($err)
     }
 }
