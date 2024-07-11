@@ -24,8 +24,8 @@ Set-Alias -Name gb		-Value Use-GitCliForBranch		-Scope Global -Option AllScope
 Set-Alias -Name b64		-Value Convert-Base64			-Scope Global -Option AllScope
 Set-Alias -Name sop		-Value Search-ObjectProperties  -Scope Global -Option AllScope
 Set-Alias -Name sov		-Value Search-ObjectValues		-Scope Global -Option AllScope
-Set-Alias -Name sno		-Value Select-NestedObject      -Scope Global -Option AllScope
-Set-Alias -Name selectno -Value Select-NestedObject     -Scope Global -Option AllScope
+Set-Alias -Name slp		-Value Select-Property	    	-Scope Global -Option AllScope
+Set-Alias -Name slop	-Value Select-Property  	   	-Scope Global -Option AllScope
 
 Set-Alias -Name count		-Value Measure-CollectionCount 	-Scope Global -Option AllScope
 Set-Alias -Name joinop		-Value Invoke-JoinOperator		-Scope Global -Option AllScope

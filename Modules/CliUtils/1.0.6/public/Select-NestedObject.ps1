@@ -120,7 +120,7 @@ class PSObjectSelector {
     }
 }
 
-function Select-NestedObject {
+function Select-Property {
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         [object[]]$InputObject,

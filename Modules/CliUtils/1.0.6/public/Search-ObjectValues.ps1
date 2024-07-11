@@ -31,7 +31,7 @@ function Search-ObjectValues {
         Foreach ($object in $InputObject) {
             $objectToSearch, $sov = & {
                 if ( $NodePath ) {
-                    Select-NestedObject -InputObject $object.Value -PropertyNodes $NodePath -NodeSeparator '.'
+                    Select-Property -InputObject $object.Value -PropertyNodes $NodePath -NodeSeparator '.'
                     [SearchObjectValues]::new($NodePath)
                 } else {
                     $object
