@@ -2,30 +2,32 @@ using namespace System.Collections.Generic
 
 Function Join-ObjectLinq {
     Param(
-        [object[]]$inputObjectLeft,
-        [object[]]$inputObjectRight,
-        [string]$joinColsLeft,
-        [string]$joinColsRight,
+        [object[]]$LeftInputObject,
+        [object[]]$RightInputObject,
+        [string]$LeftJoinKeys,
+        [string]$RightJoinKeys,
         [ValidateSet('inner','left','right', 'full')]
-        [string]$joinType = 'inner'
+        [string]$JoinType = 'inner'
     )
-    If ( $joinType -eq 'right' ) {
-        $inpObjB = $inputObjectLeft
-        $inpObjA = $inputObjectRight
-        $joinColsB = $joinColsLeft
-        $joinColsA = $joinColsRight
+
+    If ( $JoinType -eq 'right' ) {
+        $inpObjB = $LeftInputObject
+        $inpObjA = $RightInputObject
+        $joinColsB = $LeftJoinKeys
+        $joinColsA = $RightJoinKeys
         $dupFieldName = 'left'
     }
     Else {
-        $inpObjA = $inputObjectLeft
-        $inpObjB = $inputObjectRight
-        $joinColsA = $joinColsLeft
-        $joinColsB = $joinColsRight
+        $inpObjA = $LeftInputObject
+        $inpObjB = $RightInputObject
+        $joinColsA = $LeftJoinKeys
+        $joinColsB = $RightJoinKeys
         $dupFieldName = 'right'
     }
-    [hashset[string]]$colA = $inpObja | Get-Member -MemberType Properties | Select -exp Name
-    [hashset[string]]$colb = $inpObjb | Get-Member -MemberType Properties | Select -exp Name
-    [hashset[string]]$cols = $colA.clone()
+
+    [hashset[string]]$colA = $inpObja | Get-Member -MemberType Properties | Select-Object -exp Name
+    [hashset[string]]$colb = $inpObjb | Get-Member -MemberType Properties | Select-Object -exp Name
+    [hashset[string]]$cols = $colA.Clone()
     $cols.UnionWith($colb)
     
     [text.stringbuilder]$outCols = ''
@@ -50,12 +52,12 @@ Function Join-ObjectLinq {
 
     Switch -regex ($joinType) {
         'inner' {
-            $outer = [Collections.Generic.IEnumerable[object]]$inpObja
-            $inner = [Collections.Generic.IEnumerable[object]]$inpObjb
-            $funcOuter = [System.Func[Object,string]] {param ($x);$x.$JoinColsA}
-            $funcInner = [System.Func[Object,string]] {param ($y);$y.$JoinColsB}
+            $outer = [IEnumerable[object]]$inpObja
+            $inner = [IEnumerable[object]]$inpObjb
+            $funcOuter = [Func[Object,string]] {param ($x);$x.$JoinColsA}
+            $funcInner = [Func[Object,string]] {param ($y);$y.$JoinColsB}
             $result = (
-                [System.Func[Object,Object,Object]]{
+                [Func[Object,Object,Object]]{
                     param ($x,$y)
                     
                     & $sb $x $y
@@ -64,12 +66,12 @@ Function Join-ObjectLinq {
             $join = 'Join'
         }
         '(left)|(right)' {
-            $outer = [Collections.Generic.IEnumerable[object]]$inpObja
-            $inner = [linq.Enumerable]::DefaultIfEmpty([Collections.Generic.IEnumerable[object]]$inpObjb)
-            $funcOuter = [System.Func[Object,string]] {param ($x);$x.$JoinColsA}
-            $funcInner = [System.Func[Object,string]] {param ($y);$y.$JoinColsB}
+            $outer = [IEnumerable[object]]$inpObja
+            $inner = [Linq.Enumerable]::DefaultIfEmpty([IEnumerable[object]]$inpObjb)
+            $funcOuter = [Func[Object,string]] {param ($x);$x.$JoinColsA}
+            $funcInner = [Func[Object,string]] {param ($y);$y.$JoinColsB}
             $result = (
-                [System.Func[Object,[Collections.Generic.IEnumerable[object]],Object]]{
+                [Func[Object,[IEnumerable[object]],Object]]{
                     param ($x,$y)
                     
                     & $sb $x $y
@@ -78,22 +80,22 @@ Function Join-ObjectLinq {
             $join = 'GroupJoin'
         }
         'full' {
-            $outer = [Collections.Generic.IEnumerable[object]]$inpObja
-            $inner = [linq.Enumerable]::DefaultIfEmpty([Collections.Generic.IEnumerable[object]]$inpObjb)
-            $funcOuter = [System.Func[Object,string]] {param ($x);$x.$JoinColsA}
-            $funcInner = [System.Func[Object,string]] {param ($y);$y.$JoinColsB}
+            $outer = [IEnumerable[object]]$inpObja
+            $inner = [Linq.Enumerable]::DefaultIfEmpty([IEnumerable[object]]$inpObjb)
+            $funcOuter = [Func[Object,string]] {param ($x);$x.$JoinColsA}
+            $funcInner = [Func[Object,string]] {param ($y);$y.$JoinColsB}
             $result = (
-                [System.Func[Object,[Collections.Generic.IEnumerable[object]],Object]]{
+                [Func[Object,[IEnumerable[object]],Object]]{
                     param ($x,$y)
                     
                     & $sb $x $y
                 }
             )
             $join = 'GroupJoin'
-            $fullouterJoin = Join-ObjectLinq $inputObjectLeft $inputObjectRight $joinColsLeft $joinColsRight 'right'
+            $fullouterJoin = Join-ObjectLinq $LeftInputObject $RightInputObject $LeftJoinKeys $RightJoinKeys 'right'
         }
     }
 
-    $linq = [System.Linq.Enumerable]::$join($outer, $inner, $funcOuter, $funcInner, $result )
+    $linq = [Linq.Enumerable]::$join($outer, $inner, $funcOuter, $funcInner, $result )
     return ([Linq.Enumerable]::ToArray($linq) + $fullouterJoin)
 }

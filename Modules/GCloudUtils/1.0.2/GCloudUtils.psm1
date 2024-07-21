@@ -1,12 +1,23 @@
 Set-Alias -Name gkecred -Value Add-GKECredentials -Scope Global -Option AllScope
 Set-Alias -Name agc -Value Add-GKECredentials -Scope Global -Option AllScope
 
-if ( !(Test-Path $HOME/.pwsh/gcloud/projects.csv ) ) { New-Item $HOME/.pwsh/gcloud/projects.csv -ItemType File -Force }
+if ( !(Test-Path ([GCloud]::PathToProjectCSV) ) ) {
+    New-Item ([GCloud]::PathToProjectCSV) -ItemType File -Force
+}
+
+if ( !(Test-Path ([GCloud]::ProjectRoot)) ) {
+    New-Item ([GCloud]::ProjectRoot) -ItemType Directory -Force
+}
+
+if ( !(Test-Path ([GCloud]::PathToProjectGkeMappings)) ) {
+    New-Item ([GCloud]::PathToProjectGkeMappings) -ItemType File -Value '@{}' -Force
+}
+
 $psDriveGoogleProjects = 'gcp'
 
 $GCloudParams = @{
-    'PathToProjectCSV' = "$HOME/.pwsh/gcloud/projects.csv"
-    'ProjectRoot' = "$HOME/.pwsh/gcloud/projects"
+    'PathToProjectCSV' = [GCloud]::PathToProjectCSV
+    'ProjectRoot' = [GCloud]::ProjectRoot
     'OrganizationNumber' = ''
     'FilterProjectNames' = '.*'
     'FilterProjectIds' = '.*'
@@ -28,7 +39,7 @@ $GCloudParams = @{
     * Cached IDs are automatically removed, including orphaned parent folders (only if they're empty), if the ID no longer exists in `gcloud projects list`.
     * Rerun Sync-GCloudProjectsAsJob whenever you wish to update for new project IDs.
 #>
-if ( !(Get-Item "${psDriveGoogleProjects}:" -ErrorAction SilentlyContinue) ) {
+if ( !(Test-Path $psDriveGoogleProjects -ErrorAction SilentlyContinue) ) {
     New-PSDrive -Name $psDriveGoogleProjects -Root ([GCloud]::ProjectRoot) -PSProvider FileSystem -Description 'Folder structure of projects in Google Cloud' -Scope Global
 }
 
@@ -57,6 +68,7 @@ Start-ThreadJob -ScriptBlock {
 }
 [Kube]::ModularContextFile = [GCloud]::PathToProjectGkeMappings
 [Kube]::AddContext = {param([ValidateNotNullOrEmpty()]$ContextName) Add-GKECredentials -SkipAddMapKey -ProjectID ($ContextName -split '_gke-' | Select-Object -Last 1)}
+[Kube]::UpdateKubeMappedContexts()
 
 #Removing private functions that were loaded via ScriptsToProcess.
 #Get-ChildItem (Join-Path $PSScriptRoot private) | Foreach {

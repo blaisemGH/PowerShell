@@ -31,12 +31,12 @@ class colorRGB {
     
     static [object] TryParseString ([string]$colors) {
         if ( $colors -match ';' ) {
-            $c = $colors -split ';'
+            $c = $colors -replace '^.*;([0-9]+(?:;[0-9]{1,3}){2})m?$','$1' -split ';'
             $red    = $c[0]
             $green  = $c[1]
             $blue   = $c[2]
             if ( ! ($red -as [int] -and $green -as [int] -and $blue -as [int])) {
-                Write-Host "Failed to parse string to int for input string: $colors"
+                Write-Host "Failed to parse string to int for input string: $($colors -replace "`e\["). Parsed as: $c"
             }
             try {
                 return [ColorRGB]::new($red, $green, $blue)

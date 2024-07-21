@@ -1,3 +1,4 @@
+using namespace System.Collections
 using namespace System.Collections.Generic
 using namespace System.Collections.Specialized
 using namespace System.Text
@@ -31,22 +32,8 @@ Class Kube {
 
     static [string] $ContextFile = "$HOME/.pwsh/KubectlUtils/contexts.psd1"
     static [string] $ModularContextFile = ""
-    static [hashtable] $MappedContexts = ( & {
-        try {
-            $contexts = Import-PowerShellDataFile ([Kube]::ContextFile)#& { $o = [ordered]@{}; ($ht = Import-PowerShellDataFile $HOME\Documents\tenants\contexts.psd1) | Select -exp Keys | Sort | % { $o.Add($_,$ht[$_])}; $o }
-        } catch {
-            Write-Verbose "No contextFile map found. This is used by the `Get-KubeContext` function to shortcut access to different contexts. Checked [Kube]::contextFile for a PowerShellDataFile and found path: $([Kube]::contextFile)"
-            $contexts = @{}
-        }
-        $modularContexts = if ( [Kube]::ModularContextFile -and (Test-Path [Kube]::ModularContextFile) ) {
-            try {
-                Import-PowerShellDataFile ([Kube]::ModularContextFile)
-            } catch {
-                @{}
-            }
-        } else { @{} }
-        return $contexts + $modularContexts
-    })
+    static [SortedList] $MappedContexts
+    <#
     static [hashtable] $MapGCloudContexts = ( & {
         try {
             $contexts = Import-PowerShellDataFile ([Kube]::ContextFile)#& { $o = [ordered]@{}; ($ht = Import-PowerShellDataFile $HOME\Documents\tenants\contexts.psd1) | Select -exp Keys | Sort | % { $o.Add($_,$ht[$_])}; $o }
@@ -63,7 +50,7 @@ Class Kube {
         } else { @{} }
         return $contexts + $modularContexts
     })
-
+#>
     static [string[]] Get_APIResourceList() {
         If ( [Kube]::ArrayOfApiResources ) {
             return [Kube]::ArrayOfApiResources
@@ -106,7 +93,7 @@ Class Kube {
                         expression = { $_[6] -split ',' }
                     }, @{
                         label = 'DEFAULTAPIVERSION'
-                        expression = { if ( [Kube]::MapDefaultApiVersions.ContainsKey($_.Name) ) { [Kube]::MapDefaultApiVersions.$($_.Name) } }
+                        expression = { if ( $_.Name -and [Kube]::MapDefaultApiVersions.ContainsKey($_.Name) ) { [Kube]::MapDefaultApiVersions.$($_.Name) } }
                     }
                 }
         )
@@ -170,6 +157,7 @@ Class Kube {
         If ( ! [Kube]::CurrentNamespace -or $forceReloadAll) {
             [Kube]::Checkpoint_CurrentNamespace()
             [Kube]::Set_KubeNamespaceEnum()
+            [Kube]::UpdateKubeMappedContexts()
         }
 
         $resources = [Kube]::Import_APIResourceList()
@@ -191,7 +179,7 @@ Class Kube {
         #write-host $dynamicClass.ToString()
         return $dynamicClass
         #>
-        return 'Sleep -Milliseconds 1'
+        return 'Start-Sleep -Milliseconds 1'
     }
 
     static [string[]] Get_Pods (){
@@ -227,5 +215,27 @@ Class Kube {
                 $count += 1
             }
         }
+    }
+    static [void] UpdateKubeMappedContexts() {
+        try {
+            $contexts = Import-PowerShellDataFile ([Kube]::ContextFile)#& { $o = [ordered]@{}; ($ht = Import-PowerShellDataFile $HOME\Documents\tenants\contexts.psd1) | Select -exp Keys | Sort | % { $o.Add($_,$ht[$_])}; $o }
+        } catch {
+            Write-Verbose "No contextFile map found. This is used by the `Get-KubeContext` function to shortcut access to different contexts. Checked [Kube]::contextFile for a PowerShellDataFile and found path: $([Kube]::contextFile)"
+            $contexts = @{}
+        }
+        $modularContexts = if ( [Kube]::ModularContextFile -and (Test-Path ([Kube]::ModularContextFile)) ) {
+            try {
+                Import-PowerShellDataFile ([Kube]::ModularContextFile)
+            } catch {
+                @{}
+            }
+        } else { @{} }
+        
+        # If keys exist in both context files, give priority to the modular contexts.
+        $contexts.Clone().GetEnumerator() | where Key -in $modularContexts.Keys | foreach {
+            $contexts.Remove($_.Key)
+        } 
+        
+        [Kube]::MappedContexts = [SortedList]($contexts + $modularContexts)
     }
 }

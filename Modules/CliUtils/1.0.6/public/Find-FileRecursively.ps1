@@ -100,10 +100,10 @@ function Find-FileRecursively {
         }
         else {
             switch ($FileSystemType) {
-                'directory' {[System.IO.Directory]::EnumerateDirectories( $cleanPath,"*$Filter*",$enumerationOptions) | Resolve-Path -Relative }
-                'file' {[System.IO.Directory]::EnumerateFiles( $cleanPath,"*$Filter*",$enumerationOptions) | Resolve-Path -Relative }
+                'directory' {[System.IO.Directory]::EnumerateDirectories( $cleanPath, $Filter, $enumerationOptions) | Resolve-Path -Relative }
+                'file' {[System.IO.Directory]::EnumerateFiles( $cleanPath, $Filter, $enumerationOptions) | Resolve-Path -Relative }
                 DEFAULT {
-                    [System.IO.Directory]::EnumerateFileSystemEntries( $cleanPath,"*$Filter*",$enumerationOptions) | Resolve-Path -Relative
+                    [System.IO.Directory]::EnumerateFileSystemEntries( $cleanPath, $Filter, $enumerationOptions) | Resolve-Path -Relative
                 }
             }
         }

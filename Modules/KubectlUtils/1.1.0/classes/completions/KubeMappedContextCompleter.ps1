@@ -14,8 +14,8 @@ class KubeMappedContextsCompleter : IArgumentCompleter {
     ) {
         $resultList = [List[CompletionResult]]::new()
         #return (
-            [Kube]::MappedContexts.Keys | foreach {
-                $resultList.Add([CompletionResult]::new($_))
+            [Kube]::MappedContexts.Keys | where { [string]$_ -match "$wordToComplete*" } | foreach {
+                $resultList.Add([CompletionResult]::new([string]$_))
             }
         return $resultList
     }

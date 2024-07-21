@@ -4,15 +4,17 @@ using namespace System.Text
 function Sync-GCloudStandardGkeContextMappings {
     
     $currentMappings = Import-PowerShellDataFile -LiteralPath ([GCloud]::PathToProjectGkeMappings)
-    $alreadyMappedProjectIds = $currentMappings.Values | foreach { $_ -split '_gke-r' | Select-Object -last 1 }
+    $alreadyMappedProjectIds = $currentMappings.Values | foreach { $_ -split '_gke-(?=r)' | Select-Object -last 1 }
     $currentProjectIds = Get-ChildItem -LiteralPath ([GCloud]::ProjectRoot) -Recurse -File |
         Select-Object -ExpandProperty Name
     
     $upToDateCurrentMappings = Get-GCloudStandardGkeMappingsUpToDate -CurrentGkeMappings $currentMappings -CurrentMappedProjectIds $alreadyMappedProjectIds
     $currentProjectIds |
         Where-Object { $_ -notin $alreadyMappedProjectIds } |
-        New-GCloudStandardGkeContextMapping |
+        New-GCloudStandardGkeContextMapping | Sort-Object 
         Export-GCloudStandardGkeContextMappings -ExistingMappingsToKeep $upToDateCurrentMappings
+    
+    Write-Host 'Done syncing all project IDs!' -ForegroundColor Cyan
 }
 
 function Get-GCloudStandardGkeMappingsUpToDate {
@@ -27,7 +29,7 @@ function Get-GCloudStandardGkeMappingsUpToDate {
     $removeOldMappings = $alreadyMappedProjectIds | Where-Object {$_ -notin $currentProjectIds } | foreach {
         $idToRemove = $_
         $currentMappings.GetEnumerator() |
-            Where-Object (Value -split '_gke-r' | Select-Object -last 1) -eq  $idToRemove |
+            Where-Object { ($_.Value -split '_gke-r' | Select-Object -last 1) -eq  $idToRemove } |
             Select-Object -ExpandProperty Key
     }
     $null = $removeOldMappings | foreach { $currentMappings.Remove($_) }
@@ -56,12 +58,12 @@ function Export-GCloudStandardGkeContextMappings {
     }
     process {
         foreach ( $mapping in $NewMapping.GetEnumerator() ) {
-            if ( [Kube]::MapContexts.ContainsKey($mapping.Key) ) { continue }
+            if ( [Kube]::MappedContexts.ContainsKey($mapping.Key) ) { continue }
             $upToDateCurrentMappings.Add($mapping.Key, $mapping.Value)
         }
     }
     end {
-        $upToDateCurrentMappings.GetEnumerator() | Sort-Object Keys -Descending | foreach {
+        $upToDateCurrentMappings.GetEnumerator() | Sort-Object Key -Descending | foreach {
             $key, $value = $_.Key, $_.Value
             $null = $fileStrings.AppendLine("`t'$key' = '$value'")
         }
@@ -72,12 +74,18 @@ function Export-GCloudStandardGkeContextMappings {
 function New-GCloudStandardGkeContextMapping {
     param (
         [Parameter(Mandatory,ValueFromPipeline)]
-        [string]$ProjectId
+        [string[]]$GcpProjectId
     )
-    $clusterGKEInfo = (gcloud container clusters list --project $ProjectId) -replace '\s{2,}', [char]0x2561 | ConvertFrom-Csv -Delimiter ([char]0x2561)
-    $gkeContextString = 'gke_' + $ProjectId + '_' + $clusterGKEInfo.Location + '_gke-' + $ProjectId 
+    process {
+        foreach ($projectId in ($GcpProjectId | Where { $_ -notmatch '-(metric-|aw-fallback|prod-(artifacts|backups|dns|secrets))'}) ) {
+            $clusterGKEInfo = (gcloud container clusters list --project $projectId) -replace '\s{2,}', [char]0x2561 | ConvertFrom-Csv -Delimiter ([char]0x2561)
+            if ($clusterGKEInfo) {
+                $gkeContextString = 'gke_' + $projectId + '_' + $clusterGKEInfo.Location + '_gke-' + $projectId 
 
-    $key = & ([GCloud]::NewGKEContextKey) $ProjectId
+                $key = & ([GCloud]::NewGKEContextKey) $projectId
 
-    return @{ $key = $gkeContextString }
+                @{ $key = $gkeContextString }
+            }
+        }
+    }
 }

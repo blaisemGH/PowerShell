@@ -69,9 +69,10 @@ class PSPrompt {
                 }
             ) -join ''
             
+            # Handles which line connector to use.
             $lineConnector = if ( $line -eq $minItemLine ) {
                 [PSPromptConfig]::MultiLineConnectorOpenFirstLine
-            } elseif ( $line -eq $maxItemLine -and ![PSPromptConfig]::NoItemsOnLastLine ) { 
+            } elseif ( $line -eq $maxItemLine -and ![PSPromptConfig]::NoItemsOnLastLine -and !$rightPrompt ) { 
                 [PSPromptConfig]::MultiLineConnectorOpenLastLine
                 $setLastLine = $null #Set it to null because the OpenLastLine will have already been used here in $lineConnector.
             } else {
@@ -87,6 +88,7 @@ class PSPrompt {
                 elseif ( $lengthMiddleWhiteSpace -gt 0 ) {
                     $leftPrompt + ( ' ' * $lengthMiddleWhiteSpace ) + $rightPrompt
                 }
+                # Handle the case where leftprompt + rightprompt lengths exceed [Console]::WindowWidth. This forces a new line.
                 else {
                     $leftWhiteSpaceLength = [Console]::WindowWidth - ($rightPrompt -replace "`e[^m]+m").Length - [PSPromptConfig]::MultiLineConnectorOpenMiddleLine.Length
                     (
@@ -140,7 +142,7 @@ class PSPromptConfig {
     static [string]$MultiLineConnectorOpenMiddleLine
     static [string]$MultiLineConnectorOpenLastLine
     static [bool]$NoItemsOnLastLine
-    static [string]$DefaultPromptBeckon
+    static [string]$DefaultPromptBeckon = '>'
     static [int]$EmptyLinesToPrecedePromptline = 0
     static [int]$SpacesBetweenItemSeparators = 0
     static [string]$TerminalBackgroundColor = ($host.ui.RawUI.BackgroundColor)
@@ -334,7 +336,7 @@ class PSPromptTemplate {
             try {
                 $this.config.($_.Key) = $_.Value
             } catch {
-                Write-Warning "Nonexistent property! Prompt config property $($_.Key) with value $($_.Value) could not be found. Was there a typo in the config name? Allowed properties: $(([PSPromptItem]::new() | gm -MemberType Properties ) -join [Environment]::NewLine)"
+                Write-Warning "Nonexistent property! Prompt config property $($_.Key) with value $($_.Value) could not be found. Was there a typo in the config name? Allowed properties: $(([PSPromptItem]::new() | Get-Member -MemberType Properties ) -join [Environment]::NewLine)"
                 Write-Warning $_
                 Write-Warning $_.exception.stackstrace
             }            
@@ -379,7 +381,7 @@ class PSPromptTemplate {
                 } | Select-Object -First 1 
                 $keyOfLastItemInGroup = $promptConfig.Keys | Where {
                     $promptConfig[$_].GroupID -eq $groupID -and $promptConfig[$_].LineToPrintOn -eq $lineNumber
-                } | Select -Last 1
+                } | Select-Object -Last 1
             
                 $this.RemoveExistingGroupMarkers($promptConfig, $keyOfFirstItemInGroup, $keyOfLastItemInGroup, $groupID)
                 $this.SetOpenGroupMarker($promptConfig, $keyOfFirstItemInGroup, $groupID)
@@ -647,6 +649,10 @@ class PSPromptTemplate {
     }
 
     [string] GetBackgroundColorAnsi ([string]$ansiColorString) {
+        if ( $ansiColorString -notmatch '\[[0-9];48;') {
+            return [ColorRGB]::TryParseString([PSPromptConfig]::TerminalBackgroundColor).ConvertColorRGBToAnsi($false)
+        }
+
         $rgb = ($ansiColorString -replace '.*\[1;48;2((;[0-9]+){3})m.*', '$1').Trim(';') -split ';' 
         
         $red = $rgb[0]

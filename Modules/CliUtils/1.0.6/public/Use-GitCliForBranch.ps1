@@ -45,9 +45,10 @@ Function Use-GitCliForBranch {
         [Parameter(Mandatory, ParameterSetName='rename')]
         [string]$RenamedBranchName,
         [Parameter(Mandatory, ParameterSetName='squash')]
-        [switch]$Squash,
+        [ValidatePattern('^([a-z0-9]{7}|[a-z0-9]{40})$')]
+        [string]$SquashToCommitId,
         [Parameter(Mandatory, ParameterSetName='squash')]
-        [int]$HowManyCommits
+        [string]$SquashCommitMessage
     )
     DynamicParam {
         if ( !$NewBranch, !$DeleteBranch, !$List, !$Push, !$CommitMessage ) {
@@ -68,9 +69,17 @@ Function Use-GitCliForBranch {
         else {
             $BranchName
         }
+        <#
         $squashLogic = {
-            param($BranchName, $LimitIterations)
-            $count = $LimitIterations
+            param($BranchName, $SquashToCommitId ) #$LimitIterations)
+            # git config --list | sls user.name | % {$_ -split '=' | select -last 1}
+            # Can go down the commits using the below loop (update pretty format with author name) until a different author and use that.
+            <#if ( $LimitIterations -eq '0' ) {
+                $confirm = Read-Host 'Will squash everything since the previous '
+            } else {
+                [int]$count = $LimitIterations
+            }
+            git checkout $BranchName
             $logEntries = foreach ( $logEntry in (git log --pretty=format:'%H | %D') ) {
                 if ( $count -lt 0 ) {
                     break
@@ -95,16 +104,17 @@ Function Use-GitCliForBranch {
                 }
             }
             $lastHash = $logEntries[-1].hash
+
             $tempBranchName = $BranchName + [guid]::NewGuid().Guid.Substring(0,8)
             try {
-                git branch -B $tempBranchName
-                git reset --hard $lastHash
-                git merge --squash $BranchName
+                git branch $tempBranchName
+                git reset --hard $SquashToCommitId
+                git merge -n --squash $tempBranchName
             } finally {
                 git checkout $BranchName
                 git branch -D $tempBranchName
             }
-        }
+        }#>
     }
     process {
         $cmd = Switch ($PSCmdlet.ParameterSetName) {
@@ -115,7 +125,7 @@ Function Use-GitCliForBranch {
             'commit'    { 'git commit -a -m "{0}"' -f $CommitMessage }
             'push'        { "git push --set-upstream origin $currentBranch" }
             'rename'    { "git branch -m $BranchName $RenamedBranchName"}
-            'squash'    { & $squashLogic $BranchName $HowManyCommits }
+            'squash'    { git reset --soft $SquashToCommitId; 'git commit -a -m "{0}"' -f $SquashCommitMessage }
         }
         Write-Host "Executing: $cmd"
         Invoke-Expression $cmd

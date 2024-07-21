@@ -41,7 +41,8 @@ Function Get-KubeContextInfo {
         }
         
         $fullContextName = $targetContext | Select-Object -ExpandProperty name
-        $mapName = $contextMap.GetEnumerator() | where { $_.Value -eq $fullContextName } | Select-Object -ExpandProperty Key
+        $mapName = $contextMap.GetEnumerator() | where { $_.Value -eq $fullContextName } | Sort-Object { $_.Key.Length } | Select-Object -ExpandProperty Key -First 1
+        
         $contextName = If ( $mapName ) {
             $mapName
         }

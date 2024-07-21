@@ -1,7 +1,7 @@
 function Get-KubeMappedContext {
     [CmdletBinding(DefaultParameterSetName='allContexts')]
     param (
-        [Parameter(Mandatory,ParameterSetName='singleContext')]
+        [Parameter(Mandatory, ParameterSetName='singleContext', Position=0)]
         [KubeMappedContextsCompletions()]
         [alias('Context','c')]
         [string]$KubeContext,

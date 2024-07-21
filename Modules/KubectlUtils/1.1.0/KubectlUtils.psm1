@@ -57,5 +57,9 @@ if ( (Get-Module PSPrompt) -and ! (Get-Module KubectlUtils) ) {
     [PSPromptConfig]::AddTemplate($kubePromptTemplate)
 }
 
+if ( !(Test-Path ([Kube]::ContextFile)) ) {
+    New-Item ([Kube]::ContextFile) -Value '@{}' -Force
+}
+
 # Define PatternsToKeep and use this function to housekeep your kubectl config file + local mappings
 #Remove-KubeContextsIfUnused -PatternsToKeep <>

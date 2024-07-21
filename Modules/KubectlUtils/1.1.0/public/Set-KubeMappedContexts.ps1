@@ -8,9 +8,9 @@ function Set-KubeMappedContexts {
         [hashtable[]]$KubeContexts,
 
         [Parameter(Mandatory,ValueFromPipelineByPropertyName, ParameterSetName='KeyValueSeparate')]
-        [string[]]$Keys,
+        [string[]]$Key,
         [Parameter(Mandatory,ValueFromPipelineByPropertyName, ParameterSetName='KeyValueSeparate')]
-        [string[]]$Values
+        [string[]]$Value
 
     )
     begin {
@@ -19,20 +19,21 @@ function Set-KubeMappedContexts {
     process {
         $setContexts = & {
             if ( $PSCmdlet.ParameterSetName -eq 'KeyValueSeparate' ) {
-                if ( $Keys.Count -ne $Values.Count ) {
-                    $err = "Counted $($Keys.Count) keys and $($Values.Count) values. These must be equal!"
+                if ( $Key.Count -ne $Value.Count ) {
+                    $err = "Counted $($Key.Count) keys and $($Value.Count) values. These must be equal!"
                     $PSCmdlet.ThrowTerminatingError([ErrorRecord]::new($err, 'UnequalCount', 'InvalidArgument',$null))
                 }
-                $k = [list[string]]$Keys
-                $v = [list[string]]$Values
+                $k = [list[string]]$Key
+                $v = [list[string]]$Value
                 [Linq.Enumerable]::Zip($k,$v) |
                     Select-Object @{'label' = 'Key'; e = {$_.item1}}, @{l = 'Value'; e = {$_.item2}}
             }
             else {
-                $KubeContexts
+                $KubeContexts.GetEnumerator()
             }
         }
-        $setContexts.GetEnumerator() | ForEach-Object {
+        # Note $setContexts can have 2 different types based on the above control flow: a PSCustomObject or HashTableEnumerator.
+        $setContexts | ForEach-Object {
             $key, $value = $_.Key, $_.Value
             $contextEntry = "`t'$key' = '$value'"
             $null = $stringBuilder.AppendLine($contextEntry)
