@@ -1,5 +1,4 @@
-<#
-#>
+using namespace System.Collections.Generic
 Function Sync-GCloudProjectsAsJob {
     Param(
         [ValidateRange(1)]
@@ -30,14 +29,22 @@ Function Sync-GCloudProjectsAsJob {
         ForEach ( $moduleScript in $manifest.ScriptsToProcess ) {
             . (Join-Path $moduleHome $moduleScript)
         }
-        
+
         [GCloud]::Set_GCloudProperties($using:GCloudParams)
         Update-GCloudProjectRecord
         Update-GCloudProjectFS
         Sync-GCloudStandardGkeContextMappings
-        $projectsToKeep = Get-ChildItem -LiteralPath ([GCloud]::ProjectRoot) -Recurse -File | Select-Object -ExpandProperty Name
-        Remove-KubeContextsIfUnused -PatternsToKeep $projectsToKeep -PSDataFilePath ([Kube]::ContextFile)
-        Remove-KubeContextsIfUnused -PatternsToKeep $projectsToKeep -PSDataFilePath ([GCloud]::PathToProjectGkeMappings)
+
+        $currentProjects = Get-ChildItem -LiteralPath ([GCloud]::ProjectRoot) -Recurse -File | Select-Object -ExpandProperty Name
+
+        $kubeContexts = kubectl config get-contexts -o name
+        $customMappedContexts = Import-PowerShellDataFile ([Kube]::ContextFile) | Select-Object -ExpandProperty Values
+        $standardMappedContexts = Import-PowerShellDataFile ([GCloud]::PathToProjectGkeMappings) | Select-Object -ExpandProperty Values
+
+        $contextsToKeep = $kubeContexts + $customMappedContexts + $standardMappedContexts | Sort-Object -Unique | Where { ($_ | Rename-GCloudGkeContextToProjectId) -notin $currentProjects }
+
+        Remove-KubeContextsIfUnused -PatternsToKeep $contextsToKeep -PSDataFilePath ([Kube]::ContextFile)
+        Remove-KubeContextsIfUnused -PatternsToKeep $contextsToKeep -PSDataFilePath ([GCloud]::PathToProjectGkeMappings)
     }
 
     If ( $PSVersionTable.PSEdition -eq 'Core' ) {
