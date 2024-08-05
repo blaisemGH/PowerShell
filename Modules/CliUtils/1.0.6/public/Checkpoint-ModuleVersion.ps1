@@ -80,22 +80,22 @@ Function Checkpoint-ModuleVersion {
 
         #Number to increment major version by
         [Parameter(ParameterSetName='Increment')]
-[ValidateRange(0)]
+        [ValidateRange(0)]
         [int]$MajorIncrement,
 
         #Number to increment minor version by
         [Parameter(ParameterSetName='Increment')]
-[ValidateRange(0)]
+        [ValidateRange(0)]
         [int]$MinorIncrement,
 
         #Number to increment build version by
         [Parameter(ParameterSetName='Increment')]
-[ValidateRange(0)]
+        [ValidateRange(0)]
         [int]$BuildIncrement,
 
         #Number to increment revision version by
         [Parameter(ParameterSetName='Increment')]
-[ValidateRange(0)]
+        [ValidateRange(0)]
         [int]$RevisionIncrement,
 
         #Explicitly set a new version.
@@ -133,12 +133,12 @@ Function Checkpoint-ModuleVersion {
     }
 
     # Reassemble $moduleVersion to ensure all 4 version properties are present and >= 0. A missing version property defaults to -1.
-# This is required for type-casting to the [version] type, which otherwise throws on -1 values.
-# We want a [version] type in order to perform for version-semantic comparisons for validation and checks later.
-$curMajorVersion = [Math]::Max(0,$v.Major)
-$curMinorVersion = [Math]::Max(0,$v.Minor)
-$curBuildVersion = [Math]::Max(0,$v.Build)
-$curRevisionVersion = [Math]::Max(0,$v.Revision)   
+    # This is required for type-casting to the [version] type, which otherwise throws on -1 values.
+    # We want a [version] type in order to perform for version-semantic comparisons for validation and checks later.
+    $curMajorVersion = [Math]::Max(0,$v.Major)
+    $curMinorVersion = [Math]::Max(0,$v.Minor)
+    $curBuildVersion = [Math]::Max(0,$v.Build)
+    $curRevisionVersion = [Math]::Max(0,$v.Revision)   
     [version]$currentVersion = $curMajorVersion, $curMinorVersion, $curBuildVersion, $curRevisionVersion -join '.'
 
     [version]$newVersion = & {
@@ -146,10 +146,10 @@ $curRevisionVersion = [Math]::Max(0,$v.Revision)
             $VersionExplicit
         }
         Else {
-($curMajorVersion + $incMa),
-($curMinorVersion + $incMi),
-($curBuildVersion + $incBu),
-($curRevisionVersion + $incRe) -join '.'
+            ($curMajorVersion + $incMa),
+            ($curMinorVersion + $incMi),
+            ($curBuildVersion + $incBu),
+            ($curRevisionVersion + $incRe) -join '.'
         }
     }
 
@@ -163,25 +163,25 @@ $curRevisionVersion = [Math]::Max(0,$v.Revision)
     $cleanBuild = if (!$incBu -and ($incMa -or $incMi) ) { 0 } else { $newVersion.Build }
     $cleanRevision = if (!$incRe -and ($incMa -or $incMi -or $incBu) ) { 0 } else { $newVersion.Revision }
 
-# The building of $cleanVersion is used for version-semantic comparisons and checks, but it is not the final version that is set in the module.
+    # The building of $cleanVersion is used for version-semantic comparisons and checks, but it is not the final version that is set in the module.
     [version]$cleanVersion = $cleanMajor, $cleanMinor, $cleanBuild, $cleanRevision -join '.'
 
     If ( $cleanVersion -lt $currentVersion ) {
         Throw "Attempted to update module to an older version! Current Version: $currentVersion | Attempted new version: $cleanVersion"
     }
 
-<#
-$updateToVersion is the final version that will be implemented. It skips unused version tiers.
-For example, an existing version of 1.0.0 will not append a revision tier (1.0.0.0).
-This is based on the assumption that the user intentionally set the version to 1.0.0, because a revision tier was unwanted.
-Nevertheless, a major version is automatically implemented—at least 1 digit must be set for a version to make sense.
-#>
-$skipUnusedVersions = 'Major', 'Minor', 'Build', 'Revision' | Foreach {
-if ( $_ -eq 'Major' -or $v.$_ -ge 0 ) {
-Get-Variable -Name ('clean' + $_) -ValueOnly
-}
-}
-[string]$updateToVersion = $skipUnusedVersions -join '.'
+    <#
+        $updateToVersion is the final version that will be implemented. It skips unused version tiers.
+        For example, an existing version of 1.0.0 will not append a revision tier (1.0.0.0).
+        This is based on the assumption that the user intentionally set the version to 1.0.0, because a revision tier was unwanted.
+        Nevertheless, a major version is automatically implemented—at least 1 digit must be set for a version to make sense.
+    #>
+    $skipUnusedVersions = 'Major', 'Minor', 'Build', 'Revision' | Foreach {
+        if ( $_ -eq 'Major' -or $v.$_ -ge 0 ) {
+            Get-Variable -Name ('clean' + $_) -ValueOnly
+        }
+    }
+    [string]$updateToVersion = $skipUnusedVersions -join '.'
 
     Write-Host ('{0}Updating module "{1}" from version {2} to new version {3}' -f [Environment]::NewLine, $module.Name, $moduleVersion, $updateToVersion) -Fore Green
 
@@ -199,7 +199,7 @@ Get-Variable -Name ('clean' + $_) -ValueOnly
         $tempDir        = Join-Path $moduleHome tempUpdateDir
 
         # Create a temporary folder to copy module files into. Making changes in a temporary directory allows for an easy rollback in case of error later.
-# It's also required for Update-ModuleManifest to update the moduleVersion attribute (throws if changing moduleVersion within an existing version dir).
+        # It's also required for Update-ModuleManifest to update the moduleVersion attribute (throws if changing moduleVersion within an existing version dir).
         If ( $PSCmdlet.ShouldProcess( $tempDir, 'Create Directory') ) {
             $null = New-Item $tempDir -ItemType Directory -Confirm:$false
             $progressDir = $true
@@ -231,7 +231,7 @@ Get-Variable -Name ('clean' + $_) -ValueOnly
             $progressCopy = $true
 
             # If a major or minor version has been incremented, offer to delete all folders in your module directory with a lower major/minor version.
-# In effect, this cleans up old major/minor versions, including all of their builds and revisions.
+            # In effect, this cleans up old major/minor versions, including all of their builds and revisions.
             If ( $cleanVersion.Major -gt $currentVersion.Major -or $cleanVersion.Minor -gt $currentVersion.Minor ) {
                 If ( $PSCmdlet.ShouldProcess( "All builds and revisions of $currentVersion in $moduleHome", 'Delete Directory' ) ){
                     Get-ChildItem $moduleHome -Exclude $updateToVersion | Remove-Item -Recurse -Confirm:$true

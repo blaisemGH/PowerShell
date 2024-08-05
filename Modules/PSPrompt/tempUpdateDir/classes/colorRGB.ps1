@@ -70,13 +70,13 @@ class colorRGB {
         return "`e[1;$ground;2;$red;$green;${blue}m"
     }
 
-    static [string] ConvertColorIntToHexCode ([int]$int) {
+    [string] ConvertColorIntToHexCode ([int]$int) {
         $leftHex = [Math]::Floor($int / 16)
         $rightHex = $int % 16
         
         return '#{0}{1}' -f [ColorRGB]::mapIntToHex.$leftHex, [ColorRGB]::mapIntToHex.$rightHex
     }
-    static [string] ConvertColorIntToHexCode ([int]$red, [int]$green, [int]$blue) {
+    [string] ConvertColorIntToHexCode ([int]$red, [int]$green, [int]$blue) {
         $hexString = '#'
         $red, $green, $blue | Foreach {
             [int]$leftHex = [Math]::Floor($_ / 16)
