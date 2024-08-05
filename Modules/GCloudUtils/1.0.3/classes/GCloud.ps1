@@ -18,7 +18,7 @@ Class GCloud {
         return (Get-ChildItem ([GCloud]::ProjectRoot) -Recurse -File -Filter $ProjectLocalFilepath).FullName -replace '/','-'
     }
 
-    static [string]$CurrentProject = ( $null = gcloud config list | Select-String 'project = ' | ForEach { $_.Line -split ' = ' | Select-Object -Last 1 } )
+    static [string]$CurrentProject = ( gcloud config list 2> $null | Select-String 'project = ' | ForEach { $_.Line -split ' = ' | Select-Object -Last 1 } )
 
     static [void] Set_GCloudProperties ([hashtable]$propertiesToSet) {
         [GCloud]::Config = $propertiesToSet
