@@ -9,7 +9,9 @@ Function Set-GCloudContext {
                 }
             }
         )]
-        [string]$Context
+        [string]$Context,
+
+        [switch]$ForceRequestCustomContextMapping
     )
 
     $contextMap = [Kube]::MappedContexts
@@ -22,7 +24,7 @@ Function Set-GCloudContext {
     $projectId = ($gkeContext -split '_gke-')[1]
 
     $existingConfigContexts = kubectl config get-contexts -o name
-    if ( $gkeContext -notin $existingConfigContexts ) {
+    if ( $gkeContext -notin $existingConfigContexts -or $ForceRequestCustomContextMapping ) {
         Add-GKECredentials -ProjectId $projectId
 
         $null = New-Event -SourceIdentifier 'Set-KubeContext' -EventArguments $gkeContext

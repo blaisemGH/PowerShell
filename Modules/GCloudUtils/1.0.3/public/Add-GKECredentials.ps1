@@ -28,13 +28,15 @@ function Add-GKECredentials {
         [string]$ProjectID,
 
         [Parameter(Mandatory, ParameterSetName = 'ViaLocalFilesystem', ValueFromRemainingArguments )]
+        [Alias('fs')]
         [GCloudProjectCacheInFSCompletions()]
         [string]$IDFromFS,
 
         [Alias('key')]
         [string]$NewMapKey,
 
-        [switch]$SkipAddMapKey
+        [switch]$SkipAddMapKey,
+        [switch]$ForceAddMapKey
     )
 
     $selectedProjectID = & {
@@ -46,12 +48,17 @@ function Add-GKECredentials {
         }
     }
 
+    $alreadyMappedContexts = if ( Test-Path ([Kube]::ContextFile) ) {
+        (Import-PowerShellDataFile ([Kube]::ContextFile)).Values
+    }
+    else { [Kube]::MappedContexts.Values }
+
     $clusterGKEInfo = $selectedProjectID | Get-GCloudGkeClusterInfoFromProjectId
 
     gcloud container clusters get-credentials $clusterGKEInfo.Name --location $clusterGKEInfo.Location --project $selectedProjectID
 
     if ( $? ) {
-        if ( !$SkipAddMapKey -and ! ([Kube]::MappedContexts.Values -eq $clusterGKEInfo.Context) ) {
+        if ( !$SkipAddMapKey -and ($alreadyMappedContexts -eq $clusterGKEInfo.Context -or !$ForceAddMapKey) ) {
             Update-ContextFileMap -ProjectID $selectedProjectID -NewMapKey $NewMapKey -ErrorAction Stop | Export-ContextFileAsPSD1
         }
 
