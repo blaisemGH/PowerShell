@@ -27,6 +27,8 @@ $GCloudParams = @{
 
 <# INSTRUCTIONS
     Define your own parameters and run Set_GCloudProperties as performed above, e.g., in your profile or another module, then run the function:
+    Sync-GCloudProjectsAsJob [-WaitOnMinimumFrequency]
+    If calling within this psm1 file, then call it with the additional argument
     Sync-GCloudProjectsAsJob [-WaitOnMinimumFrequency] -ModuleHome $PSScriptRoot
     (see help Sync-GCloudProjectsAsJob)
 

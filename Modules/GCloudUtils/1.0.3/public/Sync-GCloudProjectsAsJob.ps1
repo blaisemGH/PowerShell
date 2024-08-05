@@ -24,15 +24,25 @@ Function Sync-GCloudProjectsAsJob {
         
         $moduleHome = $using:ModuleHome
         $manifest = Import-PowerShellDataFile $moduleHome/GCloudUtils.psd1
+        Write-Host 'Imported manifest file'
         Foreach ( $requiredModule in $manifest.RequiredModules ) {
+            Write-host "Importing required module $requiredModule"
+            $oldVerbosePreference = $VerbosePreference
+            $VerbosePreference = 'Continue'
             Import-Module $requiredModule -Force -DisableNameChecking -Verbose
+            $VerbosePreference = $oldVerbosePreference
         }
+        
         Foreach ( $nestedModule in $manifest.NestedModules ) {
+            Write-Host "Importing nested module $nestedModule"
             Import-Module (Join-Path $moduleHome $nestedModule) -Force -DisableNameChecking -Verbose
         }
+        
         ForEach ( $moduleScript in $manifest.ScriptsToProcess ) {
+            Write-Host "Importing script $moduleScript"
             . (Join-Path $moduleHome $moduleScript)
         }
+        
 
         Write-Host 'Imported GCloud module.' -Fore Green
 

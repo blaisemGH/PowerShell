@@ -26,7 +26,7 @@ function Remove-KubeMappedContext {
     }
 
     if ( $removeKubeConfigFileContexts ) {
-        $removeKubeConfigFileContexts -eq $matchPatternsToRemove | foreach { kubectl config delete-context $_ }
+        [string[]]$removeKubeConfigFileContexts -match $matchPatternsToRemove | foreach { kubectl config delete-context $_ }
     }
     #endregion
 

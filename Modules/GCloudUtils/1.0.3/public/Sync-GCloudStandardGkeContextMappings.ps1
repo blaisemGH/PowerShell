@@ -62,7 +62,7 @@ function Export-GCloudStandardGkeContextMappings {
     }
     process {
         foreach ( $mapping in $NewMapping.GetEnumerator() ) {
-            if ( [Kube]::MappedContexts.ContainsKey($mapping.Key) ) { continue }
+            if ( [Kube]::MappedContexts.Contains($mapping.Key) ) { continue }
             $upToDateCurrentMappings.Add($mapping.Key, $mapping.Value)
         }
     }
