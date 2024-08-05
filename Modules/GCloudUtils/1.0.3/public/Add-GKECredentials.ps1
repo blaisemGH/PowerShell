@@ -46,7 +46,7 @@ function Add-GKECredentials {
         }
     }
 
-    $clusterGKEInfo = $selectedProjectID | Get-GkeClusterInfoFromProjectId
+    $clusterGKEInfo = $selectedProjectID | Get-GCloudGkeClusterInfoFromProjectId
 
     gcloud container clusters get-credentials $clusterGKEInfo.Name --location $clusterGKEInfo.Location --project $selectedProjectID
 

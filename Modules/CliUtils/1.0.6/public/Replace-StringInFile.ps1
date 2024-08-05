@@ -86,7 +86,7 @@ Function Replace-StringInFile {
                     })
 
                     If ( $flagChangeMade ) {
-                        Set-Content $file -Value $contents
+                        Set-Content $file -Value $contents -Confirm:$false
                     }
                 }
                 Else {

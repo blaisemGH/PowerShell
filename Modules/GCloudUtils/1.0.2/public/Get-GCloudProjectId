@@ -1,0 +1,4 @@
+function Get-GCloudProjectId {
+    param()
+    return [GCloud]::CurrentProject
+}

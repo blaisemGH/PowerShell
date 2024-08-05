@@ -4,17 +4,19 @@ using namespace System.Text
 using namespace System.Management.Automation
 function Set-KubeMappedContexts {
     param (
+        [Parameter(Mandatory)]
+        [string]$FilePathOfContexts, #= ([Kube]::ContextFile),
+
         [Parameter(Mandatory,ValueFromPipeline, ParameterSetName='MapEntry')]
         [alias('contexts','c')]
         [hashtable[]]$KubeContexts,
-        [string]$FilePathOfContexts = ([Kube]::ContextFile),
 
         [Parameter(Mandatory,ValueFromPipelineByPropertyName, ParameterSetName='KeyValueSeparate')]
         [string[]]$Key,
         [Parameter(Mandatory,ValueFromPipelineByPropertyName, ParameterSetName='KeyValueSeparate')]
         [string[]]$Value
-
     )
+    
     begin {
         if ( !$FilePathOfContexts -or !(Test-Path $FilePathOfContexts) ) {
             $err = "Fatal! Could not find the context file path: $FilePathOfContexts"

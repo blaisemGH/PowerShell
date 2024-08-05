@@ -67,8 +67,10 @@ Start-ThreadJob -ScriptBlock {
     gcloud config set disable_usage_reporting true
 }
 [Kube]::ModularContextFile = [GCloud]::PathToProjectGkeMappings
-[Kube]::AddContext = {param([ValidateNotNullOrEmpty()]$ContextName) Add-GKECredentials -SkipAddMapKey -ProjectID ($ContextName -split '_gke-' | Select-Object -Last 1)}
+[Kube]::AddContext = {param([ValidateNotNullOrEmpty()]$ContextName) Add-GKECredentials -SkipAddMapKey -ProjectID ($ContextName | Get-GCloudProjectIdFromGkeContext)}
 [Kube]::UpdateKubeMappedContexts()
+
+Set-GCloudCompletion -ModuleHome $PSScriptRoot
 
 #Removing private functions that were loaded via ScriptsToProcess.
 #Get-ChildItem (Join-Path $PSScriptRoot private) | Foreach {

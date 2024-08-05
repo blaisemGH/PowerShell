@@ -19,7 +19,7 @@ function Add-PSPromptTemplateItem {
         [ValidateScript({
             $_ -in [Drawing.KnownColor].GetEnumNames() -or
             $_ -match '^#[A-F0-9]{6}$' -or
-            $_ -match '^(([0-9]|1[0-9]{1,2}|2[0-5]{2});){2}([0-9]|1[0-9]{1,2}|2[0-5]{2})$'
+            $_ -match '^((1?[0-9]{1,2}|2[0-5]{2});){2}(1?[0-9]{1,2}|2[0-5]{2})$'
         })]
         [object]$ForegroundColor,
 
@@ -31,7 +31,7 @@ function Add-PSPromptTemplateItem {
         [ValidateScript({
             $_ -in [Drawing.KnownColor].GetEnumNames() -or
             $_ -match '^#[A-F0-9]{6}$' -or
-            $_ -match '^(([0-9]|1[0-9]{1,2}|2[0-5]{2});){2}([0-9]|1[0-9]{1,2}|2[0-5]{2})$'
+            $_ -match '^((1?[0-9]{1,2}|2[0-5]{2});){2}(1?[0-9]{1,2}|2[0-5]{2})$'
         })]
         [object]$BackgroundColor,
 

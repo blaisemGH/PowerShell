@@ -32,7 +32,7 @@ Class Kube {
 
     static [string] $ContextFile = "$HOME/.pwsh/KubectlUtils/contexts.psd1"
     static [string] $ModularContextFile = ""
-    static [SortedList] $MappedContexts
+    static [OrderedDictionary] $MappedContexts
     <#
     static [hashtable] $MapGCloudContexts = ( & {
         try {
@@ -236,6 +236,14 @@ Class Kube {
             $contexts.Remove($_.Key)
         } 
         
-        [Kube]::MappedContexts = [SortedList]($contexts + $modularContexts)
+        $sortedContexts = [SortedList]($contexts + $modularContexts)
+        
+        $orderedMappings = [ordered]@{}
+
+        $sortedContexts.GetEnumerator() | ForEach-Object {
+            $orderedMappings.Add($_.Key, $_.Value)
+        }
+
+        [Kube]::MappedContexts = $orderedMappings
     }
 }

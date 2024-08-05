@@ -4,15 +4,19 @@ using namespace System.Text
 function Sync-GCloudStandardGkeContextMappings {
     
     $currentMappings = Import-PowerShellDataFile -LiteralPath ([GCloud]::PathToProjectGkeMappings)
-    $alreadyMappedProjectIds = $currentMappings.Values | foreach { $_ -split '_gke-(?=r)' | Select-Object -last 1 }
+    $alreadyMappedProjectIds = $currentMappings.Values | foreach { $_ -split '_gke-' | Select-Object -last 1 }
     $currentProjectIds = Get-ChildItem -LiteralPath ([GCloud]::ProjectRoot) -Recurse -File |
         Select-Object -ExpandProperty Name
     
     $upToDateCurrentMappings = Get-GCloudStandardGkeMappingsUpToDate -CurrentGkeMappings $currentMappings -CurrentMappedProjectIds $alreadyMappedProjectIds
-    $currentProjectIds |
-        Where-Object { $_ -notin $alreadyMappedProjectIds } |
-        New-GCloudStandardGkeContextMapping | Sort-Object 
-        Export-GCloudStandardGkeContextMappings -ExistingMappingsToKeep $upToDateCurrentMappings
+    $mappingsToCreate = $currentProjectIds | Where-Object { $_ -notin $alreadyMappedProjectIds }
+
+    Write-Host "Creating mappings for $($mappingsToCreate.Count) projects."
+
+    $mappingsToCreate |
+        New-GCloudStandardGkeContextMapping |
+        Sort-Object | 
+        Export-GCloudStandardGkeContextMappings -ExistingMappingsToKeep ($upToDateCurrentMappings ?? @{})
     
     Write-Host 'Done syncing all project IDs!' -ForegroundColor Cyan
 }
@@ -77,15 +81,23 @@ function New-GCloudStandardGkeContextMapping {
         [string[]]$GcpProjectId
     )
     process {
-        foreach ($projectId in ($GcpProjectId | Where { $_ -notmatch '-(metric-|aw-fallback|prod-(artifacts|backups|dns|secrets))'}) ) {
-            $clusterGKEInfo = (gcloud container clusters list --project $projectId) -replace '\s{2,}', [char]0x2561 | ConvertFrom-Csv -Delimiter ([char]0x2561)
-            if ($clusterGKEInfo) {
-                $gkeContextString = 'gke_' + $projectId + '_' + $clusterGKEInfo.Location + '_gke-' + $projectId 
+        $gkeRelevantProjectIds = if ( [GCloud]::PatternForNonGkeProjects ) {
+            $GcpProjectId | Where { $_ -notmatch ([GCloud]::PatternForNonGkeProjects) }
+        }
+        else {
+            $GcpProjectId
+        }
 
+        foreach ( $projectId in $gkeRelevantProjectIds ) {
+            Write-Host "Creating mapping for project id: $projectId" -Fore Cyan
+            try {
+                $gkeClusterInfo = $projectId | Get-GCloudGkeClusterInfoFromProjectId -ErrorAction Stop
+            
                 $key = & ([GCloud]::NewGKEContextKey) $projectId
 
-                @{ $key = $gkeContextString }
+                @{ $key = $gkeClusterInfo.Context }
             }
+            catch {$_}
         }
     }
 }

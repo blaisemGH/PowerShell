@@ -1,5 +1,6 @@
 using namespace System.Collections.Generic
 Function Sync-GCloudProjectsAsJob {
+    [CmdletBinding()]
     Param(
         [ValidateRange(1)]
         [int]$WaitOnMinimumFrequency = 0
@@ -18,22 +19,35 @@ Function Sync-GCloudProjectsAsJob {
 
     $GCloudParams = [GCloud]::Config
     $gcloudSyncProjects = {
+        Write-Host 'Importing GCloud module' -Fore Yellow
+        
         $moduleHome = Split-Path $using:PSScriptRoot -Parent
         $manifest = Import-PowerShellDataFile $moduleHome/GCloudUtils.psd1
         Foreach ( $requiredModule in $manifest.RequiredModules ) {
-            Import-Module $requiredModule -Force -DisableNameChecking
+            Import-Module $requiredModule -Force -DisableNameChecking -Verbose
         }
         Foreach ( $nestedModule in $manifest.NestedModules ) {
-            Import-Module (Join-Path $moduleHome $nestedModule) -Force -DisableNameChecking
+            Import-Module (Join-Path $moduleHome $nestedModule) -Force -DisableNameChecking -Verbose
         }
         ForEach ( $moduleScript in $manifest.ScriptsToProcess ) {
             . (Join-Path $moduleHome $moduleScript)
         }
 
+        Write-Host 'Imported GCloud module.' -Fore Green
+
         [GCloud]::Set_GCloudProperties($using:GCloudParams)
+
+        Write-Host 'Initialized GCloud module' -Fore Green
         Update-GCloudProjectRecord
+        Write-Host 'Finished updating GCloud project record. See [GCloud]::PathToProjectCSV' -Fore Cyan
+
         Update-GCloudProjectFS
+        Write-Host 'Finished Updating local filesystem cache. See [GCloud]::ProjectRoot' -Fore Cyan
+
+        Write-Host 'Beginning to write standardized mappings for Gke contexts. This may take a while.' -Fore Yellow
         Sync-GCloudStandardGkeContextMappings
+        
+        Write-Host 'Performing housekeeping to remove nonexistent contexts.' -Fore Magenta
 
         $currentProjects = Get-ChildItem -LiteralPath ([GCloud]::ProjectRoot) -Recurse -File | Select-Object -ExpandProperty Name
 
@@ -48,8 +62,14 @@ Function Sync-GCloudProjectsAsJob {
                     ($_ | Rename-GCloudGkeContextToProjectId) -notin $currentProjects
                 }
 
-        Remove-KubeMappedContext -PatternsToRemove $contextsToRemove -PSDataFilePath ([Kube]::ContextFile)
-        Remove-KubeMappedContext -PatternsToRemove $contextsToRemove -PSDataFilePath ([GCloud]::PathToProjectGkeMappings)
+        if ( $contextsToRemove ) {
+            Write-Host "Removing the following contexts for housekeeping: `n`n$( $contextsToRemove | Out-String )"
+            Remove-KubeMappedContext -PatternsToRemove $contextsToRemove -PSDataFilePath ([Kube]::ContextFile)
+            Remove-KubeMappedContext -PatternsToRemove $contextsToRemove -PSDataFilePath ([GCloud]::PathToProjectGkeMappings)
+        }
+        else {
+            Write-Host "Housekeeping found no unused contexts to remove!"
+        }
     }
 
     If ( $PSVersionTable.PSEdition -eq 'Core' ) {

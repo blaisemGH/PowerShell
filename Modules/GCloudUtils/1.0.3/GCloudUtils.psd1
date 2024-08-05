@@ -57,17 +57,14 @@ RequiredModules = @('KubectlUtils')
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = 'classes\GCloud.ps1', 'classes\completions\GCloudProjectCacheInFSCompleter.ps1', 'public\ContextFileUtils.ps1',
-               'public\Add-GKECredentials.ps1',
-               'public\Update-GCloudProjectRecord.ps1',
-               'public\Update-GCloudProjectFS.ps1',
-               'public\Sync-GCloudProjectsAsJob.ps1',
-               'public\Sync-GCloudStandardGkeContextMappings.ps1',
-               'public\Remove-GCloudUnusedContexts.ps1',
-               'public\Get-GkeClusterInfoFromProjectId.ps1',
-               'public\Set-GCloudContext.ps1',
-               'public\Set-GCloudCompletion.ps1',
-               'public\Update-GCloudCompletion.ps1'
+ScriptsToProcess = 'classes\GCloud.ps1', 'classes\completions\GCloudProjectCacheInFSCompleter.ps1',
+                'private\Get-GCloudVersion.ps1',
+                'public\ContextFileUtils.ps1', 'public\Add-GKECredentials.ps1', 'public\Update-GCloudProjectRecord.ps1',
+                'public\Update-GCloudProjectFS.ps1', 'public\Sync-GCloudProjectsAsJob.ps1',
+                'public\Sync-GCloudStandardGkeContextMappings.ps1', 'public\Remove-GCloudUnusedContexts.ps1',
+                'public\Get-GCloudGkeClusterInfoFromProjectId.ps1', 'public\Get-GCloudProjectIdFromGkeContext.ps1',
+                'public\Set-GCloudContext.ps1', 'public\Set-GCloudCompletion.ps1', 'public\Update-GCloudCompletion.ps1',
+                'public\Rename-GCloudGkeContextToProjectId.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -79,7 +76,7 @@ ScriptsToProcess = 'classes\GCloud.ps1', 'classes\completions\GCloudProjectCache
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Remove-GCloudContextKey', 'Update-ContextFileMap',
+FunctionsToExport = 'Get-GCloudVersion', 'Remove-GCloudContextKey', 'Update-ContextFileMap',
                'Export-ContextFileAsPSD1', 'Add-GKECredentials',
                'Update-GCloudProjectRecord', 'Update-GCloudProjectFS',
                'Sync-GCloudProjectsAsJob', 'Sync-GCloudStandardGkeContextMappings',
@@ -87,10 +84,12 @@ FunctionsToExport = 'Remove-GCloudContextKey', 'Update-ContextFileMap',
                'Export-GCloudStandardGkeContextMappings',
                'New-GCloudStandardGkeContextMapping',
                'Remove-GCloudUnusedContexts',
-               'Get-GkeClusterInfoFromProjectId',
+               'Get-GCloudGkeClusterInfoFromProjectId',
+               'Get-GCloudProjectIdFromGkeContext',
                'Set-GCloudContext',
-               'Set-GCloudCompletion'
-               'Update-GCloudCompletion'
+               'Set-GCloudCompletion',
+               'Update-GCloudCompletion',
+               'Rename-GCloudGkeContextToProjectId'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'

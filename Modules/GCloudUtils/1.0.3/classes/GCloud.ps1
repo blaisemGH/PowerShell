@@ -6,6 +6,7 @@ Class GCloud {
     static [string]$OrganizationNumber = ''
     static [string]$FilterProjectIds = '.*'
     static [string]$FilterProjectNames = '.*'
+    static [string]$PatternForNonGkeProjects
     static [hashtable]$CompletionTree
     static [int]$MinimumSyncFrequency
     static [hashtable]$Config
@@ -14,7 +15,7 @@ Class GCloud {
             [Parameter(Mandatory)]
             $ProjectLocalFilepath
         )
-        return $ProjectLocalFilepath -replace '/','-'
+        return (Get-ChildItem ([GCloud]::ProjectRoot) -Recurse -File -Filter $ProjectLocalFilepath).FullName -replace '/','-'
     }
 
     static [string]$CurrentProject = ( $null = gcloud config list | Select-String 'project = ' | ForEach { $_.Line -split ' = ' | Select-Object -Last 1 } )

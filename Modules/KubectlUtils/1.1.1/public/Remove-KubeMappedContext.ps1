@@ -15,22 +15,28 @@ function Remove-KubeMappedContext {
         [Parameter(ParameterSetName='housekeepKubeConfigFileOnly')]
         [switch]$HousekeepKubeConfigFileOnly
     )
-    $allContexts = kubectl config get-contexts -o name
-    $usedContexts = if ( $PSCmdlet.ParameterSetName -eq 'ContextsFromPSDataFile') {
-        Import-PowerShellDataFile -LiteralPath $PSDataFilePath | Select-Object -ExpandProperty Values
-    } else {
-        $ContextsToHousekeep
-    }
-
+    
     $matchPatternsToRemove = $PatternsToRemove -join '|'
-    $contextsToRemove = $usedContexts | Where-Object { $_ -match $matchPatternsToKeep}
 
-    # Housekeep the kubectl config file
-    if ( $allContexts ) {
-        $allContexts -eq $matchPatternsToRemove | foreach { kubectl config delete-context $_ }
+    #region Housekeep the kubectl config file
+    $removeKubeConfigFileContexts = if ( $PSCmdlet.ParameterSetName -eq 'ContextsAsStrings' ) {
+        $ContextsToHousekeep
+    } else {
+        kubectl config get-contexts -o name
     }
-    # Housekeep the input contexts provided for checking
-    if ( $usedContexts -and $PSCmdlet.ParameterSetName -ne 'housekeepKubeConfigFileOnly' ) {
-        $usedContexts -ne $contextsToRemove | Set-KubeMappedContexts
+
+    if ( $removeKubeConfigFileContexts ) {
+        $removeKubeConfigFileContexts -eq $matchPatternsToRemove | foreach { kubectl config delete-context $_ }
     }
+    #endregion
+
+    #region housekeep cached context mappings
+    if ( $PSCmdlet.ParameterSetName -eq 'ContextsFromPSDataFile') {
+        $cachedContextMappings = Import-PowerShellDataFile -LiteralPath $PSDataFilePath
+        $cachedContextMappings.GetEnumerator() |
+            Where-Object { $_.Value -notmatch $matchPatternsToRemove} |
+            Sort-Object Key |
+            Set-KubeMappedContexts -FilePathOfContexts $PSDataFilePath
+    }
+    #endregion
 }
