@@ -8,7 +8,7 @@ function Update-ContextFileMap {
         [string]$NewMapKey
     )
     
-    $contextMap = [Kube]::MappedContexts
+    $contextMap = Import-PowerShellDataFile ([Kube]::ContextFile)
 
     $kubeContext = kubectl config view -o json |
         ConvertFrom-Json |
@@ -28,12 +28,11 @@ function Update-ContextFileMap {
         }
     }
 
-    
     $newKey = & {
         if ( $NewMapKey ) {
             $newMapKey
         } else {
-            Read-Host "What string shortcut would you like to map to new context $kubeContext?"
+            Read-Host "What string shortcut would you like to map to the new context $kubeContext?"
         }
     }
 
@@ -41,7 +40,7 @@ function Update-ContextFileMap {
         $contextMap.Add( $newKey, $kubeContext )
     }
     else {
-        [int]$lastPlaceholder = $contextMap.Keys | Where {$_ -match '^undecided-[0-9]+$' } | Sort-Object | select -last 1
+        [int]$lastPlaceholder = $contextMap.Keys | Where {$_ -match '^undecided-[0-9]+$' } | Sort-Object | Select-Object -last 1
         $newPlaceholder = 'undecided-{0:d2}' -f ($lastPlaceholder + 1)
         "Defaulting shortcut to $newPlaceholder"
         $contextMap.Add( $newPlaceholder, $kubeContext )
@@ -74,46 +73,26 @@ function Export-ContextFileAsPSD1 {
     end {
         $newContent += '}'
         try {
-            Copy-Item -Path $pathContextFile -Destination $pathBackupContextFile -ErrorAction Stop
+            Copy-Item -Path $pathContextFile -Destination $pathBackupContextFile -Force -ErrorAction Stop
             $newContent | Set-Content $pathContextFile -Force -ErrorAction Stop
-            [Kube]::MappedContexts = Import-PowerShellDatafile ([Kube]::contextFile)
         }
         catch {
             $pathFailedContextFile = Join-Path $contextParent ($contextLeaf -replace '^', 'failed_')
             $newContent | Set-Content $pathFailedContextFile -Force
 
+            Write-Error ( $_ | Out-String )
+
             $err = [ErrorRecord]::new(
                 "Failed to update context file at $pathContextFile.
                 Created a backup file at $pathBackupContextFile
-                Created a file of the failed update contents at $pathTempContextFile",
+                Created a file of the failed update contents at $pathFailedContextFile",
                 $null, 'WriteError', $null
             )
             $PSCmdlet.ThrowTerminatingError($err)
         }    
         if ($?) {
-            rm $pathBackupContextFile
+            Remove-Item $pathBackupContextFile -Force
+            [Kube]::UpdateKubeMappedContexts()
         }
-    }
-}
-
-function Remove-GCloudContextKey {
-    param(
-        [Parameter(Mandatory, ValueFromPipeline)]
-        [Alias('key')]
-        [ArgumentCompleter({
-            param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-            [Kube]::MappedContexts | Where-Object {
-                $_ -like "$wordToComplete*"
-            }
-        })]
-        [string]$ContextKey
-    )
-    $contextMap = [Kube]::MappedContexts
-    if ( $contextMap.ContainsKey($ContextKey) ) {
-        [Kube]::MappedContexts.Remove($ContextKey)
-    }
-    else {
-        $err = [ErrorRecord]::new("Input key '$ContextKey' not found in current map! Available keys: $([Kube]::MappedContexts)", $null, 'InvalidArgument', $null)
-        $PSCmdlet.ThrowTerminatingError($err)
     }
 }
