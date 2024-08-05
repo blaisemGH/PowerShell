@@ -1,6 +1,5 @@
 function Set-GCloudCompletion {
     param(
-        [Parameter(Mandatory)]
         [string]$ModuleHome = (Get-Module GCloudUtils | Select-Object -ExpandProperty ModuleBase)
     )
     $gcloudVersion = Get-GCloudVersion

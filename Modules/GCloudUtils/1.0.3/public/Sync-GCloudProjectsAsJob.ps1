@@ -3,7 +3,8 @@ Function Sync-GCloudProjectsAsJob {
     [CmdletBinding()]
     Param(
         [ValidateRange(1)]
-        [int]$WaitOnMinimumFrequency = 0
+        [int]$WaitOnMinimumFrequency = 0,
+        [string]$ModuleHome = (Get-Module GCloudUtils | Select-Object -ExpandProperty ModuleBase)
     )
 
     $lastSyncDate = Get-Item ([GCloud]::PathToProjectCSV) | Select-Object -ExpandProperty LastWriteTime
@@ -21,7 +22,7 @@ Function Sync-GCloudProjectsAsJob {
     $gcloudSyncProjects = {
         Write-Host 'Importing GCloud module' -Fore Yellow
         
-        $moduleHome = Split-Path $using:PSScriptRoot -Parent
+        $moduleHome = $using:ModuleHome
         $manifest = Import-PowerShellDataFile $moduleHome/GCloudUtils.psd1
         Foreach ( $requiredModule in $manifest.RequiredModules ) {
             Import-Module $requiredModule -Force -DisableNameChecking -Verbose

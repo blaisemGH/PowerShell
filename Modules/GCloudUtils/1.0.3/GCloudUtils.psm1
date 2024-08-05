@@ -27,7 +27,7 @@ $GCloudParams = @{
 
 <# INSTRUCTIONS
     Define your own parameters and run Set_GCloudProperties as performed above, e.g., in your profile or another module, then run the function:
-    Sync-GCloudProjectsAsJob [-WaitOnMinimumFrequency]
+    Sync-GCloudProjectsAsJob [-WaitOnMinimumFrequency] -ModuleHome $PSScriptRoot
     (see help Sync-GCloudProjectsAsJob)
 
     * This function will synchronize your GCloudProjects to a local filepath, default drive being gcp (see below).

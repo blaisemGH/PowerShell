@@ -9,7 +9,7 @@ function Sync-GCloudStandardGkeContextMappings {
         Select-Object -ExpandProperty Name
     
     $upToDateCurrentMappings = Get-GCloudStandardGkeMappingsUpToDate -CurrentGkeMappings $currentMappings -CurrentMappedProjectIds $alreadyMappedProjectIds
-    $mappingsToCreate = $currentProjectIds | Where-Object { $_ -notin $alreadyMappedProjectIds }
+    $mappingsToCreate = $currentProjectIds | Where-Object { $_ -notin $alreadyMappedProjectIds -and $_ -notmatch ([GCloud]::PatternForNonGkeProjects) }
 
     Write-Host "Creating mappings for $($mappingsToCreate.Count) projects."
 
