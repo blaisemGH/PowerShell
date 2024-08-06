@@ -58,14 +58,14 @@ PowerShellVersion = '7.3.6'
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 ScriptsToProcess = 'classes/ConvertToFullPathTransform.ps1',
-                '.\public\Convert-AllHashtablesToPSCObjects.ps1',
-               '.\public\Convert-HashtableToOrderedDictionary.ps1', 
-               '.\public\Convert-ObjectToHashtable.ps1', 
-               '.\public\Join-ObjectLinq.ps1', '.\public\Test-ReadHost.ps1', 
-               '.\public\Test-ValidArgs.ps1',
-               '.\public\Update-FileVersionIncrement.ps1', 
-               '.\public\Sync-HeaderProperties.ps1',
-               '.\public\Move-FileToDatedFile.ps1',
+                './public/Convert-AllHashtablesToPSCObjects.ps1',
+               './public/Convert-HashtableToOrderedDictionary.ps1', 
+               './public/Convert-ObjectToHashtable.ps1', 
+               './public/Join-ObjectLinq.ps1', './public/Test-ReadHost.ps1', 
+               './public/Test-ValidArgs.ps1',
+               './public/Update-FileVersionIncrement.ps1', 
+               './public/Sync-HeaderProperties.ps1',
+               './public/Move-FileToDatedFile.ps1',
                'classes/ProcessHelper.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
@@ -97,14 +97,14 @@ AliasesToExport = '*'
 
 # List of all files packaged with this module
 FileList = 'classes/ConvertToFullPathTransform.ps1',
-            '.\public\Convert-AllHashtablesToPSCObjects.ps1',
-            '.\public\Convert-HashtableToOrderedDictionary.ps1',
-            '.\public\Convert-ObjectToHashtable.ps1',
-            '.\public\Join-ObjectLinq.ps1', '.\public\Test-ReadHost.ps1',
-            '.\public\Test-ValidArgs.ps1',
-            '.\public\Update-FileVersionIncrement.ps1',
-            '.\public\Sync-HeaderProperties.ps1',
-            '.\public\Move-FileToDatedFile.ps1',
+            './public/Convert-AllHashtablesToPSCObjects.ps1',
+            './public/Convert-HashtableToOrderedDictionary.ps1',
+            './public/Convert-ObjectToHashtable.ps1',
+            './public/Join-ObjectLinq.ps1', './public/Test-ReadHost.ps1',
+            './public/Test-ValidArgs.ps1',
+            './public/Update-FileVersionIncrement.ps1',
+            './public/Sync-HeaderProperties.ps1',
+            './public/Move-FileToDatedFile.ps1',
             'classes/ProcessHelper.ps1'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.

@@ -57,12 +57,12 @@ PowerShellVersion = '5.1'
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = 'enums\enums.ps1', 'classes\colorRGB.ps1', 'classes\PSPrompt.ps1', 
-                'private\prompt.ps1', 
-                'public\Get-FormattedKnownColors.ps1',
-               'public\Add-PSPromptTemplateItem.ps1', 
-               'public\Get-PowerlineSymbols.ps1', 
-               'public\Get-PSPromptTemplateSamples.ps1'
+ScriptsToProcess = 'enums/enums.ps1', 'classes/colorRGB.ps1', 'classes/PSPrompt.ps1', 
+                'private/prompt.ps1', 
+                'public/Get-FormattedKnownColors.ps1',
+               'public/Add-PSPromptTemplateItem.ps1', 
+               'public/Get-PowerlineSymbols.ps1', 
+               'public/Get-PSPromptTemplateSamples.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -93,13 +93,13 @@ AliasesToExport = '*'
 # ModuleList = @()
 
 # List of all files packaged with this module
-FileList = 'PSPrompt.psd1', 'PSPrompt.psm1', 'classes\colorRGB.ps1', 
-               'classes\PSPrompt.ps1', 'enums\enums.ps1',
-               'private\prompt.ps1', 
-               'public\Get-FormattedKnownColors.ps1',
-               'public\Add-PSPromptTemplateItem.ps1', 
-               'public\Get-PowerlineSymbols.ps1', 
-               'public\Get-PSPromptTemplateSamples.ps1'
+FileList = 'PSPrompt.psd1', 'PSPrompt.psm1', 'classes/colorRGB.ps1', 
+               'classes/PSPrompt.ps1', 'enums/enums.ps1',
+               'private/prompt.ps1', 
+               'public/Get-FormattedKnownColors.ps1',
+               'public/Add-PSPromptTemplateItem.ps1', 
+               'public/Get-PowerlineSymbols.ps1', 
+               'public/Get-PSPromptTemplateSamples.ps1'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

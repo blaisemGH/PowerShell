@@ -57,14 +57,14 @@ RequiredModules = @('KubectlUtils')
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = 'classes\GCloud.ps1', 'classes\completions\GCloudProjectCacheInFSCompleter.ps1',
-                'private\Get-GCloudVersion.ps1',
-                'public\ContextFileUtils.ps1', 'public\Add-GKECredentials.ps1', 'public\Update-GCloudProjectRecord.ps1',
-                'public\Update-GCloudProjectFS.ps1', 'public\Sync-GCloudProjectsAsJob.ps1',
-                'public\Sync-GCloudStandardGkeContextMappings.ps1', 'public\Remove-GCloudUnusedContexts.ps1',
-                'public\Get-GCloudGkeClusterInfoFromProjectId.ps1', 'public\Get-GCloudProjectIdFromGkeContext.ps1',
-                'public\Set-GCloudContext.ps1', 'public\Set-GCloudCompletion.ps1', 'public\Update-GCloudCompletion.ps1',
-                'public\Rename-GCloudGkeContextToProjectId.ps1'
+ScriptsToProcess = 'classes/GCloud.ps1', 'classes/completions/GCloudProjectCacheInFSCompleter.ps1',
+                'private/Get-GCloudVersion.ps1',
+                'public/ContextFileUtils.ps1', 'public/Add-GKECredentials.ps1', 'public/Update-GCloudProjectRecord.ps1',
+                'public/Update-GCloudProjectFS.ps1', 'public/Sync-GCloudProjectsAsJob.ps1',
+                'public/Sync-GCloudStandardGkeContextMappings.ps1', 'public/Remove-GCloudUnusedContexts.ps1',
+                'public/Get-GCloudGkeClusterInfoFromProjectId.ps1', 'public/Get-GCloudProjectIdFromGkeContext.ps1',
+                'public/Set-GCloudContext.ps1', 'public/Set-GCloudCompletion.ps1', 'public/Update-GCloudCompletion.ps1',
+                'public/Rename-GCloudGkeContextToProjectId.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -107,7 +107,7 @@ AliasesToExport = '*'
 # ModuleList = @()
 
 # List of all files packaged with this module
-FileList = 'public\ContextFileUtils.ps1', 'public\Add-GKECredentials.ps1'
+FileList = 'public/ContextFileUtils.ps1', 'public/Add-GKECredentials.ps1'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

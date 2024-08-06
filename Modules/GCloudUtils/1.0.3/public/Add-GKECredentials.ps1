@@ -58,7 +58,7 @@ function Add-GKECredentials {
     gcloud container clusters get-credentials $clusterGKEInfo.Name --location $clusterGKEInfo.Location --project $selectedProjectID
 
     if ( $? ) {
-        if ( !$SkipAddMapKey -and ($alreadyMappedContexts -eq $clusterGKEInfo.Context -or !$ForceAddMapKey) ) {
+        if ( $ForceAddMapKey -or (!$SkipAddMapKey -and  ($alreadyMappedContexts -eq $clusterGKEInfo.Context) )) {
             Update-ContextFileMap -ProjectID $selectedProjectID -NewMapKey $NewMapKey -ErrorAction Stop | Export-ContextFileAsPSD1
         }
 

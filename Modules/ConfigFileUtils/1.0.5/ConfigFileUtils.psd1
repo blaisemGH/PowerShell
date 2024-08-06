@@ -54,14 +54,14 @@ PowerShellVersion = '5.1'
 RequiredModules = @('PSUtils')
 
 # Assemblies that must be loaded prior to importing this module
-RequiredAssemblies = 'assemblies\net8.0\YamlDotNet.15.1.2.dll'
+RequiredAssemblies = 'assemblies/net8.0/YamlDotNet.15.1.2.dll'
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = '.\enums\DataTypes.ps1', '.\classes\IStructuredData.ps1', '.\classes\StructuredDataUtils.ps1', 
-    '.\classes\YamlData.ps1', '.\classes\NewStructuredDataType.ps1', '.\public\ConvertFrom-StructuredData.ps1',
-    '.\public\ConvertTo-StructuredData.ps1', '.\public\Export-StructuredDataFile.ps1', '.\public\Import-StructuredDataFile.ps1',
-    '.\public\yaml\ConvertFrom-Yaml.ps1', '.\public\yaml\ConvertTo-Yaml.ps1', '.\public\yaml\Export-YamlFile.ps1',
-    '.\public\yaml\Import-YamlFile.ps1'
+ScriptsToProcess = './enums/DataTypes.ps1', './classes/IStructuredData.ps1', './classes/StructuredDataUtils.ps1', 
+    './classes/YamlData.ps1', './classes/NewStructuredDataType.ps1', './public/ConvertFrom-StructuredData.ps1',
+    './public/ConvertTo-StructuredData.ps1', './public/Export-StructuredDataFile.ps1', './public/Import-StructuredDataFile.ps1',
+    './public/yaml/ConvertFrom-Yaml.ps1', './public/yaml/ConvertTo-Yaml.ps1', './public/yaml/Export-YamlFile.ps1',
+    './public/yaml/Import-YamlFile.ps1'
 
 
 
@@ -93,8 +93,8 @@ AliasesToExport = '*'
 # ModuleList = @()
 
 # List of all files packaged with this module
-FileList = 'public\ConvertFrom-Yaml.ps1', 'public\Import-ConfigFile.ps1', 
-               'public\Import-YamlFile.ps1'
+FileList = 'public/ConvertFrom-Yaml.ps1', 'public/Import-ConfigFile.ps1', 
+               'public/Import-YamlFile.ps1'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
