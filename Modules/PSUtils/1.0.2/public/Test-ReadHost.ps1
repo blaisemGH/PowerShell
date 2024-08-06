@@ -8,7 +8,7 @@ Function Test-ReadHost {
     [CmdletBinding(DefaultParameterSetName='NoValidation')]
     Param(
         # Message to display to user
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, Position = 0)]
         [string]$Query,
 
         # List of strings to validate the user response against

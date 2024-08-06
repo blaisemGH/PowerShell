@@ -41,7 +41,7 @@ $GCloudParams = @{
     * Cached IDs are automatically removed, including orphaned parent folders (only if they're empty), if the ID no longer exists in `gcloud projects list`.
     * Rerun Sync-GCloudProjectsAsJob whenever you wish to update for new project IDs.
 #>
-if ( !(Test-Path $psDriveGoogleProjects -ErrorAction SilentlyContinue) ) {
+if ( !(Test-Path "${psDriveGoogleProjects}:" -ErrorAction SilentlyContinue) ) {
     New-PSDrive -Name $psDriveGoogleProjects -Root ([GCloud]::ProjectRoot) -PSProvider FileSystem -Description 'Folder structure of projects in Google Cloud' -Scope Global
 }
 
