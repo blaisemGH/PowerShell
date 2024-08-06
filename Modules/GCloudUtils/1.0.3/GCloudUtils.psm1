@@ -1,5 +1,7 @@
 Set-Alias -Name gkecred -Value Add-GKECredentials -Scope Global -Option AllScope
 Set-Alias -Name agc -Value Add-GKECredentials -Scope Global -Option AllScope
+Set-Alias -Name ggp -Value Get-GCloudProjectId -Scope Global -Option AllScope
+Set-Alias -Name ugp -Value Use-GCloudProjectId -Scope Global -Option AllScope
 
 if ( !(Test-Path ([GCloud]::PathToProjectCSV) ) ) {
     New-Item ([GCloud]::PathToProjectCSV) -ItemType File -Force

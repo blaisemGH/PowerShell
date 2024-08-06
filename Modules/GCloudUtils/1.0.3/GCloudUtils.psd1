@@ -64,7 +64,7 @@ ScriptsToProcess = 'classes/GCloud.ps1', 'classes/completions/GCloudProjectCache
                 'public/Sync-GCloudStandardGkeContextMappings.ps1', 'public/Remove-GCloudUnusedContexts.ps1',
                 'public/Get-GCloudGkeClusterInfoFromProjectId.ps1', 'public/Get-GCloudProjectIdFromGkeContext.ps1',
                 'public/Set-GCloudContext.ps1', 'public/Set-GCloudCompletion.ps1', 'public/Update-GCloudCompletion.ps1',
-                'public/Rename-GCloudGkeContextToProjectId.ps1'
+                'public/Rename-GCloudGkeContextToProjectId.ps1', 'public/Get-GCloudProjectId.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -84,7 +84,7 @@ FunctionsToExport = 'Get-GCloudVersion', 'Remove-GCloudContextKey', 'Update-Cont
                'Export-GCloudStandardGkeContextMappings',
                'New-GCloudStandardGkeContextMapping',
                'Remove-GCloudUnusedContexts',
-               'Get-GCloudGkeClusterInfoFromProjectId',
+               'Get-GCloudGkeClusterInfoFromProjectId', 'Get-GCloudProjectId', 'Use-GCloudProjectId',
                'Get-GCloudProjectIdFromGkeContext',
                'Set-GCloudContext',
                'Set-GCloudCompletion',
