@@ -1,0 +1,100 @@
+TOPIC
+    about_KubectlUtils
+    
+DESCRIPTION
+
+    KubectlUtils consists of wrappers for kubectl commands of various complexity.
+    Some are simple wrappers for convenience, while others are more ambitious:
+    updating your promptline with metainformation or scraping the metrics api and formatting the output sensibly.
+    
+    The main workhorse is the [kube] class, which loads and stores metadata.
+        There is almost no reason to interact with this directly; the exported functions use the class for you.
+    
+FUNCTIONS
+
+    Note: Use help on each function for specific information on their usage.
+
+    Enter-KubePod
+    
+        alias(ekp, kex)
+        A wrapper for `kubectl exec <pod>` commands.
+        * if no command is provided (`kex <pod>`), automatically appends bash
+            * If bash fails (not in pod image), automatically retries with sh
+        * Most other commands will work, e.g., (`kex <pod> <command>`).
+            * If the command begins with cat or ls, wrap in quotes to obtain path autocompletion
+    
+    Copy-KubeFile
+    
+        alias(kcp)
+        A wrapper for `kubectl cp <pod>` commands
+        * Simplifies the input arguments
+            * no need to prepend the podname
+            * destination and source are order agnostic, making them more interchangeable
+                * Specify them via -RemotePath and -LocalPath to specify the pod (remote) and local paths.
+        * The -RemotePath argument has tab completion. LocalPath obviously also has it.
+        * -ShowProgress parameter to track progress over longer running commands.
+    
+    Get-KubeResource
+    
+        alias (gkr)
+        This function specifies a specific kube resource, then runs kubectl on it in the background. 
+        
+        The output of the kubectl command is converted into a powershell object.
+        
+        This means you can easily filter on kubectl output using sophisticated object parsing instead of wrangling it as a string.
+            For example, you can extract the creationTimestamp and filter pods accordingly.
+        
+        The formatted output of this command is always stored in $k.
+    
+    Set-KubeContext
+        
+        alias (skc)
+        Change kube contexts (clusters).
+        As contexts are often long and difficult strings to remember, this function aims to simplify switching between different contexts.
+
+        KubectlUtils stores contexts as a hashtable (default path: ~/.pwsh/KubectlUtils/contexts.psd1). 
+            * Here, you can map, e.g., prod-tenant1 = <context string>, and then switch to this context via `skc prod-tenant1`.
+            * Tab completion is available, so it is simple to navigate between contexts.
+        
+        
+    Get-KubeContext
+    
+        alias(gkc)
+        Returns your current context and cluster, as well as name if it's part of your custom mapped contexts.
+        While it can be used to check your context, its main purpose is to be included into the prompt.
+        This notifies you dynamically which context and namespace you're currently in.
+    
+    Set-KubeNamespace
+    
+        alias(skn, kns)
+        A function to change your namespace. This change is imposed onto the kubeconfig.
+        Thanks to tab completion, it's faster in almost all cases to switch namespaces instead of using -n in all of your kubectl commands.
+        This quickly saves much time and annoyance editing kubectl commands to get the namespace right.
+        
+        If the PSPromptTemplate module is available, the namespace will be printed onto your prompt line.
+        * This helps keep track of which namespace you're currently in.
+        * Reduces mental load (focus only on your current namespace rather than juggling commands across many namespaces with -n)
+            * This should reduce errors and be far faster at firing out commands sequentially.
+        
+    Get-KubeMetrics
+    
+        alias(gkn)
+        Scrapes the kube-metricsapi for container metrics and formats the output to be easily readable. 
+        It also enriches the output with the datetime of the command. 
+        
+        By default, it filters down to containers in your current namespace and which are annotated as default containers by kubectl.
+        
+        There are however parameters to deactivate the filter, change the namespace, or supply a custom list of containers.
+    
+    Trace-KubeMetrics
+    
+        alias(tkm)
+        A wrapper around Get-KubeMetrics.
+        This will run the Get-KubeMetrics command by a given interval (default minimum in k8s is 30s) and serialize the output to a json file.
+        Because Get-KubeMetrics is enriched with the datetime, your serialized output becomes time-series data.
+        
+    Find-MaxPodMetric
+    
+        alias (kmax)
+        This function is meant to accompany Trace-KubeMetrics.
+        Given an object from its json file, kmax will return aggregated stats over that period of time, such as max values or average values.

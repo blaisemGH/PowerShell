@@ -45,7 +45,29 @@ Function Use-GitCliForBranch {
         [Parameter(Mandatory, ParameterSetName='rename')]
         [string]$RenamedBranchName,
         [Parameter(Mandatory, ParameterSetName='squash')]
-        [ValidatePattern('^([a-z0-9]{7}|[a-z0-9]{40})$')]
+        [ArgumentCompleter(
+            {
+                param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+                #%B for commit message
+                git log --pretty=format:'%H | %an | %ad | %s | %D' --date=iso | Select-Object -First 30 | ForEach-Object {
+                    $parts = $_ -split ' \| '
+                    $id = $parts[0]
+                    $author = ($parts[1] -split ' ')[-1]
+                    $date = Get-Date $parts[2] -format 'yyyy-MM-dd HH:mm:ss'
+                    $subject = $parts[3]
+                    $tags = if ( $parts[4] ) { $parts[4] }
+                    $tooltip = "$author | $date | $subject"
+                    
+                    [System.Management.Automation.CompletionResult]::new(
+                        $id,
+                        "$id | $tags",
+                        [System.Management.Automation.CompletionResultType]::Text,
+                        $tooltip
+                    )
+                } | Where-Object { $_.CompletionText -like "$wordToComplete*" }
+            }
+        )]
+        #[ValidatePattern('^([a-z0-9]{7}|[a-z0-9]{40})$')]
         [string]$SquashToCommitId,
         [Parameter(Mandatory, ParameterSetName='squash')]
         [string]$SquashCommitMessage

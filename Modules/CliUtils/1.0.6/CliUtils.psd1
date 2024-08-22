@@ -76,7 +76,7 @@ ScriptsToProcess = 'enums/enums.ps1', 'classes/ItemSize.ps1', 'classes/newline.p
                'public/Replace-StringInFile.ps1', 
                'public/Search-ObjectProperties.ps1', 
                'public/Search-ObjectValues.ps1', 'public/Select-NestedObject.ps1', 
-               'public/Use-GitCliForBranch.ps1'
+               'public/Use-GitCliForBranch.ps1', 'public/Invoke-DefinitelyNotAfk.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -101,7 +101,7 @@ FunctionsToExport = 'cd-', '..', '...', '....', '.....', '......', '.......', '.
                'Out-AllPropertiesInGridView', 'Out-FileHash', 
                'Repair-GitConflictsInFiles', 'Replace-StringInFile', 
                'Search-ObjectProperties', 'Search-ObjectValues', 
-               'Select-NestedObject', 'Use-GitCliForBranch'
+               'Select-NestedObject', 'Use-GitCliForBranch', 'Invoke-DefinitelyNotAfk'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'
