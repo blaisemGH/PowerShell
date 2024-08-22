@@ -29,7 +29,7 @@ function Start-KubePortForward {
         $PSCmdlet.ThrowTerminatingError($errorRecord)
     }
     
-    $portForward = if ( $LocalPort ) { $LocalPort } else { Write-Host "Parameter LocalPort not provided. Using target port: $targetPort"; $targetPort }
+    $portForward = if ( $LocalPort ) { $LocalPort } else { Write-Host "`nParameter LocalPort not provided. Using target port: $targetPort" -Fore Yellow; $targetPort }
 
     $logArguments = [pscustomobject]@{
         Namespace = if ( $Namespace ) { $Namespace } else { [Kube]::CurrentNamespace }
@@ -39,7 +39,7 @@ function Start-KubePortForward {
         Address = $Address
     }
 
-    Write-Host "`nkubectl port forward parameters: `n" -ForegroundColor Cyan
+    Write-Host "`nkubectl port forward parameters:" -ForegroundColor Cyan
     Write-Host ($logArguments | Format-List | Out-String)
     
     kubectl port-forward --address=$Address service/$Service ${targetPort}:$portForward
