@@ -59,7 +59,7 @@ RequiredModules = @('PSUtils')
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 ScriptsToProcess = 'classes/kube.ps1', 
                'classes/completions/KubeMappedContextCompleter.ps1', 'classes/completions/KubeServiceCompleter.ps1',
-               'classes/completions/KubeNamespaceCompleter.ps1',
+               'classes/completions/KubePodCompleter.ps1', 'classes/completions/KubeNamespaceCompleter.ps1',
                'classes/KubeNodesByPod.ps1', 'private/Measure-KubeContainers.ps1', 
                'public/Copy-KubeFile.ps1', 'public/Enter-KubePod.ps1', 
                'public/Find-MaxPodMetric.ps1', 'public/Get-KubeContextInfo.ps1', 

@@ -1,21 +1,47 @@
 function Start-KubePortForward {
+    [CmdletBinding(DefaultParameterSetName='serviceToLocal')]
     param(
-        [Parameter(Mandatory, Position=0)]
+        [Parameter(Mandatory, ParameterSetName='serviceToLocal', Position=0)]
         [KubeServiceCompletions()]
         [string]$Service,
 
+        [Parameter(ParameterSetName='serviceToLocal')]
         [KubeNamespaceCompletions()]
         [string]$Namespace,
 
+        [Parameter(ParameterSetName='serviceToLocal')]
         [string]$LocalPort,
 
+        [Parameter(ParameterSetName='serviceToLocal')]
         [ValidateScript({
             $_ -eq 'LocalHost' || $_ -as [ipaddress]
         })]
-        [string]$Address = '0.0.0.0'
+        [string]$Address = '0.0.0.0',
+
+        [Parameter(Mandatory, ParameterSetName='javaDebugger')]
+        [KubePodCompletions()]
+        [string]$DebugJVMPod
     )
 
     $ns = if ( $Namespace ) { "--namespace=$Namespace" }
+
+    if ( $PSCmdlet.ParameterSetName -eq 'javaDebugger' ) {
+        
+        [string[]]$debugPorts = kubectl $ns get pod $DebugJVMPod -o yaml |
+            Select-String agentlib |
+            foreach {
+                ($_.Line -split ':')[-1]
+            }
+
+        $port = if ( $debugPorts.Count -eq 1) { $debugPorts } else {
+            Test-ReadHost -Query "Found multiple debug ports. Please enter a port to continue." -ValidationStrings $debugPorts
+        }
+        
+        kubectl $ns port-forward $DebugJVMPod $port
+        
+        break
+    }
+    
     $targetPort = (kubectl $ns describe service $Service | Select-String '(?<=^TargetPort:\s+)\d+').Matches.Groups[0].Value
 
     if ( !$targetPort ) {
@@ -42,5 +68,5 @@ function Start-KubePortForward {
     Write-Host "`nkubectl port forward parameters:" -ForegroundColor Cyan
     Write-Host ($logArguments | Format-List | Out-String)
     
-    kubectl port-forward --address=$Address service/$Service ${targetPort}:$portForward
+    kubectl $ns port-forward --address=$Address service/$Service ${targetPort}:$portForward
 }
