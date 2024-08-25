@@ -44,7 +44,7 @@ if ( (Get-Module PSPrompt) -and ! (Get-Module KubectlUtils) ) {
         try {
             $area = (gkc).Name
             $ns = (gkc).Namespace
-            [string]$nsNumber = [Kube]::MapIntsToNamespaces.GetEnumerator() | Where-Object Value -eq $ns | Select -exp Name
+            [string]$nsNumber = [Kube]::MapIntsToNamespaces.GetEnumerator() | Where-Object Value -eq $ns | Select-Object -exp Name
             "${area}: $ns ($nsNumber)"
         } catch {}
     }

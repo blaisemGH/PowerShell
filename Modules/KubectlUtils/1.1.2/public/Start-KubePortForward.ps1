@@ -32,6 +32,10 @@ function Start-KubePortForward {
             foreach {
                 ($_.Line -split ':')[-1]
             }
+        if (!$debugPorts) {
+            $err = "Pod $DebugJVMPod was not found or had no return value!"
+            $PSCmdlet.ThrowTerminatingError([ErrorRecord]::new($err, 'Pod not found', 'InvalidResult',$null))
+        }
 
         $port = if ( $debugPorts.Count -eq 1) { $debugPorts } else {
             Test-ReadHost -Query "Found multiple debug ports. Please enter a port to continue." -ValidationStrings $debugPorts

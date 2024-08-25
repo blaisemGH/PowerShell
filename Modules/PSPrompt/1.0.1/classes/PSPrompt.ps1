@@ -127,6 +127,7 @@ class PSPromptItem : PSPrompt {
     [scriptblock]$ContentFunction
     [bool]$DoNotRecalculateContentValue
     [string]$Group
+    [bool]$NoGroup
 }
 
 <#
@@ -194,7 +195,8 @@ class PSPromptConfig {
         # After a template has been added to the list of items, and the config has been resorted:
         #   * backtrack through the config dict and reapply any group markers, but only if group markers have been activated
         #   * if no group markers activated, remove first item's beginning string, in case the sort has moved a new item into the first position.
-        if ( [PSPromptConfig]::"DefaultGroupID$alignment" -ge 0 ) {
+        if ( [PSPromptConfig]::"DefaultGroupID$alignment" -ge 0 -and !$configToAdd.containsKey('NoGroup')) {
+            Write-Host $configToAdd.LineToPrintOn
             $PSPromptTemplate.SetGroupMarkers($alignedConfigDict)
         }
         #if ( $alignedConfigDict.Count -gt 1)
@@ -283,7 +285,7 @@ class PSPromptConfig {
         }
         [PSPromptConfig]::GroupMarkerMaps.add($groupId, $groupMapping)
     }
-    static [void] AddGroupMarkerMap ([string]$id ) {
+    static [void] GroupMarkerMaps ([string]$id ) {
         $groupId = [PSPromptConfig]::ResolveGroupId($id)
 
         $groupMapping = & {

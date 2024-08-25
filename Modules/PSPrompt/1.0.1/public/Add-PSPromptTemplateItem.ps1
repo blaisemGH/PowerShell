@@ -61,7 +61,8 @@ function Add-PSPromptTemplateItem {
 
         # A metafield that has no effect on the promptline. It is used to identify other items in the promptline. For example:
         # if another module adds an item to PSPrompt with a label, you can check for this label to confirm whether that module is present and has added an item.
-        [string]$Label
+        [string]$Label,
+        [switch]$NoGroup
         
     )
     [PSPromptConfig]::AddTemplate($PSBoundParameters)

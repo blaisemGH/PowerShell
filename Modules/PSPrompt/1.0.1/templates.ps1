@@ -21,22 +21,22 @@ $getRunDuration = {
     return '' + $fmtDuration
 }
 $promptTemplateGetRunDuration = @{
-    'Alignment' = 'Left'
-    'ItemSeparator' = ''
-    'BackgroundColor' = '150;30;65'
-    'ContentFunction' = $getRunDuration
+    Alignment = 'Left'
+    ItemSeparator = ''
+    BackgroundColor = '150;30;65'
+    ContentFunction = $getRunDuration
 }
 Add-PSPromptTemplateItem @promptTemplateGetRunDuration
 
 
 $getPSVersion = { 'PS' + $PSVersionTable.PSVersion.ToString() }
 $promptTemplateGetPSVersion = @{
-    'Alignment' = 'Left'
-    'ItemSeparator' = ''
-    'AnsiEffects' = 'italicize'
-    'BackgroundColor' = '20;90;169'
-    'ContentFunction' = $getPSVersion
-    'DoNotRecalculateContentValue' = $true
+    Alignment = 'Left'
+    ItemSeparator = ''
+    AnsiEffects = 'italicize'
+    BackgroundColor = '20;90;169'
+    ContentFunction = $getPSVersion
+    DoNotRecalculateContentValue = $true
 }
 Add-PSPromptTemplateItem @promptTemplateGetPSVersion
 
@@ -47,10 +47,10 @@ $getPromptTimestamp = {
     return $timestamp
 }
 $promptTemplateGetTimestamp = @{
-    'Alignment' = 'Left'
-    'ItemSeparator' = ''
-    'BackgroundColor' = '210;140;40'
-    'ContentFunction' = $getPromptTimestamp
+    Alignment = 'Left'
+    ItemSeparator = ''
+    BackgroundColor = '210;140;40'
+    ContentFunction = $getPromptTimestamp
 }
 Add-PSPromptTemplateItem @promptTemplateGetTimestamp
 
@@ -101,10 +101,10 @@ $itemCurrentPath = {
 }
 
 $promptTemplateGetCurrentPath = @{
-    'Alignment' = 'Left'
-    'ItemSeparator' = ''
-    'BackgroundColor' = '40;169;120'
-    'ContentFunction' = $itemCurrentPath
+    Alignment = 'Left'
+    ItemSeparator = ''
+    BackgroundColor = '40;169;120'
+    ContentFunction = $itemCurrentPath
 }
 Add-PSPromptTemplateItem @promptTemplateGetCurrentPath
 
@@ -146,11 +146,11 @@ if ( Get-Command git ) {
     }
 }
 $promptTemplateGetGitBranch = @{
-    'Alignment' = 'Left'
-    'ItemSeparator' = ''
-    'LineToPrintOn' = 2
-    'ForegroundColor' = 'Orchid'
-    'ContentFunction' = $getGitBranch
+    Alignment = 'Left'
+    NoGroup = $true
+    LineToPrintOn = 2
+    ForegroundColor = 'Orchid'
+    ContentFunction = $getGitBranch
     AnsiEffects = 'italicize'
 }
 
