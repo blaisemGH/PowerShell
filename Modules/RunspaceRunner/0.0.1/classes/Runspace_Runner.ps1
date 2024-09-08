@@ -1,6 +1,12 @@
 using namespace System.Collections.Generic
 using namespace System.Management.Automation.Runspaces
+using namespace System.Collections.Specialized
 
+class RunspaceRunnerOrderedEntry {
+    [string]$MarkId
+    [string[]]$Arguments
+    [initialsessionstate]$Iss
+}
 class RunspaceRunner {
     [RunspacePool]$RunspacePool
     [list[PSCustomObject]]$RunspaceInvocations = @()
@@ -159,9 +165,43 @@ class RunspaceRunner {
         }
         return $output
     }
+
+    [int] StartRunspaceEntry([RunspaceRunnerOrderedEntry]$entry) {
+        return $(
+            if ( $entry.iss -and !$entry.Arguments ) {$this.Start_NewRunspace($entry.iss)}
+            elseif ( $entry.Arguments -and !$entry.iss) {$this.Start_NewRunspace($entry.Args)}
+            elseif ( $entry.Iss -and $entry.Arguments) {$this.Start_NewRunspace($entry.iss, $entry.Args)}
+            else { $this.runspaceRunner.Start_NewRunspace() }
+        )
+    }
+
+    [OrderedDictionary]InvokeAllInOrder([List[Hashtable]]$orderedItems) {
+        $orderedOutput = [ordered]@{}
+        $trackConcurrency = @{}
+        foreach ($entry in $orderedItems ) {
+            if ((Get-Runspace).Count -lt $this.parallelism) {
+                $runId = $this.StartRunspaceEntry($entry)
+                $trackConcurrency.Add( $runId, $entry.MarkId )
+            } else {
+                while ( $this.RunspaceInvocations.handle.IsCompleted -NotContains $true) {}
+              
+                $finishedId = $this.RunspaceInvocations | where {$_.handle.IsCompleted} | Select-Object -ExpandProperty id
+                $commandCompletions = $this.Receive_RunspaceOutput($finishedId)
+                $command = $trackConcurrency.$finishedId
+              
+                $orderedOutput.Add($command, $commandCompletions)
+              
+                $trackConcurrency.Remove($finishedId)
+    
+                $trackConcurrency.Add( [void]$this.StartRunspaceEntry($entry), $command )
+            }
+        }
+
+        return $orderedOutput
+    }
     
     [void] Close () {
-        $this.RunspacePool.Dispose()
+        $this.RunspacePool.Close()
         [System.GC]::Collect()
         [System.GC]::WaitForPendingFinalizers()
     }

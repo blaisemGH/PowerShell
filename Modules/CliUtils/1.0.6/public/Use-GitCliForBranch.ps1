@@ -9,6 +9,17 @@
 Function Use-GitCliForBranch {
     [CmdletBinding(DefaultParameterSetName='list')]
     Param(
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName='pull')]
+        [ArgumentCompleter(
+            {
+                param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+                [string[]](git branch -r) | Where-Object {
+                    $_ -like "$wordToComplete*"
+                }
+            }
+        )]
+        [Alias('pb')]
+        [string]$PullBranch,
         [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='create')]
         [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='delete')]
         [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='checkout')]
@@ -36,6 +47,7 @@ Function Use-GitCliForBranch {
         [Alias('ls')]
         [switch]$List,
         [Parameter(Mandatory, ParameterSetName='push')]
+        [Alias('p')]
         [switch]$Push,
         [Parameter(Mandatory, ParameterSetName='commit')]
         [Alias('c')]

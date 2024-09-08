@@ -46,29 +46,34 @@ function Set-GCloudCompletion {
 function Register-GCloudCompletion {
     $gcloudCompletion = {
         param($wordToComplete, $commandAst, $commandCharPosition)
-        $argTokens = $commandAst.CommandElements.Extent.Text
-        $ht = [GCloud]::CompletionTree
-        $gcloudWideFlags = $ht.gcloudWideFlags | Sort-Object
-        $ht.Remove('gcloudWideFlags')
-        $completionStrings = foreach ( $token in ($argTokens | where { $_ -notmatch '^-' }) ){
-            if ( $token -eq 'gcloud' ) { continue }
-            if ( $ht.ContainsKey($token) ) { #-and !$flagIsCommandWithProperties...
-                if ( $ht[$token].ContainsKey('commandProperties') ) {
-                    $ht = $ht[$token].commandProperties
+        $argTokens = $commandAst.CommandElements.Extent.Text | where { $_ -notmatch '^-' }
+        $ht = [GCloud]::CompletionTree.Clone()
+        $gcloudAllFlags = $ht.gcloudAllFlags | Sort-Object
+        $ht.Remove('gcloudAllFlags')
+        
+        $completionStrings = if ( $argTokens.Count -gt 1 ) {
+            foreach ( $token in $argTokens ){
+                if ( $token -eq 'gcloud' ) { continue }
+                if ( $ht.ContainsKey($token) ) { #-and !$flagIsCommandWithProperties...
+                    if ( $ht[$token].ContainsKey('commandProperties') ) {
+                        $ht = $ht[$token].commandProperties
+                    }
+                    else {
+                        $ht = $ht[$token]
+                    }
                 }
                 else {
-                    $ht = $ht[$token]
+                    $ht.Keys | Where-Object { $_ -like "$wordToComplete*" }
                 }
             }
-            else {
-                $ht.Keys | Where-Object { $_ -like "$wordToComplete*" }
-            }
-        }
-        if ( !$wordToComplete ) {
+        } else {
             $ht.Keys
         }
+        $flags = if ( $ht.gcloudAllowedAllFlags ) {
+            $ht.gcloudAllowedAllFlags
+        } else { @() }
 
-        ($completionStrings | Sort-Object -Unique) + $gcloudWideFlags | Where-Object { $_ -notin $argTokens }
+        ($completionStrings | Sort-Object -Unique) + ($gcloudAllFlags | Where-Object { $_ -notin $argTokens -and $_ -in $flags })
     }
     Register-ArgumentCompleter -CommandName gcloud -ScriptBlock $gcloudCompletion -Native
 }

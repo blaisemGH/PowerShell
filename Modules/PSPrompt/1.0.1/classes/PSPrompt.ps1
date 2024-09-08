@@ -170,7 +170,7 @@ class PSPromptConfig {
         else {
             $alignedConfigDict = [PSPromptConfig]::PromptConfigsLeft
         }
-        
+
         # Prevent the same item from being added twice. Checks to see if the input function already exists.
         if ( $alignedConfigDict.Values.RawContent ) {
             $alignedConfigDict.Values | ForEach {
@@ -179,7 +179,7 @@ class PSPromptConfig {
                 }
             }
         }
-        
+
         [PSPromptConfig]::RemoveDefaultTemplate($alignedConfigDict)
 
         $PSPromptTemplate = [PSPromptTemplate]::new($configToAdd)
@@ -195,13 +195,15 @@ class PSPromptConfig {
         # After a template has been added to the list of items, and the config has been resorted:
         #   * backtrack through the config dict and reapply any group markers, but only if group markers have been activated
         #   * if no group markers activated, remove first item's beginning string, in case the sort has moved a new item into the first position.
-        if ( [PSPromptConfig]::"DefaultGroupID$alignment" -ge 0 -and !$configToAdd.containsKey('NoGroup')) {
-            Write-Host $configToAdd.LineToPrintOn
-            $PSPromptTemplate.SetGroupMarkers($alignedConfigDict)
+        if ( [PSPromptConfig]::"DefaultGroupID$alignment" -ge 0 -and ! $configToAdd.NoGroup) {
+            $PSPromptTemplate.SetGroupMarkers($alignedConfigDict, [Math]::Max(1,$configToAdd.LineToPrintOn))
         }
         #if ( $alignedConfigDict.Count -gt 1)
         else {
-            $firstItem = $alignedConfigDict.Keys | Select -First 1
+            $firstItem = $alignedConfigDict.GetEnumerator() |
+                Where-Object {$_.Value.LineToPrintOn -eq $configToAdd.LineToPrintOn} |
+                Select-Object -ExpandProperty Key -First 1
+
             $alignedConfigDict[$firstItem].BeginningText = ''
         }
 
@@ -362,8 +364,8 @@ class PSPromptTemplate {
     }
 
     # Wrap each group with its beginning and ending marker symbols/strings.
-    [void] SetGroupMarkers([SortedDictionary[int,PSPrompt]]$promptConfig) {
-        $groupLinesAndID = $promptConfig.Values |
+    [void] SetGroupMarkers([SortedDictionary[int,PSPrompt]]$promptConfig, [int]$LineToPrintOn) {
+        $groupLinesAndID = $promptConfig.Values | Where-Object LineToPrintOn -eq $LineToPrintOn
             Group-Object LineToPrintOn, GroupID |
             Select-Object -ExpandProperty Name | ForEach-Object {
                 $group = $_ -split ', '

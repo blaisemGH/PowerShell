@@ -27,10 +27,17 @@ function Add-GKECredentials {
         )]
         [string]$ProjectID,
 
-        [Parameter(Mandatory, ParameterSetName = 'ViaLocalFilesystem', ValueFromRemainingArguments )]
-        [Alias('fs')]
+        [Parameter(Mandatory, ParameterSetName = 'GkeInfoParams')]
         [GCloudProjectCacheInFSCompletions()]
-        [string]$IDFromFS,
+        [string]$GkeName,
+
+        [Parameter(Mandatory, ParameterSetName = 'GkeInfoParams' )]
+        [GCloudProjectCacheInFSCompletions()]
+        [string]$GkeLocation,
+
+        [Parameter(Mandatory, ParameterSetName = 'GkeInfoObject', ValueFromPipeline )]
+        [GCloudProjectCacheInFSCompletions()]
+        [GCloudGkeInfo]$GkeInfo,
 
         [Alias('key')]
         [string]$NewMapKey,
@@ -48,16 +55,34 @@ function Add-GKECredentials {
         }
     }
 
-    $alreadyMappedContexts = if ( Test-Path ([Kube]::ContextFile) ) {
-        (Import-PowerShellDataFile ([Kube]::ContextFile)).Values
+    if ( $PSCmdlet.ParameterSetName -eq 'GkeInfoParams' ) {
+        gcloud container clusters get-credentials $GkeName --location $GkeLocation --project $selectedProjectID    
     }
-    else { [Kube]::MappedContexts.Values }
+    elseif ( $PSCmdlet.ParameterSetName -eq 'GkeInfoObject' ) {
+        gcloud container clusters get-credentials $GkeInfo.Name --location $GkeInfo.Location --project $selectedProjectID
+    }
+    else {
+        $gkeMetaInformation = try {
+            Get-ChildItem ([GCloud]::ProjectRoot) -File -Filter "*$projectId" -ErrorAction Stop | Get-Content | ConvertFrom-StringTable -ErrorAction Stop
+        } catch {
+            $null
+        }
+        
+        if ( $gkeMetaInformation.Name -and $gkeMetaInformation.Location ) {
+            gcloud container clusters get-credentials $gkeMetaInformation.Name --location $gkeMetaInformation.Location --project $selectedProjectID
+        } else {
+            $clusterGKEInfo = $selectedProjectID | Get-GCloudGkeClusterInfoFromProjectId
+            gcloud container clusters get-credentials $clusterGKEInfo.Name --location $clusterGKEInfo.Location --project $selectedProjectID
+        }
+    }
 
-    $clusterGKEInfo = $selectedProjectID | Get-GCloudGkeClusterInfoFromProjectId
-
-    gcloud container clusters get-credentials $clusterGKEInfo.Name --location $clusterGKEInfo.Location --project $selectedProjectID
-
+    
     if ( $? ) {
+        $alreadyMappedContexts = if ( Test-Path ([Kube]::ContextFile) ) {
+            (Import-PowerShellDataFile ([Kube]::ContextFile)).Values
+        }
+        else { [Kube]::MappedContexts.Values }
+
         if ( $ForceAddMapKey -or (!$SkipAddMapKey -and  ($alreadyMappedContexts -eq $clusterGKEInfo.Context) )) {
             Update-ContextFileMap -ProjectID $selectedProjectID -NewMapKey $NewMapKey -ErrorAction Stop | Export-ContextFileAsPSD1
         }

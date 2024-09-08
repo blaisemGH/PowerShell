@@ -1,10 +1,13 @@
+using namespace System.IO.FileInfo
 Function Update-GCloudProjectFS {
     $currentProjects = Import-CSV ([GCloud]::PathToProjectCSV) -Delimiter ','
-    $currentFSProjects = Get-ChildItem ([GCloud]::ProjectRoot) -Recurse -File | Select-Object -ExpandProperty Name
+    $currentFSProjects = Get-ChildItem ([GCloud]::ProjectRoot) -Recurse -File
 
-    Remove-OldGCloudProjectsFromLocalDrive -GCloudProjects $currentProjects -FilesystemProjects $currentFSProjects
-
-    Add-MissingGCloudProjectsToLocalDrive -GCloudProjects $currentProjects -FilesystemProjects $currentFSProjects
+    Remove-OldGCloudProjectsFromLocalDrive -GCloudProjects $currentProjects -FilesystemProjects $currentFSProjects.Name
+    
+    Update-IncompleteGCloudFSProjects -GCloudProjects $currentProjects -FilesystemProjects $currentFSProjects
+    
+    Add-MissingGCloudProjectsToLocalDrive -GCloudProjects $currentProjects -FilesystemProjects $currentFSProjects.Name
 }
 
 # This function will recursively climb up the parent folders and remove any that are empty. Stops climbing at [GCloud]::ProjectRoot.
@@ -20,9 +23,11 @@ Function Remove-OldGCloudProjectsFromLocalDrive {
 
         Write-Host "Project ID $_ no longer found in GCloud. Deleting project from local filesystem cache..." -Fore Red
 
-        Get-ChildItem ([GCloud]::ProjectRoot) -Recurse -File -Filter $_ | Select-Object -ExpandProperty FullName | ForEach-Object {
-            Remove-OldProject -LocalFilePath $_ -RootPathEscapedRegex ([Regex]::Escape((Convert-Path ([GCloud]::ProjectRoot))))
-        }
+        Get-ChildItem ([GCloud]::ProjectRoot) -Recurse -File -Filter $_ -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty FullName | 
+            ForEach-Object {
+                Remove-OldProject -LocalFilePath $_ -RootPathEscapedRegex ([Regex]::Escape((Convert-Path ([GCloud]::ProjectRoot))))
+            }
     }
 }
 
@@ -48,6 +53,26 @@ Function Remove-OldProject {
     }
 }
 
+Function Update-IncompleteGCloudFSProjects {
+    param(
+        [Parameter(Mandatory)]
+        [PSCustomObject[]]$GCloudProjects,
+        [Parameter(Mandatory)]
+        [FileInfo[]]$FilesystemProjects
+    )
+    $FilesystemProjects |
+        Where-Object {
+            # If file already contains both name and location (count -eq 2), then no need to update it
+            (Select-String -Pattern 'name|location' -Path $_.FullName).Matches.Count -ne 2 -and
+            $_.Name -in $GCloudProjects
+        }  |
+        Get-GkeClusterMetaInfo -PipelineVariable projectObject |
+        Set-Content -Path $projectObject.FullName |
+        ForEach-Object {
+            Write-Host 'Updating missing meta information at local filepath ' -Fore Cyan -NoNewLine; Write-Host $_.FullName
+        }
+}
+
 Function Add-MissingGCloudProjectsToLocalDrive {
     param(
         [Parameter(Mandatory)]
@@ -65,9 +90,10 @@ Function Add-MissingGCloudProjectsToLocalDrive {
             $projectDriveFilePath = Get-GCloudProjectLineageAsFilepath -ProjectID $_.project_id
 
             if ( $projectDriveFilePath ) {
+                $gkeClusterMetaInfo = Get-GkeClusterMetaInfo -ProjectId $_.project_id
                 Write-Host 'Adding new local filepath ' -Fore Magenta -NoNewLine; Write-Host $projectDriveFilePath
                 $projectFullPath = Join-Path ([GCloud]::ProjectRoot) $projectDriveFilePath
-                $null = New-Item  $projectFullPath -ItemType File -force
+                $null = New-Item -Path $projectFullPath -ItemType File -Value $gkeClusterMetaInfo -Force
             }
             Write-Host '' # Add a space between logging outputs
         }
@@ -128,4 +154,25 @@ Function Get-GCloudProjectLineageAsFilepath {
 
     # Remove whitespace around hyphens to make later filesystem navigation more convenient.
     return (Join-Path $parentPath $leafPath) -replace '(?<=-)\s|\s(?=-)' -replace '\s', '-'
+}
+
+Function Get-GkeClusterMetaInfo {
+    Param(
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName='projectId')]
+        [string]$ProjectId,
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName='projectFileInfo')]
+        [FileInfo]$ProjectFileInfo
+    )
+
+    process {
+        $useProjectId = if ( $PSCmdlet.ParameterSetName -eq 'projectId' ) { $ProjectId } else { $ProjectFileInfo.Name } 
+        try {
+            $gkeInfo = [GCloudGkeInfo]($useProjectId | Get-GCloudGkeClusterInfoFromProjectId | Convert-ObjectToHashtable)
+            $gkeInfo.ProjectId = $useProjectId
+            $gkeInfo.ProjectNumber = (gcloud projects describe $useProjectId | Select-String projectNumber).Line.split(':')[1].Trim("' ")
+            return ($gkeInfo.psobject.properties.name | ForEach-Object { "$_ = $gkeInfo.$($_)" }) -join "`n"
+        } catch {
+            return $null
+        }
+    }
 }

@@ -25,16 +25,23 @@ Function Set-GCloudContext {
 
     $existingConfigContexts = kubectl config get-contexts -o name
     if ( $gkeContext -notin $existingConfigContexts -or $ForceRequestCustomContextMapping ) {
-        Add-GKECredentials -ProjectId $projectId
+        $gkeMetaInformation = try {
+            Get-ChildItem ([GCloud]::ProjectRoot) -File -Filter "*$projectId" -ErrorAction Stop | Get-Content | ConvertFrom-StringTable -ErrorAction Stop
+        } catch {
+            $null
+        }
+        
+        if ( $gkeMetaInformation.Name -and $gkeMetaInformation.Location ) {
+            Add-GKECredentials -GkeName $gkeMetaInformation.Name -GkeLocation $gkeMetaInformation.Location
+        } else {
+            Add-GKECredentials -ProjectId $projectId
+        }
 
-        $null = New-Event -SourceIdentifier 'Set-KubeContext' -EventArguments $gkeContext
+        #$null = New-Event -SourceIdentifier 'Set-KubeContext' -EventArguments $gkeContext
         Invoke-Expression ([Kube]::Initialize_KubeApiAutocomplete($true))
-        Update-KubeCompletions
+        #Update-KubeCompletions
     }
     else {
         Set-KubeContext -Context $gkeContext
     }
-
-    [GCloud]::CurrentProject = $projectId
-    gcloud config set project $projectId
 }
