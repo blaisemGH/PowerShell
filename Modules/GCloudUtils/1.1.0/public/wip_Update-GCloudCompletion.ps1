@@ -25,7 +25,7 @@ function Update-GCloudCompletion {
       Write-Host 'Delete this file or rerun the command with the -Force parameter.'
     }
     try {
-        [GCloud]::CompletionTree = Import-Clixml $completionFilepath
+        [GCloud]::CompletionTree = Get-Content $completionFilepath | ConvertFrom-Json #Import-Clixml $completionFilepath
         Register-GCloudCompletion
     }
     catch {
@@ -47,7 +47,7 @@ function Get-GCloudCommandTree {
   }
   process {
     foreach ( $parentCmd in $ParentCommands ) {
-      Write-Host "Completing gcloud args: $parentCmd"
+      Write-Host "Completing gcloud args: $parentCmd" -ForegroundColor Green
       $toArgs = ($parentCmd -split ' ') + '--help'
       $previousKey = $toArgs[-2]
       if ( ($previousKey -in '--help', '-h' -or ( $toArgs | group | where count -gt 1)) -and ($toArgs -eq '--help').count -ne 2 ) {
@@ -57,8 +57,10 @@ function Get-GCloudCommandTree {
       $isLeafCommand = $true
       $uniqueFlagsStart = $false
       $uniqueFlagsKeyIncrement = 0
+      $active = $false
 
-      foreach ($line in (gcloud @toArgs) ) {
+      $gcloudText = gcloud @toArgs
+      foreach ($line in $gcloudText) {
         # Handle lists of arguments preceded by GLOBAL FLAGS or OTHER FLAGS.
         if ( $line -cmatch '^GLOBAL FLAGS' -or $line -cmatch '^OTHER FLAGS' ) {
           if ( ! $HashtableCache.ContainsKey('gcloudAllFlags' )) {
@@ -152,11 +154,13 @@ function Get-GCloudCommandTree {
           continue
         }
 
-        if ( $active -and $line -match '^\s{4,9}[-a-z]+($|[;,=](?=\s*[-[]+\S+$))') {#[-a-z_;=",[\].]+$))') {
+        # prefilter the line so that we only process lines that could potentially contain a command for us to add to autocomplete.
+        if ( $active -and $line -match '^\s{4,9}[-a-z_]+($|[;,=](?=\s*[-[\S]+(.* default=.*)?$))') {#[-a-z_;=",[\].]+$))') {
           # Parse the line if it hasn't been skipped yet
           $addCommandParams = @{
             HashtableCache = $HashtableCache
             Line = $line
+            GCloudText = $gcloudText
             CurrentCommand = $ParentCmd
             PreviousKey = $PreviousKey
             IsUniqueFlags = $isUniqueFlags
@@ -167,10 +171,6 @@ function Get-GCloudCommandTree {
             Write-Debug "Unique line $line"
           }
         }
-        #if ( $line -match '^\s{5}[a-z]|^\s{5,}--?[a-z](?!.*[^,;] |.*\.$)' -and $line -match '^\s*[-A-Za-z0-9]+=?' ) {
-          
-          
-        #}
       }
     }
     Write-Output $HashtableCache
@@ -183,6 +183,7 @@ function Add-GCloudCommandToCache {
     [Hashtable]$HashtableCache,
     [Parameter(Mandatory)]
     [string]$Line,
+    [string[]]$GCloudText,
     [string]$CurrentCommand,
     [string]$PreviousKey,
     [Parameter(Mandatory)]
@@ -190,28 +191,49 @@ function Add-GCloudCommandToCache {
     [Parameter(Mandatory)]
     [switch]$isGcloudAllFlag
   )
-  # gcloud artifacts docker images scan --help
-    # I need to highlight the must be one of syntax and extract the key from this, which I then apply to that key. The problem is: 
-    # gcloud  ai-platform jobs submit training --help
-      # This has a command that switches the _ and -. So I need to replace the _ with a -, as all keys will use a - and not an _ 
-  $key = $Line -replace '^\s+(\S+).*$', '$1' -replace '=.*$'
-  if ( $line -match 'METRIC-NAME') {
-    write-host 'breakpoint'
-  }
-  #if ( $key -cmatch '^\s*--?[-a-z]+(?=$|=[A-Z]+($|;))' -and $key -ne $previousKey) {
-  if ( $key -cmatch '^\s*--?[-a-z]+(?=$|=.*)' -and $key -ne $PreviousKey) {
+  # To-Do: Add a fork in the flag workup for unique flags.
+  # work up the key, the line indentation to the flag found, and make sure we have a copy of the help menu text for recursive parsing, as some
+  # keys have multi-line implications regarding their enums and such, that it was easier to just reparse the help menu than continue line-by-line.
+  $key = $Line -replace '^\s+(\S+).*$', '$1' -replace '[=,].*$'
+  $lineIndentation = $Line -replace '(\s+).*$' , '$1'
+  $gcloudHelpText = if ( !$GCloudText ) {
     $cmdAsNativeArgs = $CurrentCommand -split '\s+' #| where {$_}
-    $gcloudHelpText = (gcloud @cmdAsNativeArgs --help) -join "`n"
-    $regexSafeLine = [Regex]::Escape($Line)
-    # Handle flags that take multiple values, each of which has its own set of valid values.
-    if ( $Line -match '^\s+--.*=\[[-a-z]+=.*[\]]' ) {
+    (gcloud @cmdAsNativeArgs --help) -join "`n"
+  } else {
+    $GCloudText -join "`n"
+  }
+  $regexSafeLine = [Regex]::Escape( ($Line -replace '^\s+') )
+
+  # Check if key is a flag, i.e., preceded by --
+  if ( $key -cmatch '^\s*--?[-a-z_]+(?=$|=.*)' -and $key -ne $PreviousKey) {
+    
+    # Handle flags that take an enum of values, with each enum having its own nested enum. See 'ai endpoints deploy-model'
+    if ( $Line -match '^\s+--.*=\[[-a-z_]+=.*[\]]' ) {
+      # First extract the enums to look for, as these are listed on the same line as the flag, e.g., FLAG=[ENUM1,...]. Not all Enums are listed here,
+      # but we only need ENUM1 from the example.
       [string[]]$partialFlagSubKeys = $Line -replace '^[^\[]+' -replace '[\[\]]' -split ',' | where { $_ -match '=' } | foreach { ($_ -split '=')[0] }
+      # Now find the block of lines that start with the flag and end before the next flag. This is the block that we need to parse for the enums of the enums.
       $relevantLines = ($gcloudHelpText | Select-String "(?sm)^(\s+)$key.+?\n\n.*?(?=^\1[^\s])").Matches.Value -split "`n"
+      # Take the first key from partialFlagSubKeys as a hint. Then find the line in the block of relevant lines that contains this hint. We sample this line
+      # to get its indentation. It's assumed it will have the same indentation as all the enums, so we can parse the relevant lines for strings with the
+      # same indentation and assume they are also enum values. This is how we find the remaining enums after ENUM1.
       $testKey = $partialFlagSubKeys[0]
-      $testLine = $relevantLines | where {$_ -match "^\s+$testKey"}
-      $getIndentation = ' ' * ($testLine -replace '^([\s]+)\S.*' , '$1' | foreach Length)
-      $allFlagSubKeys = $relevantLines | where {$_ -match "^$getIndentation\S"} | foreach trim(' ')
-      $HashtableCache.Add("$key=", @{})
+      $testLine = $relevantLines | where {$_ -match "^\s+$testKey(?![-a-z])"}
+      $getIndentation = $testLine -replace '^([\s]+).*$' , '$1' #' ' * ($testLine -replace '^([\s]+)\S.*' , '$1' | foreach Length)
+      $allFlagSubKeys = if ( $testLine -and $getIndentation ) {
+         $relevantLines | where {$_ -match "^$getIndentation\S"} | foreach trim(' ')
+      } else { $null }
+      # Only add the flag as a key with an empty hashtable if there are actually enum values found to populate that hashtable.
+      if ( $allFlagSubKeys ) {
+        $HashtableCache.Add("$key=", @{})
+        # If there were no enums found, then treat it like a normal flag and pack it either into gcloudAllFlags or as just a regular flag in the else.
+      } elseif ( $isGcloudAllFlag ) {
+          write-debug "all flag is $key"
+          $HashtableCache.gcloudAllFlags.Add($key)
+      } else {
+        $HashtableCache.Add($key, '')
+      }
+      # If subkeys (enums) were found, then also check for these enums had nested enums. Add these in if so.
       foreach ($subKey in $allFlagSubKeys) {
         $findSubkey = $gcloudHelpText |  Select-String "(?sm)(?<=^[\s]{9}$subKey.*?)^\s{10,}.*?(?=(\n\s)*^\s{5,9}[^\s])"
         $validValues = if ($findSubkey.Matches.Value -notmatch '.*hoices are ') {
@@ -222,15 +244,30 @@ function Add-GCloudCommandToCache {
         $HashtableCache."$key=".Add($subKey, $validValues)
       }
     }
-    elseif ( ( ($gcloudHelpText | Select-String "(?s)$regexSafeLine.*?(?=\n\n)").Matches.Value | Select-String 'must be one of|is one of the following') ) {
-      $relevantLines = ($gcloudHelpText | Select-String '(?sm)^(\s+)[^\n]+(must be one of|is one of the following):\s*\n\n.*?(?:\1([-a-z]+.*$(?=\n\1))+)').Matches.Groups[0].Value
-      $values = if ( $relevantLines -match 'must be one of: \[' ) {
-        ($relevantLines -split ': ')[1] -split ',\s*' | foreach trim('[]')
+    # Covers the case of enums defined for a specific command, which are preceded by either "must be one of", "is one of the following",
+    # "must be (only one value is supported)". The \s in between every word is to account for cases where the preceding phrases wrap across
+    # multiple lines.
+    # see access-context-manager levels create, artifacts repositories create, artifacts docker image scan, ai-platform jobs submit training,
+          # alloydb clusters create, alloydb instances create
+          # hardest one: access-context-manager authorized-orgs create
+    elseif ( ( ($gcloudHelpText | Select-String "(?sm)^$lineIndentation$regexSafeLine$.*?(?=\n\n)").Matches.Value | Select-String 'must[\s]+be[\s]+one[\s]+of|is[\s]+one[\s]+of[\s]+the[\s]+following|must[\s]+be[\s]+\(only[\s]+one[\s]+value[\s]+is[\s]+supported\)') ) {
+      # This regex selects for the above phrases and captures from the key, past that line, to the next key. If it's the last key in a set of flags,
+      # then the next line will do a full outdent and begin with [A-Z], hence the or | at the every end.
+      $relevantLines = ($gcloudHelpText | 
+        Select-String "(?sm)^$lineIndentation$regexSafeLine.*?^(\s+)[^\n]*(must[\s]+be[\s]+one[\s]+of|is[\s]+one[\s]+of[\s]+the[\s]+following|must[\s]+be[\s]+\(only[\s]+one[\s]+value[\s]+is[\s]+supported\)):[^\n]*\s*\n\n?.*?(?=\n$lineIndentation[-a-z]+|^[A-Z])"
+      ).Matches.Groups[0].Value
+      #"(?sm)(?<=$regexSafeLine.*?)^(\s+)[^\n]+(must be one of|is one of the following):\s*\n\n.*?(?:\1([-a-z]+.*`$(?=\n\1))+)").Matches.Groups[0].Value
+      # First if regex covers the case of "must be one of: <value>", where <value> may be wrapped in brackets, and also the case that the list of values
+      # begins on the next line. The else covers the case of "must be one of: <double newline, then values separated by newlines and descriptions>"
+      # Note that relevantLines has concatenated the output into a single string, so \s matches newlines.
+      $values = if ( $relevantLines -match '(?s)must\s+be\s+one\s+of: *\n? *[-a-z'',[_"]+' ) {
+        ($relevantLines -split ':\s*')[1] -split '[,.]\s*' | foreach trim('[]') | where {$_ -match '^[-a-z0-9_]+$'}
       } else {
         $relevantLines -split "`n" | where {$_ -match '^\s+[-a-z_]+\s*$'} | foreach trim(' ')
       }
       $HashtableCache.Add("$key=",$values)
     }
+    # Handle every other kind of flag
     else {
       # Some lines list multiple keys, like `--quiet, -q`
       $multiKeys = $key -split ',\s+'
@@ -243,11 +280,21 @@ function Add-GCloudCommandToCache {
           $HashtableCache.gcloudAllFlags.Add($flagName)
           continue
         }
-        $HashtableCache.Add($flagName, '')
+        if ( ! $HashtableCache.ContainsKey($flagName) ){$HashtableCache.Add($flagName, '')}
       }
     }
   }
-  elseif ( $key -ne $PreviousKey -and $key -match '^[a-z]' -and $key -notmatch '^--?' -and ($key -notin $HashtableCache.Values.Keys -and $key -notin $HashtableCache.Values) ){
+  # Handle non flags.
+  # 1 line: Any repeat keys are not included, and the key must begin with a-z and not be a flag (start with --)
+  # 2 line: we can't control for the indentation as it can vary between 4,5,7,8, or 9 whitespaces. It may be possible for them
+    # to be ::indent::<command>::whitespace::, so that we can't easily use regex to check if a line is a command or not. Therefore, we check that the
+    # preceding line doesn't have the same indentation as our key, which would imply it is a block of descriptive text, since every command is followed
+    # immediately by a further indented block of descriptive text.
+  # 3 line: Check if the key is already in the hashtable to control for any of the enums of flags we searched for above and may have already added.
+  elseif ( $key -ne $PreviousKey -and $key -match '^[a-z]' -and $key -notmatch '^--?' -and 
+    ! ($gcloudHelpText | Select-String "(?sm)^$lineIndentation[^\n]+\n$regexSafeLine").Matches -and
+    ($key -notin $HashtableCache.Values.Keys -and $key -notin ($HashtableCache.Values | foreach {$_}) )
+  ){
     $appendCommands = (($parentCmd -replace '--help') + ' ' + $key) -replace '^\s+' -replace '\s+$' -replace '\s{2,}', ' '
     
     Write-Verbose "command is $appendCommands"
@@ -258,4 +305,18 @@ function Add-GCloudCommandToCache {
   return $HashtableCache
 }
 
+
 Update-GCloudCompletion -Force
+
+#Make these into unit tests one day. They are commands that failed and required special cases in the code to account for.
+#Get-GCloudCommandTree -ParentCommands 'alloydb clusters create' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'alloydb instances create' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'ai-platform jobs submit training' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'ai model-monitoring-jobs create' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'artifacts docker images scan' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'ai endpoints deploy-model' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'artifacts repositories create' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'access-context-manager levels create' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'access-context-manager authorized-orgs create' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'ai-platform jobs submit prediction' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'ai-platform jobs submit training' -HashtableCache @{}
