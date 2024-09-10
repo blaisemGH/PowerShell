@@ -37,7 +37,7 @@ try {
 }
 catch {}
 
-Update-KubeCompletions
+#Update-KubeCompletions
 
 if ( (Get-Module PSPrompt) -and ! (Get-Module KubectlUtils) ) {
     $getItemKubernetes = {

@@ -18,7 +18,7 @@ function Update-GCloudCompletion {
     $versionedCompletionFile = "gcloud-completion-v$($gcloudVersion.ToString()).json"
     $completionFilepath = Join-Path ([GCloud]::LocalCache) $versionedCompletionFile
     if ( ! (Test-Path $completionFilepath ) -or $Force ) {
-        Get-GCloudCommandTree -ParentCommands '--help' -HashtableCache @{} | ConvertTo-Json $completionFilepath -Compress -Depth 20 | Add-Content $completionFilepath
+        Get-GCloudCommandTree -ParentCommands '--help' -HashtableCache @{} | ConvertTo-Json -Compress -Depth 20 | Add-Content $completionFilepath
     }
     else {
       Write-Host "Completion file for gcloud version $gcloudVersion already exists: $completionFilepath"
@@ -146,6 +146,7 @@ function Get-GCloudCommandTree {
           $active = $true
           continue
         }
+        # If the help menu ever fully outdents and doesn't match the requisite words, deactivate $active
         if ( $active -and $line -cmatch '^[A-Z][A-Z ]+' -and $line -notmatch 'flag|command|group|topic') {
           $active = $false
         }
@@ -155,7 +156,7 @@ function Get-GCloudCommandTree {
         }
 
         # prefilter the line so that we only process lines that could potentially contain a command for us to add to autocomplete.
-        if ( $active -and $line -match '^\s{4,9}[-a-z_]+($|[;,=](?=\s*[-[\S]+(.* default=.*)?$))') {#[-a-z_;=",[\].]+$))') {
+        if ( $active -and $line -match '^\s{4,9}[-a-z_0-9]+($|[;,=](?=\s*[-[\S]+(.* default=.*)?$))') {#[-a-z_;=",[\].]+$))') {
           # Parse the line if it hasn't been skipped yet
           $addCommandParams = @{
             HashtableCache = $HashtableCache
@@ -205,23 +206,71 @@ function Add-GCloudCommandToCache {
   $regexSafeLine = [Regex]::Escape( ($Line -replace '^\s+') )
 
   # Check if key is a flag, i.e., preceded by --
-  if ( $key -cmatch '^\s*--?[-a-z_]+(?=$|=.*)' -and $key -ne $PreviousKey) {
+  if ( $key -cmatch '^\s*--?[-a-z_0-9]+(?=$|=.*)' -and $key -ne $PreviousKey) {
     
+    $indicatesEnumsWillBeProvided = @(
+      'etermines\s+the\s+spec\s+of\s+endpoints\s+attached\s+to\s+this\s+group'
+      'ust[\s]+be[\s]+one[\s]+of'
+      'is[\s]+one[\s]+of[\s]+the[\s]+following'
+      'ust[\s]+be[\s]+\(only[\s]+one[\s]+value[\s]+is[\s]+supported\)'
+      'he\s+following\s+keys\s+are\s+allowed'
+      'he\s+allowed\s+values\s+of\s+the\s+key\s+are\s+as\s+follows'
+      'ossible\s+attributes\s+include'
+      'ets\s+allowed_ports\s+value'
+      'ets\s+boost_config\s+value'
+    ) -join '|'
+
+    if ( $enumBlock = (
+      ($gcloudHelpText |
+        Select-String "(?sm)^$lineIndentation$regexSafeLine$.*?(?=\n\n($lineIndentation\S|^[A-Z]))"
+      ).Matches.Value |
+        Select-String "(?m)^$lineIndentation\s{1,4}\S.*($indicatesEnumsWillBeProvided).*$"
+    )) {
+      # This regex selects for the above phrases and captures from the key, past that line, to the next key. If it's the last key in a set of flags,
+      # then the next line will do a full outdent and begin with [A-Z], hence the or | at the every end.
+      $values = if ( $enumBlock.Matches.Value -match '(?s): *\n? *\S.*$' ) {
+        ($enumBlock -split ':\s*')[-1] -split '[,.]\s*' | foreach trim('[]') | where {$_ -match '^[-a-z0-9_]+$'}
+      } else {
+        $relevantLines = ($gcloudHelpText | 
+        Select-String "(?sm)^$lineIndentation$regexSafeLine.*?^(\s+)[^\n]*($indicatesEnumsWillBeProvided)[.:][^\n]*\s*\n\n?.*?(?=\n$lineIndentation[-a-z]+|^[A-Z])"
+      ).Matches.Groups[0].Value
+        $relevantLines -split "`n" | where {$_ -match '^\s+[-a-z0-9_]+\s*$'} | foreach trim(' ')
+      }
+      
+      #"(?sm)(?<=$regexSafeLine.*?)^(\s+)[^\n]+(must be one of|is one of the following):\s*\n\n.*?(?:\1([-a-z]+.*`$(?=\n\1))+)").Matches.Groups[0].Value
+      # First if regex covers the case of "must be one of: <value>", where <value> may be wrapped in brackets, and also the case that the list of values
+      # begins on the next line. The else covers the case of "must be one of: <double newline, then values separated by newlines and descriptions>"
+      # Note that relevantLines has concatenated the output into a single string, so \s matches newlines.
+      <#$values = if ( $relevantLines -match '(?s)must\s+be\s+one\s+of: *\n? *[-a-z'',[_"]+' ) {
+        ($relevantLines -split ':\s*')[1] -split '[,.]\s*' | foreach trim('[]') | where {$_ -match '^[-a-z0-9_]+$'}
+      } else {
+        $relevantLines -split "`n" | where {$_ -match '^\s+[-a-z_]+\s*$'} | foreach trim(' ')
+      }#>
+      $HashtableCache.Add("$key=",$values)
+    }
     # Handle flags that take an enum of values, with each enum having its own nested enum. See 'ai endpoints deploy-model'
-    if ( $Line -match '^\s+--.*=\[[-a-z_]+=.*[\]]' ) {
+    elseif ( $Line -match '(?sm)^(\s+)--.*=(\[[-a-z0-9[_,=]+|[-a-z0-9[_,=]+).*?[\]]$' ) {
       # First extract the enums to look for, as these are listed on the same line as the flag, e.g., FLAG=[ENUM1,...]. Not all Enums are listed here,
       # but we only need ENUM1 from the example.
-      [string[]]$partialFlagSubKeys = $Line -replace '^[^\[]+' -replace '[\[\]]' -split ',' | where { $_ -match '=' } | foreach { ($_ -split '=')[0] }
+      #[string[]]$partialFlagSubKeys = $Line -replace '^[^\[]+' -replace '[\[\]]' -split ',' | where { $_ -match '=' } | foreach { ($_ -split '=')[0] }
+      #$testKey = $partialFlagSubKeys[0]
       # Now find the block of lines that start with the flag and end before the next flag. This is the block that we need to parse for the enums of the enums.
-      $relevantLines = ($gcloudHelpText | Select-String "(?sm)^(\s+)$key.+?\n\n.*?(?=^\1[^\s])").Matches.Value -split "`n"
+      #$relevantLines = ($gcloudHelpText | Select-String "(?sm)^$lineIndentation$key.+?\n\n.*?(?=^$lineIndentation[^\s])").Matches.Value -split "`n"
+      
       # Take the first key from partialFlagSubKeys as a hint. Then find the line in the block of relevant lines that contains this hint. We sample this line
       # to get its indentation. It's assumed it will have the same indentation as all the enums, so we can parse the relevant lines for strings with the
       # same indentation and assume they are also enum values. This is how we find the remaining enums after ENUM1.
-      $testKey = $partialFlagSubKeys[0]
-      $testLine = $relevantLines | where {$_ -match "^\s+$testKey(?![-a-z])"}
+      
+      #if ( $testKey -in 'KEY','PROPERTY' ) {
+        $relevantLines = ($gcloudHelpText | Select-String "(?sm)(?<=^$lineIndentation$regexSafeLine.+?\n\n).*?(?=\s*^$lineIndentation[^\s])").Matches.Value
+        $testLine = ( $relevantLines | Select-String '(?sm)^(\s+)\S[^\n]+?(?=\n^\1\s+[^\n]+$\n\1\s)').Matches.Value
+      #} else {
+      #  $relevantLines = ($gcloudHelpText | Select-String "(?sm)(?<=^$lineIndentation$key.+?\n\n).*?(?=\s*^$lineIndentation[^\s])").Matches.Value -split "`n"
+      #  $testLine = $relevantLines | where {$_ -match "^\s+$testKey(?![-a-z])"} | Select-Object -First 1
+      #}
       $getIndentation = $testLine -replace '^([\s]+).*$' , '$1' #' ' * ($testLine -replace '^([\s]+)\S.*' , '$1' | foreach Length)
       $allFlagSubKeys = if ( $testLine -and $getIndentation ) {
-         $relevantLines | where {$_ -match "^$getIndentation\S"} | foreach trim(' ')
+         $relevantLines -split "`n" | where {$_ -match "^$getIndentation\S+$"} | foreach trim(' ')
       } else { $null }
       # Only add the flag as a key with an empty hashtable if there are actually enum values found to populate that hashtable.
       if ( $allFlagSubKeys ) {
@@ -250,23 +299,6 @@ function Add-GCloudCommandToCache {
     # see access-context-manager levels create, artifacts repositories create, artifacts docker image scan, ai-platform jobs submit training,
           # alloydb clusters create, alloydb instances create
           # hardest one: access-context-manager authorized-orgs create
-    elseif ( ( ($gcloudHelpText | Select-String "(?sm)^$lineIndentation$regexSafeLine$.*?(?=\n\n)").Matches.Value | Select-String 'must[\s]+be[\s]+one[\s]+of|is[\s]+one[\s]+of[\s]+the[\s]+following|must[\s]+be[\s]+\(only[\s]+one[\s]+value[\s]+is[\s]+supported\)') ) {
-      # This regex selects for the above phrases and captures from the key, past that line, to the next key. If it's the last key in a set of flags,
-      # then the next line will do a full outdent and begin with [A-Z], hence the or | at the every end.
-      $relevantLines = ($gcloudHelpText | 
-        Select-String "(?sm)^$lineIndentation$regexSafeLine.*?^(\s+)[^\n]*(must[\s]+be[\s]+one[\s]+of|is[\s]+one[\s]+of[\s]+the[\s]+following|must[\s]+be[\s]+\(only[\s]+one[\s]+value[\s]+is[\s]+supported\)):[^\n]*\s*\n\n?.*?(?=\n$lineIndentation[-a-z]+|^[A-Z])"
-      ).Matches.Groups[0].Value
-      #"(?sm)(?<=$regexSafeLine.*?)^(\s+)[^\n]+(must be one of|is one of the following):\s*\n\n.*?(?:\1([-a-z]+.*`$(?=\n\1))+)").Matches.Groups[0].Value
-      # First if regex covers the case of "must be one of: <value>", where <value> may be wrapped in brackets, and also the case that the list of values
-      # begins on the next line. The else covers the case of "must be one of: <double newline, then values separated by newlines and descriptions>"
-      # Note that relevantLines has concatenated the output into a single string, so \s matches newlines.
-      $values = if ( $relevantLines -match '(?s)must\s+be\s+one\s+of: *\n? *[-a-z'',[_"]+' ) {
-        ($relevantLines -split ':\s*')[1] -split '[,.]\s*' | foreach trim('[]') | where {$_ -match '^[-a-z0-9_]+$'}
-      } else {
-        $relevantLines -split "`n" | where {$_ -match '^\s+[-a-z_]+\s*$'} | foreach trim(' ')
-      }
-      $HashtableCache.Add("$key=",$values)
-    }
     # Handle every other kind of flag
     else {
       # Some lines list multiple keys, like `--quiet, -q`
@@ -292,7 +324,7 @@ function Add-GCloudCommandToCache {
     # immediately by a further indented block of descriptive text.
   # 3 line: Check if the key is already in the hashtable to control for any of the enums of flags we searched for above and may have already added.
   elseif ( $key -ne $PreviousKey -and $key -match '^[a-z]' -and $key -notmatch '^--?' -and 
-    ! ($gcloudHelpText | Select-String "(?sm)^$lineIndentation[^\n]+\n$regexSafeLine").Matches -and
+    ! ($gcloudHelpText | Select-String "(?sm)^$lineIndentation[^\n]+\n$lineIndentation$regexSafeLine").Matches -and
     ($key -notin $HashtableCache.Values.Keys -and $key -notin ($HashtableCache.Values | foreach {$_}) )
   ){
     $appendCommands = (($parentCmd -replace '--help') + ' ' + $key) -replace '^\s+' -replace '\s+$' -replace '\s{2,}', ' '
@@ -319,4 +351,33 @@ Update-GCloudCompletion -Force
 #Get-GCloudCommandTree -ParentCommands 'access-context-manager levels create' -HashtableCache @{}
 #Get-GCloudCommandTree -ParentCommands 'access-context-manager authorized-orgs create' -HashtableCache @{}
 #Get-GCloudCommandTree -ParentCommands 'ai-platform jobs submit prediction' -HashtableCache @{}
+
 #Get-GCloudCommandTree -ParentCommands 'ai-platform jobs submit training' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'beta compute instance-groups managed instance-configs create' -HashtableCache @{}
+
+#Get-GCloudCommandTree -ParentCommands 'beta builds submit' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'beta compute forwarding-rules set-target' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'beta compute instance-groups managed instance-configs update' -HashtableCache @{}
+
+#Get-GCloudCommandTree -ParentCommands 'beta compute backend-services create' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'beta compute backend-services add-backend' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'beta compute backend-services update' -HashtableCache @{}
+
+#Get-GCloudCommandTree -ParentCommands 'beta compute images create' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'beta compute instances bulk create' -HashtableCache @{}
+
+#Get-GCloudCommandTree -ParentCommands 'beta compute network-endpoint-groups create' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'beta workstations configs create' -HashtableCache @{}
+#Get-GCloudCommandTree -ParentCommands 'beta memcache instances create' -HashtableCache @{}
+
+
+# Failing this command as it tries to add "container-image-uri" twice. It should be a unique flag. There are a number of other commands with the same
+# issue. Too many to record—maybe 20-30 different command permutations (out of the 5k+, not bad!). I don't *think* these impact tab completion.
+#Get-GCloudCommandTree -ParentCommands 'ai custom-jobs create' -HashtableCache @{}
+
+# hard af, likely brittle to changes. I still failed on the scopes parameter, so it's not quite fully tab-complete compatible.
+#Get-GCloudCommandTree -ParentCommands 'beta compute instance-templates create' -HashtableCache @{}
+
+# Rekt on enum "short-name."" In general a lot of sub enums (enums to enums), and I miss all of these.
+# Not the only command missing sub enums, but this one has some of the most missing sub enums. Expect tab completion here to be poor/incomplete.
+#Get-GCloudCommandTree -ParentCommands 'beta compute instances ops-agents policies create' -HashtableCache @{}
