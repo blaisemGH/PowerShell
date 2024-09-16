@@ -57,12 +57,13 @@ If ( (Get-Module PSReadLine | Select-Object -ExpandProperty Version) -ge [Versio
 }
 
 # Sets a default template
-[PSPromptConfig]::PromptConfigsLeft.Add(-1 , 
-    ([PSPrompt]@{
-        Content = { $PWD.Path + ' ' }
-    })
-)
-
+if ( [PSPromptConfig]::PromptConfigsLeft.Count -lt 1 ) {
+    [PSPromptConfig]::PromptConfigsLeft.Add(-1 , 
+        ([PSPrompt]@{
+            Content = { $PWD.Path + ' ' }
+        })
+    )
+}
 <# Add in formatting to place these on the next line.
         ╭
         │

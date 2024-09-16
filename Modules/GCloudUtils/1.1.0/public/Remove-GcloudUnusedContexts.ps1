@@ -1,5 +1,5 @@
 using namespace System.Text
-function Remove-GCloudUnusedContexts {
+<#function Remove-GCloudUnusedContexts {
     if ( Test-Path ([Kube]::ContextFile) ) {
         try {
             $getKubeContextMappings = Import-PowerShellDataFile ([Kube]::ContextFile)
@@ -24,5 +24,29 @@ function Remove-GCloudUnusedContexts {
         }
         $stringBuilder.AppendLine('}')
         $stringBuilder.ToString() | Set-Content -LiteralPath [kube]::ContextFile -Force
+    }
+}
+#>
+
+Function Remove-GCloudUnusedGkeContexts {        
+    Write-Verbose 'Performing housekeeping to remove nonexistent contexts.' -Fore Magenta
+
+    $currentProjects = Get-ChildItem -LiteralPath ([GCloud]::ProjectRoot) -Recurse -File | Select-Object -ExpandProperty Name
+    $kubeContexts = kubectl config get-contexts -o name
+    $customMappedContexts = Import-PowerShellDataFile ([Kube]::ContextFile) | Select-Object -ExpandProperty Values
+    $standardMappedContexts = Import-PowerShellDataFile ([GCloud]::PathToProjectGkeMappings) | Select-Object -ExpandProperty Values
+    $contextsToRemove = $kubeContexts + $customMappedContexts + $standardMappedContexts |
+        Sort-Object -Unique |
+            Where {
+                $_ -match '^gke(_[-a-z0-9]+){2}_gke-[-0-9a-z]+$' -and
+                ($_ | Rename-GCloudGkeContextToProjectId) -notin $currentProjects
+            }
+    if ( $contextsToRemove ) {
+        Write-Verbose "Removing the following contexts for housekeeping: `n`n$( $contextsToRemove | Out-String )"
+        Remove-KubeMappedContext -PatternsToRemove $contextsToRemove -PSDataFilePath ([Kube]::ContextFile)
+        Remove-KubeMappedContext -PatternsToRemove $contextsToRemove -PSDataFilePath ([GCloud]::PathToProjectGkeMappings)
+    }
+    else {
+        Write-Verbose "Housekeeping found no unused contexts to remove!"
     }
 }

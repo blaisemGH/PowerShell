@@ -53,8 +53,12 @@ if ( (Get-Module PSPrompt) -and ! (Get-Module KubectlUtils) ) {
         ForegroundColor = 'Crimson'
         ContentFunction = $getItemKubernetes
         label = 'KubectlUtilsSetContext'
+        UniqueId = 69
     }
-    [PSPromptConfig]::AddTemplate($kubePromptTemplate)
+    #$align = $kubePromptTemplate.Alignment
+    #if ( [PSPromptConfig]::"PromptConfigs$align".Values.UniqueId -eq $kubePromptTemplate.UniqueId ) {
+        [PSPromptConfig]::AddTemplate($kubePromptTemplate)
+    #}
 }
 
 if ( !(Test-Path ([Kube]::ContextFile)) ) {

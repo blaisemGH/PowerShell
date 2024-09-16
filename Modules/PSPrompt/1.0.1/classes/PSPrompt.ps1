@@ -39,6 +39,7 @@ class PSPrompt {
     [string]$ItemSeparator
     [int]$ItemPosition
     [string]$Label
+    [string]$UniqueId = ([Guid]::NewGuid().Guid)
     
     static [string] GetPrompt(){
         $ansiReset = "`e[0m"
@@ -174,7 +175,7 @@ class PSPromptConfig {
         # Prevent the same item from being added twice. Checks to see if the input function already exists.
         if ( $alignedConfigDict.Values.RawContent ) {
             $alignedConfigDict.Values | ForEach {
-                if ( $_.RawContent.ToString() -eq $configToAdd.ContentFunction.ToString() ) {
+                if ( $_.RawContent.ToString() -eq $configToAdd.ContentFunction.ToString() -or $_.UniqueId -eq $configToAdd.UniqueId) {
                     break
                 }
             }
@@ -200,11 +201,11 @@ class PSPromptConfig {
         }
         #if ( $alignedConfigDict.Count -gt 1)
         else {
-            $firstItem = $alignedConfigDict.GetEnumerator() |
+            $alignedConfigDict.GetEnumerator() |
                 Where-Object {$_.Value.LineToPrintOn -eq $configToAdd.LineToPrintOn} |
-                Select-Object -ExpandProperty Key -First 1
-
-            $alignedConfigDict[$firstItem].BeginningText = ''
+                Select-Object -ExpandProperty Key -First 1 | ForEach-Object {
+                    $alignedConfigDict[$_].BeginningText = ''
+                }
         }
 
     }

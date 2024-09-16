@@ -25,7 +25,7 @@ function Update-GCloudCompletion {
       Write-Host 'Delete this file or rerun the command with the -Force parameter.'
     }
     try {
-        [GCloud]::CompletionTree = Get-Content $completionFilepath | ConvertFrom-Json #Import-Clixml $completionFilepath
+        [GCloud]::CompletionTree = Get-Content $completionFilepath -Raw | ConvertFrom-Json -AsHashtable #Import-Clixml $completionFilepath
         Register-GCloudCompletion
     }
     catch {
@@ -373,9 +373,10 @@ Update-GCloudCompletion -Force
 
 # Failing this command as it tries to add "container-image-uri" twice. It should be a unique flag. There are a number of other commands with the same
 # issue. Too many to record—maybe 20-30 different command permutations (out of the 5k+, not bad!). I don't *think* these impact tab completion.
+# Just an ugly error in the output of this command...probably.
 #Get-GCloudCommandTree -ParentCommands 'ai custom-jobs create' -HashtableCache @{}
 
-# hard af, likely brittle to changes. I still failed on the scopes parameter, so it's not quite fully tab-complete compatible.
+# hard af to get this one right, likely brittle to changes. I still failed on the scopes parameter, so it's not quite fully tab-complete compatible.
 #Get-GCloudCommandTree -ParentCommands 'beta compute instance-templates create' -HashtableCache @{}
 
 # Rekt on enum "short-name."" In general a lot of sub enums (enums to enums), and I miss all of these.

@@ -1,0 +1,76 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\git\\PowerShell\\Modules\\GcsHelmRepoProvider\\0.0.1\\provider\\src\\GcsHelmRepoProvider\\GcsHelmRepoProvider\\GcsHelmRepoProvider.csproj": {}
+  },
+  "projects": {
+    "C:\\git\\PowerShell\\Modules\\GcsHelmRepoProvider\\0.0.1\\provider\\src\\GcsHelmRepoProvider\\GcsHelmRepoProvider\\GcsHelmRepoProvider.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\git\\PowerShell\\Modules\\GcsHelmRepoProvider\\0.0.1\\provider\\src\\GcsHelmRepoProvider\\GcsHelmRepoProvider\\GcsHelmRepoProvider.csproj",
+        "projectName": "GcsHelmRepoProvider",
+        "projectPath": "C:\\git\\PowerShell\\Modules\\GcsHelmRepoProvider\\0.0.1\\provider\\src\\GcsHelmRepoProvider\\GcsHelmRepoProvider\\GcsHelmRepoProvider.csproj",
+        "packagesPath": "C:\\Users\\MullenixJohn\\.nuget\\packages\\",
+        "outputPath": "C:\\git\\PowerShell\\Modules\\GcsHelmRepoProvider\\0.0.1\\provider\\src\\GcsHelmRepoProvider\\GcsHelmRepoProvider\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\MullenixJohn\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://www.nuget.org/api/v2": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "Google.Cloud.Storage.V1": {
+              "target": "Package",
+              "version": "[4.10.0, )"
+            },
+            "System.Management.Automation": {
+              "target": "Package",
+              "version": "[7.4.5, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\MullenixJohn\\Programs\\dotnet\\9-preview3\\sdk\\9.0.100-preview.3.24204.13/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
