@@ -1,7 +1,7 @@
 [PSPromptConfig]::NoItemsOnLastLine = $true
 [PSPromptConfig]::DefaultPromptBeckon = ''
 [PSPromptConfig]::SetMultilineConnector()
-[PSPromptConfig]::SetSpaceBetweenItemSeparators(1, '10;25;25')
+#[PSPromptConfig]::SetSpaceBetweenItemSeparators(1, '10;25;25')
 [PSPromptConfig]::UseDefaultGroupMarkers('Left')
 
 $getRunDuration = {
