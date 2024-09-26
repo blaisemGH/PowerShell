@@ -21,6 +21,8 @@ function Update-ContextFileMap {
         if ( $confirm -eq 'y') {
             $oldKey = $contextMap.GetEnumerator() | Foreach { if ( $_.Value -eq $kubeContext ) { $_.Key }}
             $contextMap.Remove($oldKey)
+        } else {
+            break
         }
     }
 

@@ -159,9 +159,12 @@ function Get-GCloudCommandTree {
         if ( !$active -or !$line ) {
           continue
         }
-
+        #if ($line -notmatch 'clusters' ) { continue}
+      
         # prefilter the line so that we only process lines that could potentially contain a command for us to add to autocomplete.
-        if ( $active -and $line -match '^\s{4,9}[-a-z_0-9]+($|[;,=](?=\s*[-[\S]+(.* default=.*)?$))') {#[-a-z_;=",[\].]+$))') {
+        if ( $active -and $line -match '^\s{4,9}[-a-z_0-9]+($|[;,=](?=\s*[-[\S]+(.* default=.*)?$))' -and 
+          $line -notmatch '^\s{4,9}---' -and $line -notmatch '\s+(or|and|see|addons)(?!\S)'
+        ) {#[-a-z_;=",[\].]+$))') {
           # Parse the line if it hasn't been skipped yet
           $addCommandParams = @{
             HashtableCache = $HashtableCache
@@ -219,6 +222,7 @@ function Add-GCloudCommandToCache {
       'is[\s]+one[\s]+of[\s]+the[\s]+following'
       'ust[\s]+be[\s]+\(only[\s]+one[\s]+value[\s]+is[\s]+supported\)'
       'he\s+following\s+keys\s+are\s+allowed'
+      'he\s+following\s+keys\s+are\s+accepted'
       'he\s+allowed\s+values\s+of\s+the\s+key\s+are\s+as\s+follows'
       'ossible\s+attributes\s+include'
       'ets\s+allowed_ports\s+value'
@@ -294,7 +298,8 @@ function Add-GCloudCommandToCache {
       }
       # If subkeys (enums) were found, then also check for these enums had nested enums. Add these in if so.
       foreach ($subKey in $allFlagSubKeys) {
-        $findSubkey = $gcloudHelpText |  Select-String "(?sm)(?<=^[\s]{9}$subKey.*?)^\s{10,}.*?(?=(\n\s)*^\s{5,9}[^\s])"
+        $escapedRegexSubKey = [Regex]::Escape($subKey)
+        $findSubkey = $gcloudHelpText |  Select-String "(?sm)(?<=^[\s]{9}$escapedRegexSubKey.*?)^\s{10,}.*?(?=(\n\s)*^\s{5,9}[^\s])"
         $validValues = if ($findSubkey.Matches.Value -notmatch '.*hoices are ') {
           @()
         } else {
@@ -384,6 +389,9 @@ Update-GCloudCompletion -Force -Verbose
 # Failing this command as it tries to add "container-image-uri" twice. It should be a unique flag. There are a number of other commands with the same
 # issue. Too many to record—maybe 20-30 different command permutations (out of the 5k+, not bad!). I don't *think* these impact tab completion.
 #Get-GCloudCommandTree -ParentCommands 'ai custom-jobs create' -HashtableCache @{}
+
+#Seems like it should work but it doesn't
+#Get-GCloudCommandTree -HashtableCache @{} -ParentCommands 'gcloud compute instance-groups managed rolling-action start-update'
 
 # hard af, likely brittle to changes. I still failed on the scopes parameter, so it's not quite fully tab-complete compatible.
 #Get-GCloudCommandTree -ParentCommands 'beta compute instance-templates create' -HashtableCache @{}

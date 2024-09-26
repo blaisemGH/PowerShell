@@ -7,7 +7,7 @@ Function Update-GCloudProjectFS {
     Remove-OldGCloudProjectsFromLocalDrive -GCloudProjects $currentProjects -FilesystemProjects $currentFSProjects.Name
 
     $cleanedCurrentFSProjects = Get-ChildItem ([GCloud]::ProjectRoot) -Recurse -File
-    Write-Host "`nMigrating any local filesystem entries without GKE cluster data if relevant" -Fore Yellow
+    Write-Host "`nUpdating GKE Cluster Data for any local filesystem entries missing GKE cluster data" -Fore Yellow
     Update-IncompleteGCloudFSProjects -GCloudProjects $currentProjects -FilesystemProjects $cleanedCurrentFSProjects
     
     Write-Host "`nAdding new projects to local filesystem cache" -Fore Yellow
@@ -79,7 +79,7 @@ Function Update-IncompleteGCloudFSProjects {
                 $info = $_ | Get-GkeClusterMetaInfo -ErrorAction Stop
                 if ( $info ) {
                     Set-Content -Path $localPath -Value $info -Force
-                    Write-Host 'Updated missing meta information at local filepath ' -Fore Cyan -NoNewLine; Write-Host $localPath
+                    Write-Host 'Updated missing meta information in filepath ' -Fore Cyan -NoNewLine; Write-Host $localPath
                 }
             } catch {
                 $_

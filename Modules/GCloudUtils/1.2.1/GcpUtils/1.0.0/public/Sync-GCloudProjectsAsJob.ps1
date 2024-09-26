@@ -50,12 +50,12 @@ Function Sync-GCloudProjectsAsJob {
 
         Write-Host 'Initialized GCloud module' -Fore Green
         Update-GCloudProjectRecord
-        Write-Host 'Finished updating GCloud project record. See [GCloud]::PathToProjectCSV' -Fore Cyan
+        Write-Host "`nFinished updating GCloud project record. See [GCloud]::PathToProjectCSV" -Fore Cyan
 
         Update-GCloudProjectFS
-        Write-Host 'Finished Updating local filesystem cache. See [GCloud]::ProjectRoot' -Fore Cyan
+        Write-Host "`nFinished Updating local filesystem cache. See [GCloud]::ProjectRoot" -Fore Cyan
 
-        Write-Host 'Beginning to write standardized mappings for Gke contexts. This may take a while.' -Fore Yellow
+        Write-Host "`nBeginning to write standardized mappings for Gke contexts. This may take a while." -Fore Yellow
         Sync-GCloudStandardGkeContextMappings
     }
 

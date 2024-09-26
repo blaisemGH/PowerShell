@@ -9,15 +9,15 @@ function Sync-GCloudStandardGkeContextMappings {
         Select-Object -ExpandProperty Name
     
     $upToDateCurrentMappings = Get-GCloudStandardGkeMappingsUpToDate -CurrentGkeMappings $currentMappings -CurrentMappedProjectIds $alreadyMappedProjectIds
-    $mappingsToCreate = $currentProjectIds | Where-Object { $_ -notin $alreadyMappedProjectIds -and $_ -notmatch ([GCloud]::PatternForNonGkeProjects) }
+    $mappingsToCreate = $currentProjectIds | Where-Object { $_ -notin $alreadyMappedProjectIds -and $_ -notmatch ([GCloud]::PatternForNonGkeProjects) -and (& ([GCloud]::ProjectHasGkeCluster) $_) } | Sort-Object
 
     Write-Host "Creating mappings for $($mappingsToCreate.Count) projects."
 
     $mappingsToCreate |
         New-GCloudStandardGkeContextMapping |
-        Sort-Object | 
+        Sort-Object -ov newMappings | 
         Export-GCloudStandardGkeContextMappings -ExistingMappingsToKeep ($upToDateCurrentMappings ?? @{})
-    
+    $script:m = $newMappings
     Write-Host 'Done syncing all project IDs!' -ForegroundColor Cyan
 }
 
@@ -72,7 +72,7 @@ function Export-GCloudStandardGkeContextMappings {
     }
     end {
         $upToDateCurrentMappings.GetEnumerator() | Sort-Object Key -Descending | foreach {
-            $key, $value = $_.Key, $_.Value
+            $key, $value = ([string[]]$_.Key)[0], $_.Value
             $null = $fileStrings.AppendLine("`t'$key' = '$value'")
         }
         $null = $fileStrings.AppendLine('}')
@@ -93,16 +93,24 @@ function New-GCloudStandardGkeContextMapping {
         }
 
         foreach ( $projectId in $gkeRelevantProjectIds ) {
-            Write-Host "Creating mapping for project id: $projectId" -Fore Cyan
-            try {
-                $gkeClusterInfo = $projectId | Get-GCloudGkeClusterInfoFromProjectId -ErrorAction Stop
-            
-                $key = & ([GCloud]::NewGKEContextKey) $projectId
+            if ( & ([GCloud]::ProjectHasGkeCluster) $projectId ) {
+                Write-Host "Creating gke context mapping for project id: $projectId" -Fore Cyan
+                
+                try {
+                    $localPath = Get-ChildItem ([GCloud]::ProjectRoot) -Recurse -File -Filter $projectID
+                    $gkeClusterContext = if ( ($localPath | Select-String '^Context') ) {
+                        Get-Content $localPath -Raw | ConvertFrom-StringData | Select-Object -ExpandProperty Context
+                    } else {
+                        $projectId | Get-GCloudGkeClusterInfoFromProjectId -ErrorAction Stop | Select-Object -ExpandProperty Context
+                    }
+                
+                    $key = & ([GCloud]::NewGKEContextKey) $projectId
 
-                @{ $key = $gkeClusterInfo.Context }
-            }
-            catch {
-                Write-Host ($_.Exception.Message + " --> Cannot set a kube context mapping for this project, skipping it.")
+                    @{ $key = $gkeClusterContext }
+                }
+                catch {
+                    Write-Host ($_.Exception.Message + " --> Cannot set a kube context mapping for this project, skipping it.")
+                }
             }
         }
     }
