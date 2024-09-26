@@ -5,8 +5,9 @@ function Invoke-SplitOperator {
 
         [Parameter(Mandatory, Position = 1)]
         [string]$patternToSplitOn,
-        
-        [string]$howManyDelimitersToSplit
+
+        [Parameter(Position = 2)]
+        [int]$howManyDelimitersToSplit
     )
     process {
         foreach ($object in $InputObject) {
