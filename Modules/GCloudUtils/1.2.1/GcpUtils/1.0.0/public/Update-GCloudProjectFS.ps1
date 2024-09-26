@@ -3,11 +3,15 @@ Function Update-GCloudProjectFS {
     $currentProjects = Import-CSV ([GCloud]::PathToProjectCSV) -Delimiter ','
     $currentFSProjects = Get-ChildItem ([GCloud]::ProjectRoot) -Recurse -File
 
+    Write-Host "`nChecking for projects to housekeep..." -Fore Yellow
     Remove-OldGCloudProjectsFromLocalDrive -GCloudProjects $currentProjects -FilesystemProjects $currentFSProjects.Name
+
+    $cleanedCurrentFSProjects = Get-ChildItem ([GCloud]::ProjectRoot) -Recurse -File
+    Write-Host "`nMigrating any local filesystem entries without GKE cluster data if relevant" -Fore Yellow
+    Update-IncompleteGCloudFSProjects -GCloudProjects $currentProjects -FilesystemProjects $cleanedCurrentFSProjects
     
-    Update-IncompleteGCloudFSProjects -GCloudProjects $currentProjects -FilesystemProjects $currentFSProjects
-    
-    Add-MissingGCloudProjectsToLocalDrive -GCloudProjects $currentProjects -FilesystemProjects $currentFSProjects.Name
+    Write-Host "`nAdding new projects to local filesystem cache" -Fore Yellow
+    Add-MissingGCloudProjectsToLocalDrive -GCloudProjects $currentProjects -FilesystemProjects $cleanedCurrentFSProjects.Name
 }
 
 # This function will recursively climb up the parent folders and remove any that are empty. Stops climbing at [GCloud]::ProjectRoot.
@@ -67,11 +71,12 @@ Function Update-IncompleteGCloudFSProjects {
         Where-Object {
             # If file already contains both name and location (count -eq 2), then no need to update it
             (Select-String -Pattern 'name|location' -Path $_.FullName).Matches.Count -ne 2 -and
-            $_.Name -in $GCloudProjects.PROJECT_ID
+            $_.Name -in $GCloudProjects.PROJECT_ID -and
+            (& ([GCloud]::ProjectHasGkeCluster) $_.Name)
         } | ForEach-Object {
             $localPath = $_.FullName
             try {
-                $info = $_ | Get-GkeClusterMetaInfo
+                $info = $_ | Get-GkeClusterMetaInfo -ErrorAction Stop
                 if ( $info ) {
                     Set-Content -Path $localPath -Value $info -Force
                     Write-Host 'Updated missing meta information at local filepath ' -Fore Cyan -NoNewLine; Write-Host $localPath
@@ -96,18 +101,22 @@ Function Add-MissingGCloudProjectsToLocalDrive {
         } |
         ForEach-Object {
             $projectId = $_.project_id
-            Write-Host "Found new project folder $($_.name). Fetching metadata..." -Fore Green
+            Write-Host "Found new project folder $($_.name) ($($_.project_id)). Fetching metadata..." -Fore Green
             $projectDriveFilePath = Get-GCloudProjectLineageAsFilepath -ProjectID $projectId
 
             if ( $projectDriveFilePath ) {
                 
                 Write-Host 'Adding new local filepath ' -Fore Magenta -NoNewLine; Write-Host $projectDriveFilePath
                 $projectFullPath = Join-Path ([GCloud]::ProjectRoot) $projectDriveFilePath
-                try {
-                    $gkeClusterMetaInfo = Get-GkeClusterMetaInfo -ProjectId $_.project_id -ErrorAction Stop
-                    $null = New-Item -Path $projectFullPath -ItemType File -Value $gkeClusterMetaInfo -Force
-                } catch {
-                    Write-Warning "Permission denied on project $projectId. Error: $($_ | Out-String)"
+                if ( & ([GCloud]::ProjectHasGkeCluster) $projectId ) {
+                    try {
+                        $gkeClusterMetaInfo = Get-GkeClusterMetaInfo -ProjectId $_.project_id -ErrorAction Stop
+                        $null = New-Item -Path $projectFullPath -ItemType File -Value $gkeClusterMetaInfo -Force
+                    } catch {
+                        Write-Warning "Failed to get GKE metadata on project $projectId. Error: $($_ | Out-String)"
+                        $null = New-Item -Path $projectFullPath -ItemType File -Force
+                    }
+                } else {
                     $null = New-Item -Path $projectFullPath -ItemType File -Force
                 }
 
@@ -191,5 +200,32 @@ Function Get-GkeClusterMetaInfo {
         } catch {
             return $null
         }
+    }
+}
+
+# Reproduced the function in this nested module so that it doesn't reimport the entire gcloudutils module and overwrite my gcloud class's config.
+function Get-GCloudGkeClusterInfoFromProjectId {
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [string]$ProjectId
+    )
+
+    process {
+        $checkIfCached = Get-ChildItem ([Gcloud]::ProjectRoot) -File -Recurse | Where-Object Name -eq $ProjectId
+        if ( (Select-String -Path ($checkIfCached) -Pattern '^Context') ) {
+            return [PSCustomObject](Get-Content $checkIfCached -Raw | ConvertFrom-StringData)
+        }
+        
+        $gkeClusterInfo = (gcloud container clusters list --project $ProjectId 2> $null) -replace '\s{2,}', [char]0x2561 | ConvertFrom-Csv -Delimiter ([char]0x2561)
+
+        if ( ! $gkeClusterInfo.Name ) {
+            $err = [System.Management.Automation.ErrorRecord]::new("Empty output from command: gcloud container clusters list --project $ProjectId", $null, 'ObjectNotFound', $null)
+            $PSCmdlet.ThrowTerminatingError($err)
+        }
+
+        $gkeContext = "gke_${ProjectId}_$($gkeClusterInfo.Location)_$($gkeClusterInfo.Name)"
+        $gkeClusterInfo | Add-Member -Name Context -Value $gkeContext -MemberType NoteProperty
+        
+        $gkeClusterInfo
     }
 }

@@ -20,6 +20,7 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
         [IDictionary] $currentBoundParameters
     ) {
         $resultList = [List[CompletionResult]]::new()
+        $collectAllResults = [List[CompletionResult]]::new()
 
         $cacheTier, $cacheId = switch ($currentBoundParameters) {
             {$_.ContainsKey('Organization')} { 'organization', $_.Organization }
@@ -28,14 +29,18 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
         }
         $argTier = "--${cacheTier}=$cacheId"
 
-        $argLocation = "--location=$($currentBoundParameters.Location)"
+        $location = if ( $currentBoundParameters.Location ) { $currentBoundParameters.Location } else { 'global' }
+        $argLocation = "--location=$location"
 
         $date = Get-Date
         
         if ( $argLocation -and $argTier ) {
-            $cachedEntry = [GCloudPamEntitlementCompleter]::cachedEntitlements.$cacheTier.$cacheId | where location -eq $argLocation
-            if ( $cachedEntry.date -gt $date.AddSeconds(-30) ) {
-                return $cachedEntry.resultList | Where-Object { $_.ListText -like "$wordToComplete*"}
+            $cachedEntry = [GCloudPamEntitlementCompleter]::cachedEntitlements.$cacheTier.$cacheId | where location -eq $location
+            if ( $date.AddSeconds(-30) -lt $cachedEntry.date ) {
+                $cachedEntry.resultList | Where-Object { $_.ListItemText -like "$wordToComplete*"} | ForEach-Object {
+                    $resultList.Add($_)
+                }
+                return $resultList
             }
 
             $gcloudArgs = @(
@@ -44,26 +49,32 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
                 $argLocation
                 $argTier
             )
-            gcloud @gcloudArgs 2>$null | ConvertFrom-Json | ForEach-Object {
-                $completion = ($_.Name -split '/')[-1]
-                
-                $maxduration = $_.maxRequestDuration
-                $roles = $j.privilegedAccess.gcpIamAccess.roleBindings.role -replace '^roles/' -join ', '
-                $tooltip = "Roles: $roles | maxDur: $maxDuration"
 
+            $json = gcloud @gcloudArgs 2>$null | ConvertFrom-Json
+            $script:j = $json
+            $json | ForEach-Object {
+                $completion = ($_.Name -split '/')[-1]
+
+                $maxduration = $_.maxRequestDuration
+                $roles = $_.privilegedAccess.gcpIamAccess.roleBindings.role -replace '^roles/' -join ', '
+                $tooltip = "Roles: $roles | maxDur: $($maxDuration.Trim('s'))"
                 $result = [CompletionResult]::new($completion, $completion, [CompletionResultType]::Text, $tooltip)
-                $resultList.Add($result)
+                $collectAllResults.Add($result)
+                
             }
 
             $cachedMetaData = [PSCustomObject]@{
                 date = $date
-                location = $argLocation
-                resultList = $resultList
+                location = $location
+                resultList = $collectAllResults
             }
             [GCloudPamEntitlementCompleter]::cachedEntitlements.$cacheTier.$cacheId = $cachedMetaData
         }
 
-        return $resultList | Where-Object { $_.ListText -like "$wordToComplete*"}
+        $collectAllResults | Where-Object ListItemText -like "$wordToComplete*" | ForEach-Object {
+            $resultList.Add($_)
+        }
+        return $resultList 
     }
 }
 

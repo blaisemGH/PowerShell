@@ -34,7 +34,7 @@ function New-GCloudPamGrant {
     $pamGrantCachePath = Join-Path ([Gcloud]::LocalCache) pam-grants
     if ( !(Test-Path $pamGrantCachePath) ) { New-Item $pamGrantCachePath -ItemType Directory }
 
-    $existingGrant = Get-ChildItem $pamGrantCachePath | where name -match "^${Entitlement}_${tierType}_${tierValue}_"
+    $existingGrant = Get-ChildItem $pamGrantCachePath | where name -match "^${Entitlement}_${tierType}_${tierValue}_${Location}_"
     $expiryDate = if ( $existingGrant ) { [datetime]::FromFileTimeUtc( ($existingGrant.BaseName -split '_')[-1] ) }
 
     if ( $expiryDate -and $expiryDate -gt (Get-Date) ) {
@@ -62,7 +62,7 @@ function New-GCloudPamGrant {
             $activationDateTime = Get-Date ($scheduledActivation -split ':\s*', 2)[-1].Trim("'""")
             $newExpiryDateTime = $activationDateTime.AddSeconds($DurationInSeconds).ToFileTimeUtc()
 
-            $cacheGrantRecord = Join-Path $pamGrantCachePath "${Entitlement}_${tierType}_${tierValue}_$newExpiryDateTime.log"
+            $cacheGrantRecord = Join-Path $pamGrantCachePath "${Entitlement}_${tierType}_${tierValue}_${Location}_${newExpiryDateTime}.log"
             
             $null = New-Item -Path $cacheGrantRecord -Value ($gcloudOutput -join "`n") -Force
         }

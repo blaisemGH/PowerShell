@@ -10,6 +10,7 @@ Class GCloud {
     static [hashtable]$CompletionTree
     static [int]$MinimumSyncFrequency
     static [hashtable]$Config
+    static [scriptblock]$ProjectHasGkeCluster = { $true }
     static [scriptblock]$NewGKEContextKey = {
         param(
             [Parameter(Mandatory)]

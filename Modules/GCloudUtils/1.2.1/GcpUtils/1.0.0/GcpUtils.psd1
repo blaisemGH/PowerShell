@@ -67,7 +67,8 @@
                    'public/Sync-GCloudProjectsAsJob.ps1', 
                    'public/Sync-GCloudStandardGkeContextMappings.ps1',
                    'public/Get-GCloudProjectId.ps1',
-                   'public/New-GCloudPamGrant.ps1'
+                   'public/New-GCloudPamGrant.ps1',
+                   'public/Set-GCloudConfigProject.ps1'
     
     # Type files (.ps1xml) to be loaded when importing this module
     # TypesToProcess = @()
@@ -87,7 +88,8 @@
                    'Export-GCloudStandardGkeContextMappings', 
                    'New-GCloudStandardGkeContextMapping', 
                    'Get-GCloudGkeClusterInfoFromProjectId', 'Get-GCloudProjectId', 
-                   'Use-GCloudProjectId', 'New-GCloudPamGrant'
+                   'Use-GCloudProjectId', 'New-GCloudPamGrant',
+                   'Set-GCloudConfigProject'
     
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
     CmdletsToExport = '*'

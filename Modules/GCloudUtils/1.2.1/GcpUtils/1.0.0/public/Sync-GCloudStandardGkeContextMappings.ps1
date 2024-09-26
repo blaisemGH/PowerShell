@@ -101,7 +101,9 @@ function New-GCloudStandardGkeContextMapping {
 
                 @{ $key = $gkeClusterInfo.Context }
             }
-            catch {$_}
+            catch {
+                Write-Host ($_.Exception.Message + " --> Cannot set a kube context mapping for this project, skipping it.")
+            }
         }
     }
 }

@@ -15,10 +15,14 @@ function Update-GCloudCompletion {
       [switch]$Force
     )
     $gcloudVersion = Get-GCloudVersion
-    $versionedCompletionFile = "gcloud-completion-v$($gcloudVersion.ToString()).json"
+    $versionedCompletionFile = "test-gcloud-completion-v$($gcloudVersion.ToString()).json"
     $completionFilepath = Join-Path ([GCloud]::LocalCache) $versionedCompletionFile
     if ( ! (Test-Path $completionFilepath ) -or $Force ) {
-        Get-GCloudCommandTree -ParentCommands '--help' -HashtableCache @{} | ConvertTo-Json -Compress -Depth 20 | Add-Content $completionFilepath
+        $script:noBeta = Get-GCloudCommandTree -ParentCommands '--help' -HashtableCache @{}
+        $noBeta | ConvertTo-Json -Compress -Depth 20 | Set-Content -Path "$home/.pwsh/gcloud/test-nobeta.xml"
+        $script:beta = Get-GCloudCommandTree -ParentCommands 'beta --help' -HashtableCache @{}
+        $beta | ConvertTo-Json -Compress -Depth 20 | Set-Content -Path "$home/.pwsh/gcloud/test-withbeta.xml"
+        #| ConvertTo-Json -Compress -Depth 20 | Add-Content $completionFilepath
     }
     else {
       Write-Host "Completion file for gcloud version $gcloudVersion already exists: $completionFilepath"
@@ -66,6 +70,7 @@ function Get-GCloudCommandTree {
           if ( ! $HashtableCache.ContainsKey('gcloudAllFlags' )) {
             Write-Debug "Adding gcloudAllFlags"
             $HashtableCache.Add('gcloudAllFlags', [List[string]]::new() )
+            $HashtableCache.Add('gcloudAllFlagsEnums', @{} )
           }
           $isGcloudAllFlag = $true
         }
@@ -246,7 +251,12 @@ function Add-GCloudCommandToCache {
       } else {
         $relevantLines -split "`n" | where {$_ -match '^\s+[-a-z_]+\s*$'} | foreach trim(' ')
       }#>
-      $HashtableCache.Add("$key=",$values)
+      if ( $isGcloudAllFlag ) {
+        $HashtableCache.gcloudAllFlags.Add($key)
+        $HashtableCache.gcloudAllFlagsEnums.Add($key,$values)
+      } else {
+        $HashtableCache.Add("$key=",$values)
+      }
     }
     # Handle flags that take an enum of values, with each enum having its own nested enum. See 'ai endpoints deploy-model'
     elseif ( $Line -match '(?sm)^(\s+)--.*=(\[[-a-z0-9[_,=]+|[-a-z0-9[_,=]+).*?[\]]$' ) {
@@ -305,7 +315,7 @@ function Add-GCloudCommandToCache {
       $multiKeys = $key -split ',\s+'
       foreach ($flag in $multiKeys) {
         # Extract the key name from a string that looks like `--format=FORMAT`
-        $flagName = ($flag -split '=')[0].trim(',;')
+        $flagName = if ( $flag -match '=' ) {($flag -split '=')[0].trim(',;')} else {$flag}
         Write-Verbose "flag is $flagName"
         if ( $isGcloudAllFlag ) {
           write-debug "all flag is $flagName"
@@ -323,7 +333,7 @@ function Add-GCloudCommandToCache {
     # preceding line doesn't have the same indentation as our key, which would imply it is a block of descriptive text, since every command is followed
     # immediately by a further indented block of descriptive text.
   # 3 line: Check if the key is already in the hashtable to control for any of the enums of flags we searched for above and may have already added.
-  elseif ( $key -ne $PreviousKey -and $key -match '^[a-z]' -and $key -notmatch '^--?' -and 
+  elseif ( $key -ne $PreviousKey -and $key -match '^[a-z]' -and $key -notmatch '^--?' -and $key -ne 'beta' -and
     ! ($gcloudHelpText | Select-String "(?sm)^$lineIndentation[^\n]+\n$lineIndentation$regexSafeLine").Matches -and
     ($key -notin $HashtableCache.Values.Keys -and $key -notin ($HashtableCache.Values | foreach {$_}) )
   ){
@@ -338,7 +348,7 @@ function Add-GCloudCommandToCache {
 }
 
 
-Update-GCloudCompletion -Force
+Update-GCloudCompletion -Force -Verbose
 
 #Make these into unit tests one day. They are commands that failed and required special cases in the code to account for.
 #Get-GCloudCommandTree -ParentCommands 'alloydb clusters create' -HashtableCache @{}
