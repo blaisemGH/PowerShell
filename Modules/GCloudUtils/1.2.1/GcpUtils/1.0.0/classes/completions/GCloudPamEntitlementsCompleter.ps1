@@ -30,7 +30,7 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
             {$_.ContainsKey('ProjectId')}    { 'project', $_.ProjectId }
         }
         if ( !$cacheTier ) {
-            Write-Host "`n`nCannot tab complete on -Entitlement unless --organization, --folder, or --project have been explicitly specified first!" -Fore Red
+            Write-Host "`nCannot tab complete on -Entitlement unless --organization, --folder, or --project have been explicitly specified first!" -Fore Red
             return $resultList
         }
 
@@ -44,7 +44,7 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
         if ( $argLocation -and $argTier ) {
             $cachedEntry = [GCloudPamEntitlementCompleter]::cachedEntitlements.$cacheTier.$cacheId | where location -eq $location
             if ( $date.AddSeconds(-30) -lt $cachedEntry.date ) {
-                $cachedEntry.resultList | Where-Object { $_.ListItemText -like "$wordToComplete*"} | ForEach-Object {
+                $cachedEntry.resultList | Where-Object { $_.ListItemText -like "$wordToComplete*"} | Sort-Object ListItemText | ForEach-Object {
                     $resultList.Add($_)
                 }
                 return $resultList
@@ -64,7 +64,7 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
 
                 $maxduration = $_.maxRequestDuration
                 $roles = $_.privilegedAccess.gcpIamAccess.roleBindings.role -replace '^roles/' -join ', '
-                $tooltip = "Roles: $roles | maxDur: $($maxDuration.Trim('s'))"
+                $tooltip = "Roles: $roles | maxDuration: $($maxDuration.Trim('s')) (seconds)"
                 $result = [CompletionResult]::new($completion, $completion, [CompletionResultType]::Text, $tooltip)
                 $collectAllResults.Add($result)
                 
@@ -78,7 +78,7 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
             [GCloudPamEntitlementCompleter]::cachedEntitlements.$cacheTier.$cacheId = $cachedMetaData
         }
 
-        $collectAllResults | Where-Object ListItemText -like "$wordToComplete*" | ForEach-Object {
+        $collectAllResults | Where-Object ListItemText -like "$wordToComplete*" | Sort-Object ListItemText | ForEach-Object {
             $resultList.Add($_)
         }
         return $resultList 
