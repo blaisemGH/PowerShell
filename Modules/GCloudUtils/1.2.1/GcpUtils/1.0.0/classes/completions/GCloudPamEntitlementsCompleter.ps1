@@ -57,9 +57,7 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
                 $argTier
             )
 
-            $json = gcloud @gcloudArgs 2>$null | ConvertFrom-Json
-            $script:j = $json
-            $json | ForEach-Object {
+            gcloud @gcloudArgs 2>$null | ConvertFrom-Json | ForEach-Object {
                 $completion = ($_.Name -split '/')[-1]
 
                 $maxduration = $_.maxRequestDuration
