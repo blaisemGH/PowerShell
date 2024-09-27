@@ -15,9 +15,9 @@ function Sync-GCloudStandardGkeContextMappings {
 
     $mappingsToCreate |
         New-GCloudStandardGkeContextMapping |
-        Sort-Object -ov newMappings | 
+        Sort-Object | 
         Export-GCloudStandardGkeContextMappings -ExistingMappingsToKeep ($upToDateCurrentMappings ?? @{})
-    $script:m = $newMappings
+    
     Write-Host 'Done syncing all project IDs!' -ForegroundColor Cyan
 }
 
@@ -66,8 +66,8 @@ function Export-GCloudStandardGkeContextMappings {
                 if ([Kube]::MappedContexts.Contains($mapping.Key)) {
                     continue
                 }
-                $upToDateCurrentMappings.Add($mapping.Key, $mapping.Value)
             }
+            $upToDateCurrentMappings.Add($mapping.Key, $mapping.Value)
         }
     }
     end {
@@ -76,6 +76,7 @@ function Export-GCloudStandardGkeContextMappings {
             $null = $fileStrings.AppendLine("`t'$key' = '$value'")
         }
         $null = $fileStrings.AppendLine('}')
+        Write-Host "Exporting mappings:`n$($fileStrings.ToString())`n`n to file $([GCloud]::PathToProjectGkeMappings)" -Fore Magenta
         $fileStrings.ToString() | Set-Content -LiteralPath ([GCloud]::PathToProjectGkeMappings) -Force
     }
 }

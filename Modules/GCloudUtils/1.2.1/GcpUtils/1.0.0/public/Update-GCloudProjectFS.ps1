@@ -7,7 +7,7 @@ Function Update-GCloudProjectFS {
     Remove-OldGCloudProjectsFromLocalDrive -GCloudProjects $currentProjects -FilesystemProjects $currentFSProjects.Name
 
     $cleanedCurrentFSProjects = Get-ChildItem ([GCloud]::ProjectRoot) -Recurse -File
-    Write-Host "`nUpdating GKE Cluster Data for any local filesystem entries missing GKE cluster data" -Fore Yellow
+    Write-Host "`nUpdating local filesystem entries missing GKE cluster metadata with their metadata" -Fore Yellow
     Update-IncompleteGCloudFSProjects -GCloudProjects $currentProjects -FilesystemProjects $cleanedCurrentFSProjects
     
     Write-Host "`nAdding new projects to local filesystem cache" -Fore Yellow

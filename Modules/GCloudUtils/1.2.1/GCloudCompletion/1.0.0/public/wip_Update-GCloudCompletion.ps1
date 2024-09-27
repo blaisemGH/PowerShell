@@ -166,6 +166,7 @@ function Get-GCloudCommandTree {
           $line -notmatch '^\s{4,9}---' -and $line -notmatch '\s+(or|and|see|addons)(?!\S)'
         ) {#[-a-z_;=",[\].]+$))') {
           # Parse the line if it hasn't been skipped yet
+          Write-Debug "Adding line $line"
           $addCommandParams = @{
             HashtableCache = $HashtableCache
             Line = $line
@@ -284,7 +285,7 @@ function Add-GCloudCommandToCache {
       #}
       $getIndentation = $testLine -replace '^([\s]+).*$' , '$1' #' ' * ($testLine -replace '^([\s]+)\S.*' , '$1' | foreach Length)
       $allFlagSubKeys = if ( $testLine -and $getIndentation ) {
-         $relevantLines -split "`n" | where {$_ -match "^$getIndentation\S+$"} | foreach trim(' ')
+        $relevantLines -split "`n" | where {$_ -match "^$getIndentation\S+$"} | foreach trim(' ')
       } else { $null }
       # Only add the flag as a key with an empty hashtable if there are actually enum values found to populate that hashtable.
       if ( $allFlagSubKeys ) {
@@ -340,7 +341,7 @@ function Add-GCloudCommandToCache {
   # 3 line: Check if the key is already in the hashtable to control for any of the enums of flags we searched for above and may have already added.
   elseif ( $key -ne $PreviousKey -and $key -match '^[a-z]' -and $key -notmatch '^--?' -and $key -ne 'beta' -and
     ! ($gcloudHelpText | Select-String "(?sm)^$lineIndentation[^\n]+\n$lineIndentation$regexSafeLine").Matches -and
-    ($key -notin $HashtableCache.Values.Keys -and $key -notin ($HashtableCache.Values | foreach {$_}) )
+    ($key -notin $HashtableCache.Values.Keys -and $key -notin ($HashtableCache.Values | foreach {$_}) -and ! $HashtableCache.ContainsKey($key) )
   ){
     $appendCommands = (($parentCmd -replace '--help') + ' ' + $key) -replace '^\s+' -replace '\s+$' -replace '\s{2,}', ' '
     
