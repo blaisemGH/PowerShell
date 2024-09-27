@@ -51,7 +51,7 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
             }
 
             $gcloudArgs = @(
-                'beta','pam','entitlements','list',
+                'beta', 'pam', 'entitlements', 'list',
                 '--format=json'
                 $argLocation
                 $argTier
@@ -63,7 +63,7 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
                 $maxduration = $_.maxRequestDuration
                 $roles = $_.privilegedAccess.gcpIamAccess.roleBindings.role -replace '^roles/' -join ', '
                 $tooltip = "Roles: $roles | maxDuration: $($maxDuration.Trim('s')) (seconds)"
-                $result = [CompletionResult]::new($completion, $completion, [CompletionResultType]::Text, $tooltip)
+                $result = [CompletionResult]::new($completion, $completion, [CompletionResultType]::ParameterValue, $tooltip)
                 $collectAllResults.Add($result)
                 
             }

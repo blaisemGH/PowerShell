@@ -33,7 +33,7 @@ class GCloudProjectIdCompleter : IArgumentCompleter {
             $labelsParsed = ($labels.psobject.properties.Name | ForEach-Object { $prop = $_; $value = $labels.$prop; "${prop}: $value"}) -join ', '
             $tooltip = "$completion/$($_.projectNumber) | parent: $($_.parent) ($labelsParsed)"
             
-            $result = [CompletionResult]::new($completion, $listText, [CompletionResultType]::Text, $tooltip)
+            $result = [CompletionResult]::new($completion, $listText, [CompletionResultType]::ParameterValue, $tooltip)
             $resultList.Add($result)
         }
 

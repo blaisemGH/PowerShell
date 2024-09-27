@@ -19,7 +19,8 @@ class GCloudProjectCacheInFSCompleter : IArgumentCompleter {
             (Split-Path $_ -Parent) -like "$wordToComplete*"
         } |
             ForEach-Object {
-                $resultList.Add($_ -replace '\s')
+                $completion = $_ -replace '\s'
+                $resultList.Add( [CompletionResult]::new($completion, $completion, [CompletionResultType]::ParameterValue, $completion) )
             }
 
         return $resultList

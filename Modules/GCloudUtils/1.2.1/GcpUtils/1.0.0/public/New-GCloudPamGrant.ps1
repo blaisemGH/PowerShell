@@ -35,7 +35,7 @@ function New-GCloudPamGrant {
     if ( !(Test-Path $pamGrantCachePath) ) { New-Item $pamGrantCachePath -ItemType Directory }
 
     $existingGrant = Get-ChildItem $pamGrantCachePath | where name -match "^${Entitlement}_${tierType}_${tierValue}_${Location}_"
-    $expiryDate = if ( $existingGrant ) { [datetime]::FromFileTimeUtc( ($existingGrant.BaseName -split '_')[-1] ) }
+    $expiryDate = if ( $existingGrant ) { [datetime]::FromFileTime( ($existingGrant.BaseName -split '_')[-1] ) }
 
     if ( $expiryDate -and $expiryDate -gt (Get-Date) ) {
         Write-Verbose "Already have these permissions! See File $($existingGrant.FullName)"
@@ -60,7 +60,7 @@ function New-GCloudPamGrant {
     
         if ( $scheduledActivation ) {
             $activationDateTime = Get-Date ($scheduledActivation -split ':\s*', 2)[-1].Trim("'""")
-            $newExpiryDateTime = $activationDateTime.AddSeconds($DurationInSeconds).ToFileTimeUtc()
+            $newExpiryDateTime = $activationDateTime.AddSeconds($DurationInSeconds).ToFileTime()
 
             $cacheGrantRecord = Join-Path $pamGrantCachePath "${Entitlement}_${tierType}_${tierValue}_${Location}_${newExpiryDateTime}.log"
             
