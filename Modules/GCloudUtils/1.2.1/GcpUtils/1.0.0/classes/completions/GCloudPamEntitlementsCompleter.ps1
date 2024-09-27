@@ -20,6 +20,8 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
         [IDictionary] $currentBoundParameters
     ) {
         $resultList = [List[CompletionResult]]::new()
+        # Note you cannot filter with Where-Object on $resultList and return that output. Something breaks. Therefore I filter on $collectAllResults
+        # and move that into $resultList for the final return.
         $collectAllResults = [List[CompletionResult]]::new()
 
         $cacheTier, $cacheId = switch ($currentBoundParameters) {
@@ -27,6 +29,11 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
             {$_.ContainsKey('Folder')}       { 'folder', $_.Folder }
             {$_.ContainsKey('ProjectId')}    { 'project', $_.ProjectId }
         }
+        if ( !$cacheTier ) {
+            Write-Host "`n`nCannot tab complete on -Entitlement unless --organization, --folder, or --project have been explicitly specified first!" -Fore Red
+            return $resultList
+        }
+
         $argTier = "--${cacheTier}=$cacheId"
 
         $location = if ( $currentBoundParameters.Location ) { $currentBoundParameters.Location } else { 'global' }
