@@ -5,7 +5,7 @@ function Get-GCloudGkeClusterInfoFromProjectId {
     )
 
     process {
-        $checkIfCached = Get-ChildItem ([Gcloud]::ProjectRoot) -File -Recurse | Where-Object Name -eq $ProjectId
+        $checkIfCached = Get-ChildItem ([Gcloud]::ProjectRoot) -File -Recurse | Where-Object Name -eq $ProjectId | Select-Object -ExpandProperty FullName
         if ( (Select-String -Path ($checkIfCached) -Pattern '^Context') ) {
             return [PSCustomObject](Get-Content $checkIfCached -Raw | ConvertFrom-StringData)
         }

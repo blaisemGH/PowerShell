@@ -2,6 +2,7 @@ Function Enter-KubePod {
     Param(
         [Parameter(Mandatory, Position=0)]
         [alias('p')]
+        [KubePodCompletions()]
         [string]$PodName,
         [Parameter(ValueFromRemainingArguments)]
         [alias('exec', 'e')]
@@ -46,8 +47,9 @@ Function Enter-KubePod {
         [alias('ni')]
         [switch]$NotInteractive,
         [Alias('n')]
+        [KubeNamespaceCompletions()]
         [string]$Namespace,
-        [ArgumentCompleter(
+<#        [ArgumentCompleter(
             {
                 param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
                 $pod = $fakeBoundParameters.PodName
@@ -68,8 +70,9 @@ Function Enter-KubePod {
                     $_ -like "$wordToComplete*"
                 }
             }
-        )]
+        )]#>
         [alias('c')]
+        [KubeContainerCompletions()]
         [string]$Container
     )
     $date = Get-Date

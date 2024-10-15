@@ -19,7 +19,7 @@ Set-Alias -Name unlock	-Value Stop-LockThread			-Scope Global -Option AllScope
 Set-Alias -name net		-value Get-NetTCPConnection		-Scope Global -Option AllScope
 
 Set-Alias -name graph	-value Out-AllMembersAsGridView	-Scope Global -Option AllScope
-Set-Alias -Name gb		-Value Use-GitCliForBranch		-Scope Global -Option AllScope
+Set-Alias -Name g		-Value Use-GitCliForBranch		-Scope Global -Option AllScope
 
 Set-Alias -Name b64		-Value Convert-Base64			-Scope Global -Option AllScope
 Set-Alias -Name sop		-Value Search-ObjectProperties  -Scope Global -Option AllScope

@@ -51,6 +51,6 @@ class KubeSingleNamespaceCompleter : IArgumentCompleter {
 class KubeSingleNamespaceCompletionsAttribute : ArgumentCompleterAttribute, IArgumentCompleterFactory {
 
     [IArgumentCompleter] Create() {
-        return [KubeNamespaceCompleter]::new()
+        return [KubeSingleNamespaceCompleter]::new()
     }
 }

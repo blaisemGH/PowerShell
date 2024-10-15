@@ -57,7 +57,9 @@ PowerShellVersion = '5.1'
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = 'enums/enums.ps1', 'classes/ItemSize.ps1', 'classes/newline.ps1', 
+ScriptsToProcess = 'enums/enums.ps1',
+               'classes/completions/GitBranchCompletions.ps1',
+               'classes/ItemSize.ps1', 'classes/newline.ps1', 
                'classes/SearchObject.ps1', 'classes/PSDirTree.ps1',
                'classes/transformations/IfPathStringTransformToFileSystemInfo.ps1',
                'public/Add-EnvironmentVariable.ps1', 'public/Back-Dir.ps1', 

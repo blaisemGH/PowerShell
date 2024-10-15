@@ -9,53 +9,56 @@
 Function Use-GitCliForBranch {
     [CmdletBinding(DefaultParameterSetName='list')]
     Param(
+        [Parameter(ValueFromRemainingArguments)]
+        [string[]]$ExtraArgs,
+
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName='add')]
+        [Alias('add')]
+        [switch]$AddItems,
+
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName='pull')]
-        [ArgumentCompleter(
-            {
-                param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-                [string[]](git branch -r) | Where-Object {
-                    $_ -like "$wordToComplete*"
-                }
-            }
-        )]
+        [GitRemoteBranchCompletions()]
         [Alias('pb')]
         [string]$PullBranch,
+
         [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='create')]
         [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='delete')]
         [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='checkout')]
         [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='rename')]
         [Parameter(ValueFromPipeline, Position = 0, ParameterSetName='push')]
-        [ArgumentCompleter(
-            {
-                param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-                [string[]]@((git branch) -replace '\*' -replace '\s') | Where-Object {
-                    $_ -like "$wordToComplete*"
-                }
-            }
-        )]
+        [GitLocalBranchCompletions()]
         [Alias('b')]
         [string]$BranchName,
+
         [Parameter(Mandatory,ParameterSetName='create')]
         [Alias('n')]
         [switch]$NewBranch,
+
         [Parameter(Mandatory,ParameterSetName='delete')]
         [Alias('d')]
         [switch]$DeleteBranch,
+
         [Parameter(ParameterSetName='checkout')]
         [switch]$CheckoutBranch,
+
         [Parameter(ParameterSetName='list')]
         [Alias('ls')]
         [switch]$List,
+
         [Parameter(Mandatory, ParameterSetName='push')]
         [Alias('p')]
         [switch]$Push,
+
         [Parameter(Mandatory, ParameterSetName='commit')]
         [Alias('c')]
         [string]$CommitMessage,
+
         [Parameter(Mandatory, ParameterSetName='rename')]
         [switch]$Rename,
+
         [Parameter(Mandatory, ParameterSetName='rename')]
         [string]$RenamedBranchName,
+
         [Parameter(Mandatory, ParameterSetName='squash')]
         [ArgumentCompleter(
             {
@@ -81,8 +84,39 @@ Function Use-GitCliForBranch {
         )]
         #[ValidatePattern('^([a-z0-9]{7}|[a-z0-9]{40})$')]
         [string]$SquashToCommitId,
+
         [Parameter(Mandatory, ParameterSetName='squash')]
-        [string]$SquashCommitMessage
+        [string]$SquashCommitMessage,
+
+        [Parameter(ParameterSetName='merge')]
+        [GitLocalBranchCompletions()]
+        [string]$MergeBranch,
+        [Parameter(ParameterSetName='merge')]
+        [switch]$MergeAbort,
+        [Parameter(ParameterSetName='merge')]
+        [switch]$MergeContinue,
+
+        [Parameter(Mandatory, ParameterSetName='rebase')]
+        [GitLocalBranchCompletions()]
+        [string]$RebaseBranch,
+        [Parameter(ParameterSetName='rebase')]
+        [switch]$RebaseAbort,
+        [Parameter(ParameterSetName='rebase')]
+        [switch]$RebaseContinue,
+
+        [Parameter(Mandatory, ParameterSetName='switch')]
+        [GitRemoteBranchCompletions()]
+        [string]$SwitchBranch,
+
+        [Parameter(Mandatory, ParameterSetName='switchHard')]
+        [Parameter(Mandatory, ParameterSetName='switchSoft')]
+        [GitRemoteBranchAndLocalCommitCompletions()]
+        [string]$Reset,
+        [Parameter(Mandatory, ParameterSetName='switchHard')]
+        [switch]$Hard,
+        [Parameter(Mandatory, ParameterSetName='switchSoft')]
+        [switch]$Soft
+        
     )
     DynamicParam {
         if ( !$NewBranch, !$DeleteBranch, !$List, !$Push, !$CommitMessage ) {
@@ -151,22 +185,70 @@ Function Use-GitCliForBranch {
         }#>
     }
     process {
-        $cmd = Switch ($PSCmdlet.ParameterSetName) {
-            'create'    { "git checkout -b $BranchName"        }
-            'delete'    { "git branch -D $BranchName"        }
-            'checkout'    { "git checkout $BranchName"            }
-            'list'        { "git branch"                        }
-            'commit'    { 'git commit -a -m "{0}"' -f $CommitMessage }
-            'push'        { "git push --set-upstream origin $currentBranch" }
-            'rename'    { "git branch -m $BranchName $RenamedBranchName"}
-            'squash'    { git reset --soft $SquashToCommitId; 'git commit -a -m "{0}"' -f $SquashCommitMessage }
+
+        $sbAddArg = {
+            if ( git branch --show-current 2>$null ) {
+                Get-ChildItem -Recurse -File -Filter *.sh | ForEach-Object { git update-index --chmod=+x $_.FullName }
+            }
+            'add *'
         }
-        Write-Host "Executing: $cmd"
-        Invoke-Expression $cmd
+
+        $sbMergeArg = {
+            if ( $MergeAbort ) {
+                'merge --abort'
+            } elseif ( $MergeContinue ) {
+                'merge --continue'
+            } elseif ( $MergeBranch ) {
+                "merge $MergeBranch"
+            }
+        }
+
+        $sbRebaseArg = {
+            if ( $RebaseAbort ) {
+                'rebase --abort'
+            } elseif ( $RebaseContinue ) {
+                'rebase --continue'
+            } elseif ( $RebaseBranch ) {
+                "rebase $RebaseBranch"
+            }
+        }
+
+        if ( $ExtraArgs ) {
+            [string[]]$gitCommands = (git -h | Select-String '(?<=^\s{3})(\S+)').Matches.Value
+            if ( $BranchName -in $gitCommands ) {
+                $gitArgs = $BranchName + $ExtraArgs
+                Write-Verbose "Running $($gitArgs -join ' ')"
+                git @gitArgs
+                break
+            }
+        }
+
+        [string[]]$commands = Switch ($PSCmdlet.ParameterSetName) {
+            add       { & $sbAddArg }
+            create    { "checkout -b $BranchName"                   }
+            delete    { "branch -D $BranchName"                     }
+            checkout  { "checkout $BranchName"                      }
+            list      { 'branch'                                    }
+            commit    { 'git commit -a -m "{0}"' -f $CommitMessage    }
+            merge     { & $sbMergeArg                                 }
+            rebase    { & $sbRebaseArg                                }
+            rename    { "branch -m $BranchName $RenamedBranchName"  }
+            push      { "push --set-upstream origin $currentBranch" }
+            squash    { "reset --soft $SquashToCommitId", 'git commit -a -m "{0}"' -f $SquashCommitMessage }
+            'switch'  { "switch $SwitchBranch"                      }
+        }
+
+        foreach ($cmd in $commands) {
+            Write-Host "Executing: $cmd"
+            $cmdArgs = if ( $cmd -match '\s' ) {
+                $cmd.Trim() -split '\s+'
+            } else {
+                $cmd
+            }
+
+            git @cmdArgs
+        }
     }
 }
 
-#git reset --hard origin/develop
-#git rebase
-#git merge
 #git diff (need to create a hashtable of commits to reference by index with first line of commit message as description on tab completion)
