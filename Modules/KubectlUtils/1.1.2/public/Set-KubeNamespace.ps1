@@ -11,6 +11,6 @@ Function Set-KubeNamespace {
         $Namespace
     }
     kubectl config set-context --current --namespace $setNamespace
-    Invoke-Expression ([Kube]::Initialize_KubeApiAutocomplete($true))
+    [Kube]::Initialize_KubeApiAutocomplete($true)
     Update-KubeCompletions
 }

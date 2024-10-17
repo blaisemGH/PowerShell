@@ -33,7 +33,7 @@ Set-Alias -Name gknp    -Value Get-KubeNodesByPod		-Scope Global -Option AllScop
 Set-Alias -Name tkm     -Value Trace-KubeMetrics		-Scope Global -Option AllScope
 
 try {
-	Invoke-Expression ([Kube]::Initialize_KubeApiAutocomplete($false))
+	[Kube]::Initialize_KubeApiAutocomplete($false)
 }
 catch {}
 

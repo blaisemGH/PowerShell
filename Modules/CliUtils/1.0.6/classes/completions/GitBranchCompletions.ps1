@@ -12,13 +12,15 @@ class GitLocalBranchCompleter : IArgumentCompleter {
         [CommandAst] $commandAst,
         [IDictionary] $currentBoundParameters
     ) {
+        
         $resultList = [List[CompletionResult]]::new()
 
-        [string[]]@((git branch) -replace '\*' -replace '\s') | Where-Object {
-            $_ -like "$wordToComplete*" | ForEach-Object {
+        [string[]]@((git branch) -replace '\*' -replace '\s') |
+            Where-Object {
+                $_ -like "$wordToComplete*"
+            } | ForEach-Object {
                 $resultList.Add($_)
             }
-        }
 
         return $resultList
     }
@@ -42,11 +44,13 @@ class GitRemoteBranchCompleter : IArgumentCompleter {
     ) {
         $resultList = [List[CompletionResult]]::new()
         
-        [string[]](git branch -r) | Where-Object {
-            $_ -like "$wordToComplete*" | ForEach-Object {
+        [string[]](git branch -r) |
+            Where-Object {
+                $_ -like "$wordToComplete*"
+            } |
+            ForEach-Object {
                 $resultList.Add($_)
             }
-        }
 
         return $resultList
     }
@@ -59,7 +63,7 @@ class GitRemoteBranchCompletionsAttribute : ArgumentCompleterAttribute, IArgumen
     }
 }
 
-class GitRemoteBranchAndLocalCommitCompleter : IArgumentCompleter {
+class GitLocalCommitsCompleter : IArgumentCompleter {
 
     [IEnumerable[CompletionResult]] CompleteArgument(
         [string] $CommandName,
@@ -70,10 +74,10 @@ class GitRemoteBranchAndLocalCommitCompleter : IArgumentCompleter {
     ) {
         $resultList = [List[CompletionResult]]::new()
         
-        $remoteRepo = git remote -v | Select-String 'fetch' | ForEach-Object { $_ -split '\s' } | Select-Object -First 1
-        $currentBranch = git branch --show-current
+        #$remoteRepo = git remote -v | Select-String 'fetch' | ForEach-Object { $_ -split '\s' } | Select-Object -First 1
+        #$currentBranch = git branch --show-current
         
-        $resultList.Add("${remoteRepo}/$currentBranch")
+        #$resultList.Add("${remoteRepo}/$currentBranch")
 
         git log --pretty=format:'%H | %an | %ad | %s | %D' --date=iso | Select-Object -First 30 | ForEach-Object {
             $parts = $_ -split ' \| '
@@ -98,9 +102,40 @@ class GitRemoteBranchAndLocalCommitCompleter : IArgumentCompleter {
     }
 }
 
-class GitRemoteBranchAndLocalCommitCompletionsAttribute : ArgumentCompleterAttribute, IArgumentCompleterFactory {
+class GitLocalCommitsCompletionsAttribute : ArgumentCompleterAttribute, IArgumentCompleterFactory {
 
     [IArgumentCompleter] Create() {
-        return [GitRemoteBranchCompleter]::new()
+        return [GitLocalCommitsCompleter]::new()
+    }
+}
+
+class GitNewShellFilesCompleter : IArgumentCompleter {
+
+    [IEnumerable[CompletionResult]] CompleteArgument(
+        [string] $CommandName,
+        [string] $parameterName,
+        [string] $wordToComplete,
+        [CommandAst] $commandAst,
+        [IDictionary] $currentBoundParameters
+    ) {
+        $resultList = [List[CompletionResult]]::new()
+        
+        git diff --name-only | 
+            Where-Object {
+                $_ -match '\..{0,2}sh$' -and
+                $_ -like "$wordToComplete*"
+            } |
+            ForEach-Object {
+                $resultList.Add($_)
+            }
+
+        return $resultList
+    }
+}
+
+class GitNewShellFilesCompletionsAttribute : ArgumentCompleterAttribute, IArgumentCompleterFactory {
+
+    [IArgumentCompleter] Create() {
+        return [GitNewShellFilesCompleter]::new()
     }
 }

@@ -26,6 +26,6 @@ Function Set-KubeContext {
     }
 
     $null = New-Event -SourceIdentifier 'Set-KubeContext' -EventArguments $contextName
-    Invoke-Expression ([Kube]::Initialize_KubeApiAutocomplete($true))
+    [Kube]::Initialize_KubeApiAutocomplete($true)
     #Update-KubeCompletions
 }

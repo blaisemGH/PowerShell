@@ -10,3 +10,9 @@ Enum FileHashes {
 Enum LengthUnit {
     b; Kb; Mb; Gb; Tb; Pb
 }
+
+[Flags()] enum chmod {
+    x = 1
+    w = 2
+    r = 4
+}

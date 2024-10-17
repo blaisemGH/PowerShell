@@ -38,7 +38,7 @@ Function Set-GCloudContext {
         }
 
         #$null = New-Event -SourceIdentifier 'Set-KubeContext' -EventArguments $gkeContext
-        Invoke-Expression ([Kube]::Initialize_KubeApiAutocomplete($true))
+        [Kube]::Initialize_KubeApiAutocomplete($true)
         #Update-KubeCompletions
     }
     else {

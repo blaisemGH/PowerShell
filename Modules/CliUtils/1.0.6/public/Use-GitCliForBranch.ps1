@@ -48,6 +48,8 @@ Function Use-GitCliForBranch {
         [Parameter(Mandatory, ParameterSetName='push')]
         [Alias('p')]
         [switch]$Push,
+        [Parameter(ParameterSetName='push')]
+        [switch]$ForcePush,
 
         [Parameter(Mandatory, ParameterSetName='commit')]
         [Alias('c')]
@@ -60,29 +62,8 @@ Function Use-GitCliForBranch {
         [string]$RenamedBranchName,
 
         [Parameter(Mandatory, ParameterSetName='squash')]
-        [ArgumentCompleter(
-            {
-                param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-                #%B for commit message
-                git log --pretty=format:'%H | %an | %ad | %s | %D' --date=iso | Select-Object -First 30 | ForEach-Object {
-                    $parts = $_ -split ' \| '
-                    $id = $parts[0]
-                    $author = ($parts[1] -split ' ')[-1]
-                    $date = Get-Date $parts[2] -format 'yyyy-MM-dd HH:mm:ss'
-                    $subject = $parts[3]
-                    $tags = if ( $parts[4] ) { $parts[4] }
-                    $tooltip = "$author | $date | $subject"
-                    
-                    [System.Management.Automation.CompletionResult]::new(
-                        $id,
-                        "$id | $tags",
-                        [System.Management.Automation.CompletionResultType]::Text,
-                        $tooltip
-                    )
-                } | Where-Object { $_.CompletionText -like "$wordToComplete*" }
-            }
-        )]
         #[ValidatePattern('^([a-z0-9]{7}|[a-z0-9]{40})$')]
+        [GitLocalCommitsCompletions()]
         [string]$SquashToCommitId,
 
         [Parameter(Mandatory, ParameterSetName='squash')]
@@ -90,13 +71,14 @@ Function Use-GitCliForBranch {
 
         [Parameter(ParameterSetName='merge')]
         [GitLocalBranchCompletions()]
+        [Alias('merge')]
         [string]$MergeBranch,
         [Parameter(ParameterSetName='merge')]
         [switch]$MergeAbort,
         [Parameter(ParameterSetName='merge')]
         [switch]$MergeContinue,
 
-        [Parameter(Mandatory, ParameterSetName='rebase')]
+        [Parameter(ParameterSetName='rebase')]
         [GitLocalBranchCompletions()]
         [string]$RebaseBranch,
         [Parameter(ParameterSetName='rebase')]
@@ -108,15 +90,28 @@ Function Use-GitCliForBranch {
         [GitRemoteBranchCompletions()]
         [string]$SwitchBranch,
 
-        [Parameter(Mandatory, ParameterSetName='switchHard')]
-        [Parameter(Mandatory, ParameterSetName='switchSoft')]
-        [GitRemoteBranchAndLocalCommitCompletions()]
-        [string]$Reset,
-        [Parameter(Mandatory, ParameterSetName='switchHard')]
-        [switch]$Hard,
-        [Parameter(Mandatory, ParameterSetName='switchSoft')]
-        [switch]$Soft
-        
+        [Parameter(Mandatory, ParameterSetName='resetHard')]
+        [GitLocalCommitsCompletions()]
+        [string]$ResetHard,
+        [Parameter(Mandatory, ParameterSetName='resetSoft')]
+        [GitLocalCommitsCompletions()]
+        [switch]$ResetSoft,
+
+        [Parameter(Mandatory, ParameterSetName='chmodX')]
+        [GitNewShellFilesCompletions()]
+        [string]$GrantChmodToFile,
+        [Parameter(ParameterSetName='chmodX')]
+        [ValidateScript({
+            $permissions = $_.Trim('ugo')
+            if ( $permissions -as [chmod] ) {
+                return $true
+            } elseif ( $permissions.Length -in 1,2,3 -and ($permissions.ToCharArray() -join ',') -as [chmod] ) {
+                return $true 
+            }
+        })]
+        [TransformToChmodGrant()]
+        [string]$ChmodPermission = 'o+x'
+
     )
     DynamicParam {
         if ( !$NewBranch, !$DeleteBranch, !$List, !$Push, !$CommitMessage ) {
@@ -137,7 +132,97 @@ Function Use-GitCliForBranch {
         else {
             $BranchName
         }
-        <#
+     }
+    process {
+
+        $useForcePush = if ( $ForcePush ) { '--force' }
+
+        $sbAddArg = {
+            if ( git branch --show-current 2>$null ) {
+                #Get-ChildItem -Recurse -File -Filter *.sh | ForEach-Object { git update-index --chmod=+x $_.FullName }
+            }
+            'add *'
+        }
+
+        $sbGitChmodPermission = {
+            '--chmod=+' + ($ChmodPermission -split '\+' | Select-Object -Last 1)
+        }
+
+        $sbMergeArg = {
+            if ( $MergeAbort ) {
+                'merge --abort'
+            } elseif ( $MergeContinue ) {
+                $conflictedFiles = git diff --name-only --diff-filter=U --relative
+                foreach ($file in $conflictedFiles) {
+                    "add $file"
+                }
+                'merge --continue'
+            } elseif ( $MergeBranch ) {
+                "merge $MergeBranch"
+            }
+        }
+
+        $sbRebaseArg = {
+            if ( $RebaseAbort ) {
+                'rebase --abort'
+            } elseif ( $RebaseContinue ) {
+                $conflictedFiles = git diff --name-only --diff-filter=U --relative
+                foreach ($file in $conflictedFiles) {
+                    "add $file"
+                }
+                'rebase --continue'
+            } elseif ( $RebaseBranch ) {
+                "rebase $RebaseBranch"
+            }
+        }
+
+        if ( $ExtraArgs ) {
+            [string[]]$gitCommands = (git -h | Select-String '(?<=^\s{3})(\S+)').Matches.Value
+            if ( $BranchName -in $gitCommands ) {
+                $gitArgs = $BranchName + $ExtraArgs
+                Write-Verbose "Running $($gitArgs -join ' ')"
+                git @gitArgs
+                break
+            }
+        }
+
+        [string[]]$commands = Switch ($PSCmdlet.ParameterSetName) {
+            add       { & $sbAddArg }
+            chmodX    { "update-index $(& $sbGitChmodPermission) $GrantChmodToFile"}
+            create    { "checkout -b $BranchName"                   }
+            delete    { "branch -D $BranchName"                     }
+            checkout  { "checkout $BranchName"                      }
+            list      { 'branch'                                    }
+            commit    { 'commit -a -m "{0}"' -f $CommitMessage      }
+            merge     { & $sbMergeArg                               }
+            rebase    { & $sbRebaseArg                              }
+            rename    { "branch -m $BranchName $RenamedBranchName"  }
+            resetHard { "reset $ResetHard --hard" }
+            resetSoft { "reset $ResetSoft --soft" }
+            push      { "push --set-upstream origin $currentBranch $useForcePush" }
+            squash    {
+                "reset --soft $SquashToCommitId"
+                'commit -a -m "{0}"' -f $SquashCommitMessage
+            }
+            'switch'  { "switch $SwitchBranch"                      }
+        }
+
+        foreach ($cmd in $commands) {
+            Write-Host "Executing: git $cmd"
+            $cmdArgs = if ( $cmd -match '\s' ) {
+                $cmd.Trim() -split '(?s)(?<!".*)\s+'
+            } else {
+                $cmd
+            }
+            $trimCmdArgs = $cmdArgs.Trim().Trim('''"')
+
+            git @trimCmdArgs
+        }
+    }
+}
+
+#git diff (need to create a hashtable of commits to reference by index with first line of commit message as description on tab completion)
+       <#
         $squashLogic = {
             param($BranchName, $SquashToCommitId ) #$LimitIterations)
             # git config --list | sls user.name | % {$_ -split '=' | select -last 1}
@@ -183,72 +268,3 @@ Function Use-GitCliForBranch {
                 git branch -D $tempBranchName
             }
         }#>
-    }
-    process {
-
-        $sbAddArg = {
-            if ( git branch --show-current 2>$null ) {
-                Get-ChildItem -Recurse -File -Filter *.sh | ForEach-Object { git update-index --chmod=+x $_.FullName }
-            }
-            'add *'
-        }
-
-        $sbMergeArg = {
-            if ( $MergeAbort ) {
-                'merge --abort'
-            } elseif ( $MergeContinue ) {
-                'merge --continue'
-            } elseif ( $MergeBranch ) {
-                "merge $MergeBranch"
-            }
-        }
-
-        $sbRebaseArg = {
-            if ( $RebaseAbort ) {
-                'rebase --abort'
-            } elseif ( $RebaseContinue ) {
-                'rebase --continue'
-            } elseif ( $RebaseBranch ) {
-                "rebase $RebaseBranch"
-            }
-        }
-
-        if ( $ExtraArgs ) {
-            [string[]]$gitCommands = (git -h | Select-String '(?<=^\s{3})(\S+)').Matches.Value
-            if ( $BranchName -in $gitCommands ) {
-                $gitArgs = $BranchName + $ExtraArgs
-                Write-Verbose "Running $($gitArgs -join ' ')"
-                git @gitArgs
-                break
-            }
-        }
-
-        [string[]]$commands = Switch ($PSCmdlet.ParameterSetName) {
-            add       { & $sbAddArg }
-            create    { "checkout -b $BranchName"                   }
-            delete    { "branch -D $BranchName"                     }
-            checkout  { "checkout $BranchName"                      }
-            list      { 'branch'                                    }
-            commit    { 'git commit -a -m "{0}"' -f $CommitMessage    }
-            merge     { & $sbMergeArg                                 }
-            rebase    { & $sbRebaseArg                                }
-            rename    { "branch -m $BranchName $RenamedBranchName"  }
-            push      { "push --set-upstream origin $currentBranch" }
-            squash    { "reset --soft $SquashToCommitId", 'git commit -a -m "{0}"' -f $SquashCommitMessage }
-            'switch'  { "switch $SwitchBranch"                      }
-        }
-
-        foreach ($cmd in $commands) {
-            Write-Host "Executing: $cmd"
-            $cmdArgs = if ( $cmd -match '\s' ) {
-                $cmd.Trim() -split '\s+'
-            } else {
-                $cmd
-            }
-
-            git @cmdArgs
-        }
-    }
-}
-
-#git diff (need to create a hashtable of commits to reference by index with first line of commit message as description on tab completion)

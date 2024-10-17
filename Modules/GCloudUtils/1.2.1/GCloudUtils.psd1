@@ -51,7 +51,7 @@ PowerShellVersion = '5.1'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @('KubectlUtils', 'GcpUtils/1.0.0/GcpUtils.psd1', 'GCloudCompletion/1.0.0/GCloudCompletion.psd1')
+RequiredModules = @('KubectlUtils', 'GcpUtils/1.0.0/GcpUtils.psd1')#, 'GCloudCompletion/1.0.0/GCloudCompletion.psd1')
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()

@@ -8,6 +8,7 @@ Class Kube {
     static [pscustomobject[]]$FullApiResources
     static [string]$CurrentNamespace
     static [string]$CurrentCluster
+    static [hashtable]$Namespaces = @{}
     static [HashSet[String]]$SyncNamespacePrefixesToInts = @()
     static [hashtable]$MapIntsToNamespaces = @{}
     static [scriptblock]$AddContext = {
@@ -33,24 +34,7 @@ Class Kube {
     static [string] $ContextFile = "$HOME/.pwsh/KubectlUtils/contexts.psd1"
     static [string] $ModularContextFile = ""
     static [OrderedDictionary] $MappedContexts
-    <#
-    static [hashtable] $MapGCloudContexts = ( & {
-        try {
-            $contexts = Import-PowerShellDataFile ([Kube]::ContextFile)#& { $o = [ordered]@{}; ($ht = Import-PowerShellDataFile $HOME\Documents\tenants\contexts.psd1) | Select -exp Keys | Sort | % { $o.Add($_,$ht[$_])}; $o }
-        } catch {
-            Write-Verbose "No contextFile map found. This is used by the `Get-KubeContext` function to shortcut access to different contexts. Checked [Kube]::contextFile for a PowerShellDataFile and found path: $([Kube]::contextFile)"
-            $contexts = @{}
-        }
-        $modularContexts = if ( [Kube]::ModularContextFile -and (Test-Path [Kube]::ModularContextFile) ) {
-            try {
-                Import-PowerShellDataFile ([Kube]::ModularContextFile)
-            } catch {
-                @{}
-            }
-        } else { @{} }
-        return $contexts + $modularContexts
-    })
-#>
+
     static [string[]] Get_APIResourceList() {
         If ( [Kube]::ArrayOfApiResources ) {
             return [Kube]::ArrayOfApiResources
@@ -60,8 +44,10 @@ Class Kube {
             return [Kube]::ArrayOfApiResources
         }
     }
-    static [object] Import_APIResourceList() {
-        return (
+    static [scriptblock] GetFuncForAPIResourceList() {
+        return {
+            param([hashtable]$MapDefaultApiVersions)
+
             kubectl api-resources -o wide | Select-Object -skip 1 |
                 Foreach-Object {
                     Write-Output -NoEnumerate ($_ -replace 
@@ -93,100 +79,40 @@ Class Kube {
                         expression = { $_[6] -split ',' }
                     }, @{
                         label = 'DEFAULTAPIVERSION'
-                        expression = { if ( $_.Name -and [Kube]::MapDefaultApiVersions.ContainsKey($_.Name) ) { [Kube]::MapDefaultApiVersions.$($_.Name) } }
+                        expression = { if ( $_.Name -and $MapDefaultApiVersions.ContainsKey($_.Name) ) { $MapDefaultApiVersions.$($_.Name) } }
                     }
                 }
-        )
-        
-        <#
-        $apiResources = kubectl api-resources -o wide | Select-Object -skip 1 |
-            Foreach {
-                Write-Output -NoEnumerate ($_ -replace 
-                '^ *' -replace 
-                '^(\S+)\s+(\S)(?<=.{50,})' , '$1  $2' -replace
-                ' {3,}' , ' ' -split ' ') | Select-Object @{
-                    label = 'NAME'
-                    expression = { $_[0] }
-                }, @{
-                    label = 'SHORTNAME'
-                    expression = { $_[1] }
-                }, @{
-                    label = 'APIVERSION'
-                    expression = { $_[2] } }
-                }, @{
-                    label = 'NAMESPACED'
-                    expression = { $_[3] }
-                }, @{
-                    label = 'KIND'
-                    expression = { $_[4] }
-                }, @{
-                    label = 'VERBS'
-                    expression = { $_[5] -split ',' }
-                }, @{
-                    label = 'CATEGORIES'
-                    expression = { $_[6] -split ',' }
-                }
-            }
-        
-        return $apiResources | Select-Object NAME, SHORTNAME, @{
-                # The api here returns strings like, e.g., for pods, 'metrics.k8s.io/v1beta1', or 'v1'. The /v1beta1 and v1 are useless.
-                # The actual string should be 'pods.metrics.k8s.io' for the first apiversion, or just 'pods' for the v1 apiversion.
-                # In other words, I can preemptively clean any APIVERSION of '/ + <string>' or any APIVERSION without a / entirely.
-                label = 'APIVERSION'
-                expression = {
-                    if ( $_.APIVERSION -match '/' ) { ( $_.APIVERSION -split '/' )[0] }
-                }
-            },
-            NAMESPACED, KIND, VERBS, CATEGORIES,
-            @{
-                label = 'DEFAULTAPIVERSION'
-                expression = {
-                    if ( [Kube]::MapDefaultApiVersions.ContainsKey($_.Name) ) { [Kube]::MapDefaultApiVersions.$($_.Name) }
-                    else {
-                        $thisResourceName = $_.NAME
-                        if ( $apiResources | Group-Object NAME | Where { $_.NAME -eq $thisResourceName -and $_.Count -gt 1 }) {
-                            $_.APIVERSION
-                        }
-                    }
-                }
-            }
-        #>
+        }
     }
 
-    static [string] Initialize_KubeApiAutocomplete([bool]$forceReloadAll) {
+    static [void] Initialize_KubeApiAutocomplete([bool]$forceReloadAll) {
         If ( ! [Kube]::CurrentNamespace -or $forceReloadAll) {
             [Kube]::Checkpoint_CurrentNamespace()
-            [Kube]::Set_KubeNamespaceEnum()
+            #[Kube]::Set_KubeNamespaceEnum()
             [Kube]::UpdateKubeMappedContexts()
         }
-
-        $resources = [Kube]::Import_APIResourceList()
-        [Kube]::ArrayOfApiResources = $resources.NAME + ( $resources.SHORTNAMES | Where-Object {$_} | ForEach-Object { $_ -split ',' } ) | Sort-Object -Unique
-        [Kube]::FullApiResources = $resources
-# Does dynamickube do anything?        
-        <#
-        [StringBuilder]$dynamicClass = 'class DynamicKube { static [string]$CurrentNamespace' + [Environment]::NewLine
-        $usedResources = @()
-        Foreach ( $r in $resources ) {
-            $rName = $r.Name
-            
-            If ( $rName -notin $usedResources ) {
-                $dynamicClass.AppendLine("static [string[]] Get_$rName (){ return ((kubectl -n `$([Kube]::CurrentNamespace) get $rName -o name) | %{ `$_ -split '/' | select -last 1}) }")
-            }
-            $usedResources += $rName # check
+        
+        $sbToImportKubeResources = [Kube]::GetFuncForAPIResourceList()
+        $asyncImportApiResources = Start-ThreadJob -ScriptBlock $sbToImportKubeResources -ArgumentList ([Kube]::MapDefaultApiVersions)
+        
+        Register-ObjectEvent -InputObject $asyncImportApiResources -EventName StateChanged -Action {
+            Unregister-Event $EventSubscriber.SourceIdentifier
+            $resources = Receive-Job -Id $EventSubscriber.SourceObject.Id -Keep
+            [Kube]::ArrayOfApiResources = $resources.NAME + ( $resources.SHORTNAMES | Where-Object {$_} | ForEach-Object { $_ -split ',' } ) | Sort-Object -Unique
+            [Kube]::FullApiResources = $resources
+            Remove-Job -Id $EventSubscriber.SourceObject.Id
         }
-        $dynamicClass.AppendLine('}')
-        #write-host $dynamicClass.ToString()
-        return $dynamicClass
-        #>
-        return 'Start-Sleep -Milliseconds 1'
     }
 
     static [string[]] Get_Pods (){
         return (kubectl get pods -o name) -replace 'pod/'
     }
     static [string[]] Get_Namespaces (){
-        return (kubectl get namespaces -o name) -replace 'namespace/'
+        $contextNamespaces = [Kube]::Namespaces.$([Kube]::CurrentNamespace)
+        if ( !$contextNamespaces ) {
+            [Kube]::Namespaces.$([Kube]::CurrentNamespace) = (kubectl get namespaces -o name) -replace 'namespace/'
+        }
+        return [Kube]::Namespaces.$([Kube]::CurrentNamespace)
     }
     static [string] Checkpoint_CurrentNamespace () {
         $currentNS = (kubectl config get-contexts | Select-String '^\*') -replace '.* ' # faster way?
@@ -196,7 +122,7 @@ Class Kube {
     static [void] Set_KubeNamespaceEnum() {
         $prefixesToInclude = [Kube]::SyncNamespacePrefixesToInts -join '|'
 
-        $namespaces = if ( $prefixesToInclude ) {
+        $contextNamespaces = if ( $prefixesToInclude ) {
             [Kube]::Get_Namespaces() | Where-Object { $_ -match "^$prefixesToInclude" }
         } else {
             [Kube]::Get_Namespaces()
@@ -205,7 +131,7 @@ Class Kube {
         #$count = $namespaces.count
         $count = 1
         [Kube]::MapIntsToNamespaces = @{}
-        $namespaces.ForEach({
+        $contextNamespaces.ForEach({
             [Kube]::MapIntsToNamespaces.$count = $_
             $count += 1
         })
