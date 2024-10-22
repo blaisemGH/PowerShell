@@ -91,7 +91,7 @@ Class Kube {
             #[Kube]::Set_KubeNamespaceEnum()
             [Kube]::UpdateKubeMappedContexts()
         }
-        
+        <#
         $sbToImportKubeResources = [Kube]::GetFuncForAPIResourceList()
         $asyncImportApiResources = Start-ThreadJob -ScriptBlock $sbToImportKubeResources -ArgumentList ([Kube]::MapDefaultApiVersions)
         
@@ -101,7 +101,7 @@ Class Kube {
             [Kube]::ArrayOfApiResources = $resources.NAME + ( $resources.SHORTNAMES | Where-Object {$_} | ForEach-Object { $_ -split ',' } ) | Sort-Object -Unique
             [Kube]::FullApiResources = $resources
             Remove-Job -Id $EventSubscriber.SourceObject.Id
-        }
+        }#>
     }
 
     static [string[]] Get_Pods (){
@@ -115,7 +115,16 @@ Class Kube {
         return [Kube]::Namespaces.$([Kube]::CurrentNamespace)
     }
     static [string] Checkpoint_CurrentNamespace () {
-        $currentNS = (kubectl config get-contexts | Select-String '^\*') -replace '.* ' # faster way?
+
+        $currentNS = if ( Get-Module ConfigFileUtils ) {
+            $kubeConfigFile = if ( $env:KUBECONFIG ) { $env:KUBECONFIG } else { "~/.kube/config" }
+            $config = Get-Content $kubeConfigFile -Raw | ConvertFrom-Yaml
+            $currentContext = $config.'current-context'
+            $config.Contexts.Where({ $_.context.cluster -eq $currentContext} ).context.namespace
+        } else {
+            $currentNS = (kubectl config get-contexts | Select-String '^\*') -replace '.* '
+        }
+        
         [Kube]::CurrentNamespace = $currentNS
         return $currentNS
     }
