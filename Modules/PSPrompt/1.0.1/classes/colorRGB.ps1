@@ -19,8 +19,10 @@ class colorRGB {
                 [Convert]::ToInt32($colors.TrimStart('#').Substring(0,2), 16),
                 [Convert]::ToInt32($colors.TrimStart('#').Substring(2,2), 16),
                 [Convert]::ToInt32($colors.TrimStart('#').Substring(4,2), 16)
-            }
-            else {
+            } elseif ( $colors -as [Color] ) {
+                $newColor = $colors -as [Color]
+                $newColor.R, $newColor.G, $newColor.B
+            } else {
                 $colors -split ';'
             }
         }
