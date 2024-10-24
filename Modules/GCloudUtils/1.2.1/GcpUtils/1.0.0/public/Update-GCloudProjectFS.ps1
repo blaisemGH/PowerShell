@@ -176,7 +176,13 @@ Function Get-GCloudProjectLineageAsFilepath {
 
     # Express parent folders and leaf items as local filepaths
     $parentPath = $folderNames -join '/'
-    $leafPath = Join-Path $ProjectLeafItem.name $ProjectLeafItem.projectId
+    
+    # It is possible the project name can be the same as the parent folder, and in gcp this looks normal, but in the FS causes duplicates.
+    $leafPath = if ( (Split-Path $parentpath -Leaf) -eq ($ProjectLeafItem.name) ) {
+        $ProjectLeafItem.projectId
+    } else {
+        Join-Path $ProjectLeafItem.name $ProjectLeafItem.projectId
+    }
 
     # Remove whitespace around hyphens to make later filesystem navigation more convenient.
     return (Join-Path $parentPath $leafPath) -replace '(?<=-)\s|\s(?=-)' -replace '\s', '-'

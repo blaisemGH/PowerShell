@@ -1,8 +1,8 @@
 Function Enter-KubePod {
     Param(
         [Parameter(Mandatory, Position=0)]
-        [alias('p')]
         [KubePodCompletions()]
+        [alias('p')]
         [string]$PodName,
         [Parameter(ValueFromRemainingArguments)]
         [alias('exec', 'e')]

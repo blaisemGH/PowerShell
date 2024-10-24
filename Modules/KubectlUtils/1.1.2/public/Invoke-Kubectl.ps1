@@ -6,7 +6,7 @@ function Invoke-Kubectl {
         [KubeCommandCompleter()]
         [string]$Command,
         [Parameter(ValueFromRemainingArguments)]
-        [string[]]$RemainingArgs
+        [string[]]$RemainingArgs,
         [KubeNamespaceCompleter()]
         [string]$Namespace
     )
@@ -43,7 +43,7 @@ function Invoke-Kubectl {
             $param1.Value = 'services'
             $dynParams.Add('Resource', $param1)
         }
-        elseif ( $Command -eq rollout ) {
+        elseif ( $Command -eq 'rollout' ) {
             $validateRolloutSubCommand = [ValidateSetAttribute]::new('history','pause','restart','resume','status','undo')
             $attributeRollout = [ParameterAttribute]@{mandatory=$true}
             $attributeCollectionRollout = [Collections.ObjectModel.Collection[System.Attribute]]::new($attributeRollout)

@@ -13,19 +13,34 @@ class KubeContainerCompleter : IArgumentCompleter {
         [CommandAst] $commandAst,
         [IDictionary] $currentBoundParameters
     ) {
+        $resultList = [List[CompletionResult]]::new()
+
         $ns = "--namespace=$($currentBoundParameters.Namespace)"
-        $resource = $currentBoundParameters.Resource
-        $object = $currentBoundParameters.Object
-        
+        $resource = switch -regex ($currentBoundParameters.Keys) {
+            '^Resource$' { $currentBoundParameters.Resource }
+            '^Pod(?=s|Name)' { 'pods' }
+        }
+        $object = switch -regex ($currentBoundParameters.Keys) {
+            '^Object$' { $currentBoundParameters.Object }
+            '^Pod$' { $currentBoundParameters.Pod}
+            '^PodName$' { $currentBoundParameters.PodName}
+        }
+
         $containers = & {
             if ( $resource -eq 'pods' ) {
                 $podConfig = kubectl $ns get $resource $object -o json | ConvertFrom-Json
-                $status = $podConfig.status.phase
+                <#$status = $podConfig.status.phase
                 if ( $status -eq 'RUNNING' ) {
                     $podConfig.spec.containers.name
                 }
                 else {
-                    $podConfig.status.containerStatuses | where ready -ne True | Select-Object -ExpandProperty Name
+                    $podConfig.status.containerStatuses | where ready -eq True | Select-Object -ExpandProperty Name
+                }#>
+                $readyStatuses = $podConfig.status.containerStatuses | where ready -eq True
+                if ( $readyStatuses ) {
+                    $readyStatuses
+                } else {
+                    $podconfig.status.initContainerStatuses | where { $_.state.running } | Select-Object -ExpandProperty name
                 }
             }
 
@@ -56,9 +71,11 @@ class KubeContainerCompleter : IArgumentCompleter {
             }
         }
 
-        return $containers | foreach {
-            [CompletionResult]::new($_)
+        $containers | where { $_ -like "$wordToComplete*" } | foreach {
+            $resultList.Add( [CompletionResult]::new($_) )
         }
+
+        return $resultList
     }
 }
 

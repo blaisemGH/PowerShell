@@ -1,4 +1,4 @@
-function New-GCloudPamGrant {
+function Request-GCloudPamGrant {
     [CmdletBinding(DefaultParameterSetName='project')]
     param(
         [Parameter(Mandatory,ParameterSetName='organization')]

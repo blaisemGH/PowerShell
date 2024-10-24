@@ -67,6 +67,9 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
                 $collectAllResults.Add($result)
                 
             }
+            if ( $collectAllResults.Count -eq 0 ) {
+                Write-Host $(gcloud @gcloudArgs)
+            }
 
             $cachedMetaData = [PSCustomObject]@{
                 date = $date

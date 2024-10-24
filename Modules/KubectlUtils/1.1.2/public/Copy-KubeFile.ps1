@@ -17,6 +17,7 @@ function Copy-KubeFile {
                 }
             }
         )]#>
+        [KubePodCompletions()]
         [alias('pod', 'p')]
         [string]$PodName,
         [Parameter(Mandatory, Position=1)]
