@@ -30,7 +30,7 @@ using namespace System.Text
 
 Function Remove-GCloudUnusedGkeContexts {
         
-    Write-Verbose 'Performing housekeeping to remove nonexistent contexts.' -Fore Magenta
+    Write-Verbose 'Performing housekeeping to remove nonexistent contexts.'
     $currentProjects = Get-ChildItem -LiteralPath ([GCloud]::ProjectRoot) -Recurse -File | Select-Object -ExpandProperty Name
     $kubeContexts = kubectl config get-contexts -o name
     $customMappedContexts = Import-PowerShellDataFile ([Kube]::ContextFile) | Select-Object -ExpandProperty Values
