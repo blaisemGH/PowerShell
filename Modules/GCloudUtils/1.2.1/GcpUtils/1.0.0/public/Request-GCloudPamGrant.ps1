@@ -1,5 +1,5 @@
 function Request-GCloudPamGrant {
-    [CmdletBinding(DefaultParameterSetName='project')]
+    [CmdletBinding(DefaultParameterSetName='defaultToProject')]
     param(
         [Parameter(Mandatory,ParameterSetName='organization')]
         [string]$Organization,
@@ -30,6 +30,7 @@ function Request-GCloudPamGrant {
         organization { 'organization', $Organization }
         folder { 'folder', $Folder }
         project { 'project', $ProjectId }
+        DEFAULT { 'project', (Get-GCloudProjectId) }
     }
     $pamGrantCachePath = Join-Path ([Gcloud]::LocalCache) pam-grants
     if ( !(Test-Path $pamGrantCachePath) ) { New-Item $pamGrantCachePath -ItemType Directory }

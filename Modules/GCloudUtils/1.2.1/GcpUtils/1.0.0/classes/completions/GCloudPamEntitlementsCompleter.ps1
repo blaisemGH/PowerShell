@@ -28,6 +28,7 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
             {$_.ContainsKey('Organization')} { 'organization', $_.Organization }
             {$_.ContainsKey('Folder')}       { 'folder', $_.Folder }
             {$_.ContainsKey('ProjectId')}    { 'project', $_.ProjectId }
+            default { 'project', (Get-GCloudProjectId) }
         }
         if ( !$cacheTier ) {
             Write-Host "`nCannot tab complete on -Entitlement unless --organization, --folder, or --project have been explicitly specified first!" -Fore Red
@@ -68,7 +69,7 @@ class GCloudPamEntitlementCompleter : IArgumentCompleter {
                 
             }
             if ( $collectAllResults.Count -eq 0 ) {
-                Write-Host $(gcloud @gcloudArgs)
+                Write-Host "`n$(gcloud @gcloudArgs 2>&1 | Out-String)"
             }
 
             $cachedMetaData = [PSCustomObject]@{
