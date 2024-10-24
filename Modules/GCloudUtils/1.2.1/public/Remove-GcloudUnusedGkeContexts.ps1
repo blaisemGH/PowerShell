@@ -28,7 +28,7 @@ using namespace System.Text
 }
 #>
 
-Function Remove-GCloudUnusedContexts {
+Function Remove-GCloudUnusedGkeContexts {
         
     Write-Verbose 'Performing housekeeping to remove nonexistent contexts.' -Fore Magenta
     $currentProjects = Get-ChildItem -LiteralPath ([GCloud]::ProjectRoot) -Recurse -File | Select-Object -ExpandProperty Name
