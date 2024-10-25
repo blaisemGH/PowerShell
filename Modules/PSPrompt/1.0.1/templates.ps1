@@ -29,7 +29,7 @@ $promptTemplateGetRunDuration = @{
 Add-PSPromptTemplateItem @promptTemplateGetRunDuration
 
 
-$getPSVersion = { 'PS' + $PSVersionTable.PSVersion.ToString() }
+$getPSVersion = { 'PS' + $PSVersionTable.PSVersion.ToString() + ' ' }
 $promptTemplateGetPSVersion = @{
     Alignment = 'Left'
     ItemSeparator = ''
@@ -41,11 +41,7 @@ $promptTemplateGetPSVersion = @{
 Add-PSPromptTemplateItem @promptTemplateGetPSVersion
 
 
-$getPromptTimestamp = {
-    $newTimestamp = Get-Date
-	$timestamp = $newTimestamp.ToString('HH:mm:ss')
-    return $timestamp
-}
+$getPromptTimestamp = { return (Get-Date).ToString('HH:mm:ss') }
 $promptTemplateGetTimestamp = @{
     Alignment = 'Left'
     ItemSeparator = ''
