@@ -17,9 +17,14 @@ Function Use-GitCliForBranch {
         [switch]$AddItems,
 
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName='pull')]
+        [Alias('pu')]
+        [switch]$Pull,
+        [Parameter(ParameterSetName='pull')]
         [GitRemoteBranchCompletions()]
         [Alias('pb')]
         [string]$PullBranch,
+        [Parameter(ParameterSetName='pull')]
+        [switch]$ForcePull,
 
         [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='create')]
         [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName='delete')]
@@ -135,7 +140,7 @@ Function Use-GitCliForBranch {
      }
     process {
 
-        $useForcePush = if ( $ForcePush ) { '--force' }
+        $useForce = if ( $ForcePush -or $ForcePull ) { '--force' }
 
         $sbAddArg = {
             if ( git branch --show-current 2>$null ) {
@@ -199,7 +204,8 @@ Function Use-GitCliForBranch {
             rename    { "branch -m $BranchName $RenamedBranchName"  }
             resetHard { "reset $ResetHard --hard" }
             resetSoft { "reset $ResetSoft --soft" }
-            push      { "push --set-upstream origin $currentBranch $useForcePush" }
+            pull      { "pull $PullBranch $useForce"}
+            push      { "push --set-upstream origin $currentBranch $useForce" }
             squash    {
                 "reset --soft $SquashToCommitId"
                 'commit -a -m "{0}"' -f $SquashCommitMessage
