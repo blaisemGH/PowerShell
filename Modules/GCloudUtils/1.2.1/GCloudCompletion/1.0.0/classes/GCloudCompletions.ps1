@@ -216,7 +216,7 @@ class GcloudCompletions {
         }
     }
 }
-<#
+
 class GcloudCompletionsPropertiesBuilder {
     [string[]]$RelevantHelpMenuText
     
@@ -260,4 +260,3 @@ class GcloudCompletionsPropertiesBuilder {
         return $completionDictionary
     }
 }
-#>

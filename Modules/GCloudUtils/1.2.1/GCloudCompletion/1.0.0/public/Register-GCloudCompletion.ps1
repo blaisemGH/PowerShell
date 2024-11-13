@@ -17,7 +17,7 @@ $sbGcloudCompletion = {
             [GcloudCompletions]::ImportCompletionTree()
         }
 
-        $currentCliTreeLevel = [GcloudCompletions]::CompletionTree.Clone() # Will be changing $currentCliTreeLevel, so need a clone to not corrupt the cache.
+        $currentCliTreeLevel = [GcloudCompletions]::CompletionTree.Clone() # $currentCliTreeLevel will be updated, so need a clone to not corrupt the cache.
         $globalFlags = $currentCliTreeLevel.flags
 
         [HashSet[string]]$inputGcloudArgs = $commandAst.CommandElements | Select-Object -Skip 1
@@ -143,7 +143,7 @@ $sbGcloudCompletion = {
                 } else {
                     $allFlags.Keys | 
                         Where { $_ -like "$wordToComplete*" -and $_ -notin $alreadyUsedFlags } |
-                        ForEach-Object { ($allFlags.$_ -and $allFlags.$_ -notin 'value','dynamic') ? "$_=" : $_ } |
+                        ForEach-Object { ($allFlags.$_ -and $allFlags.$_ -notin 'bool','value','dynamic') ? "$_=" : $_ } |
                         Sort-Object
                 }
                 
@@ -151,7 +151,7 @@ $sbGcloudCompletion = {
             } else {
                 $allFlags.Keys | 
                     Where { $_ -like "$wordToComplete*" -and $_ -notin $alreadyUsedFlags } |
-                    ForEach-Object { ($allFlags.$_ -and $allFlags.$_ -notin 'value','dynamic') ? "$_=" : $_ } |
+                    ForEach-Object { ($allFlags.$_ -and $allFlags.$_ -notin 'bool','value','dynamic') ? "$_=" : $_ } |
                     Sort-Object
             }
         }

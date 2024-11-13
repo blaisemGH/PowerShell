@@ -33,7 +33,7 @@ Copyright = '(c) Blaise Mullenix. All rights reserved.'
 Description = 'Utility functions for wrapping gcloud commands.'
 
 # Minimum version of the PowerShell engine required by this module
-PowerShellVersion = '5.1'
+PowerShellVersion = '7.2'
 
 # Name of the PowerShell host required by this module
 # PowerShellHostName = ''
@@ -57,7 +57,7 @@ PowerShellVersion = '5.1'
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = 'classes/completions/GCloudSdkCompleter.ps1', 'classes/GCloudCompletions.ps1', 'public/Set-GCloudCompletion.ps1', 'public/Update-GCloudCompletion.ps1', 'public/Register-GCloudCompletion.ps1'
+ScriptsToProcess = 'classes/GCloudCompletions.ps1', 'public/Register-GCloudCompletion.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -69,7 +69,7 @@ ScriptsToProcess = 'classes/completions/GCloudSdkCompleter.ps1', 'classes/GCloud
 #NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'g', 'Set-GCloudCompletion', 'Update-GCloudCompletion', 'Register-GCloudCompletion'
+FunctionsToExport = 'Register-GCloudCompletion'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -87,7 +87,7 @@ AliasesToExport = @()
 # ModuleList = @()
 
 # List of all files packaged with this module
-FileList = 'public/Set-GCloudCompletion.ps1', 'public/Update-GCloudCompletion.ps1'
+FileList = @()
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
