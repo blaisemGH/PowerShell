@@ -43,7 +43,7 @@ class PSObjectSelector {
                     }
                     
                     $iteratedNodePath = (
-                        $kvPair.Key + $result.NodePath + $nonWildCardNodes | Where-Object {$_}
+                        [string[]]$kvPair.Key + $result.NodePath + $nonWildCardNodes | Where-Object {$_}
                     ) -join '.' | ForEach-Object TrimStart('.') 
                     
                     # Remove the previous entry and add the updated object as each segment is parsed.

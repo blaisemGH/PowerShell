@@ -57,7 +57,7 @@ PowerShellVersion = '5.1'
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = 'public/Set-GCloudCompletion.ps1', 'public/Update-GCloudCompletion.ps1', 'public/Register-GCloudCompletion.ps1'
+ScriptsToProcess = 'classes/completions/GCloudSdkCompleter.ps1', 'classes/GCloudCompletions.ps1', 'public/Set-GCloudCompletion.ps1', 'public/Update-GCloudCompletion.ps1', 'public/Register-GCloudCompletion.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -69,16 +69,16 @@ ScriptsToProcess = 'public/Set-GCloudCompletion.ps1', 'public/Update-GCloudCompl
 #NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport =  'Set-GCloudCompletion', 'Update-GCloudCompletion', 'Register-GCloudCompletion'
+FunctionsToExport = 'g', 'Set-GCloudCompletion', 'Update-GCloudCompletion', 'Register-GCloudCompletion'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = '*'
+CmdletsToExport = @()
 
 # Variables to export from this module
-VariablesToExport = '*'
+VariablesToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = '*'
+AliasesToExport = @()
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()

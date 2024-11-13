@@ -2,29 +2,42 @@ using namespace System.Management.Automation
 using namespace System.Management.Automation.Language
 using namespace System.Collections
 using namespace System.Collections.Generic
-function Register-GCloudCompletion {
-$sbGcloudCompletion = {
-    param(
-        $WordToComplete,
-        $CommandAst,
-        $CursorPosition
-    )
 
-    $resultSet = [HashSet[CompletionResult]]::new()
+# Debug pro tip: Set these and you can run the CompleteArgument method by directly copy pasting the code to the shell, except you must skip $resultSet
+# using namespace System.Collections.Generic
+# $gcloudCliInput = 'gcloud config set' # Adjust this as required
+# $wordToComplete = '' # Adjust this as required
+# #$ast = [System.Management.Automation.Language.Parser]::ParseInput($gcloudCliInput, [ref]$null, [ref]$null)
+# $commandAst = $ast.FindAll({$args[0].GetType().Name -like 'CommandAst'}, $true)
+
+class GCloudSdkCompleter : IArgumentCompleter {
+    static [string]$CompletionFilepath
+    static [hashtable]$CompletionTree
+    static [string]$gcloudDotPs1Path = (Get-Command gcloud.ps1 | Select-Object -ExpandProperty Source)
+    static [version]$GcloudVersion = (Get-Command gcloud.ps1 | Select-Object -ExpandProperty source | Split-Path -Parent | Split-Path -Parent | Get-ChildItem | where name -eq VERSION | Get-Content -Raw)
+
+    [IEnumerable[CompletionResult]] CompleteArgument(
+        [string] $commandName,
+        [string] $parameterName,
+        [string] $wordToComplete,
+        [CommandAst] $commandAst,
+        [IDictionary] $currentBoundParameters
+    ) {
+        $resultSet = [HashSet[CompletionResult]]::new()
 
         # Lazy load the completion dictionary. It should only need to be loaded once per session.
-        if ( ![GcloudCompletions]::CompletionTree -or ![GcloudCompletions]::CompletionTree.Keys.Count ) {
-            [GcloudCompletions]::ImportCompletionTree()
+        if ( ![GCloudSdkCompleter]::CompletionTree ) {
+            [GCloudSdkCompleter]::ImportCompletionTree()
         }
-
-        $currentCliTreeLevel = [GcloudCompletions]::CompletionTree.Clone() # Will be changing $currentCliTreeLevel, so need a clone to not corrupt the cache.
+        
+        $currentCliTreeLevel = [GCloudSdkCompleter]::CompletionTree.Clone() # Will be changing $currentCliTreeLevel, so need a clone to not corrupt the cache.
         $globalFlags = $currentCliTreeLevel.flags
 
         [HashSet[string]]$inputGcloudArgs = $commandAst.CommandElements | Select-Object -Skip 1
         [Queue[string]]$gcloudTokens = $inputGcloudArgs
         
         # Compare cursor position to identify if it's a new token.
-        $isStartingNewToken = $cursorPosition -gt $commandAst.Extent.EndOffset
+        $isStartingNewToken = ($commandAst.parent.parent.parent.Extent.Text -replace '^\s+').Length -gt ($commandAst.CommandElements -join ' ').Length
 
         $token = $null
         $includeSetPropertyEnums = $null
@@ -163,78 +176,95 @@ $sbGcloudCompletion = {
             }
 
         return $resultSet
-}
+    }
 
-Register-ArgumentCompleter -Native -CommandName gcloud -ScriptBlock $sbGcloudCompletion
-}
-<#function Register-GCloudCompletion {
-    $gcloudCompletion = {
-        param($wordToComplete, $commandAst, $commandCharPosition)
-        $argTokens = $commandAst.CommandElements.Extent.Text | where { $_ -notmatch '^-' }
-        $ht = [GCloud]::CompletionTree.Clone()
-        $gcloudAllFlags = $ht.gcloudAllFlags | Sort-Object
-        $ht.Remove('gcloudAllFlags')
+    static [void] ImportCompletionTree() {
+        $cachedCompletionFile = [GCloudSdkCompleter]::GcloudVersion.ToString() + '_' + (Split-Path ([GCloudSdkCompleter]::CompletionFilepath) -Leaf )
+        $completionCacheFilepath = Join-Path ([GCloud]::LocalCache) completions $cachedCompletionFile
 
-        # step through completion possibilities for each token.
-        if ( $argTokens.Count -gt 1 ) {
-            foreach ( $token in $argTokens ){
-                if ( $token -eq 'gcloud' ) { continue }
-                if ( $ht.ContainsKey($token) ) { #-and !$flagIsCommandWithProperties...
-                    if ( $ht[$token].ContainsKey('commandProperties') ) {
-                        $ht = $ht[$token].commandProperties
-                    }
-                    else {
-                        $ht = $ht[$token]
-                    }
-                }
+        if ( !(Test-Path $completionCacheFilepath) ) {
+            [GCloudSdkCompleter]::NewCompletionCacheFile($completionCacheFilepath)
+        }
+
+        [GCloudSdkCompleter]::CompletionTree = Get-Content $completionCacheFilepath -Raw | ConvertFrom-Json -AsHashtable
+        
+        $configPropertyCompletions = [GCloudCompletionsPropertiesBuilder]::new( (gcloud topic configurations) )
+        
+        $propertyCompletions = $configPropertyCompletions.GetConfigPropertyCompletions()
+        $pyCompletionTree = [GCloudSdkCompleter]::CompletionTree.Clone()
+        
+        foreach ($configCommand in $pyCompletionTree.commands.config.commands.Keys ){
+            foreach ( $kvpair in $propertyCompletions.GetEnumerator() ) {
+                [GCloudSdkCompleter]::CompletionTree.commands.config.commands.$configCommand.commands.Add( $kvPair.Key, $kvPair.Value)
             }
-        }
-            
-        # Handle the case where the last token is a subarg. This requires a different completion logic.
-        if ( $argTokens[-1] -match '=' ) {
-            $key = ($argTokens[-1] -split '=')[0] + '='
-            $value = $ht.$key
-            $outCompletionStrings = switch ($value) {
-                { $_ -is [IList] } {
-                    $value
-                }
-                { $_ -is [IDictionary] } {
-                    $splitSubArgs = $completionStrings[0] -split '=',2
-                    if ( $splitSubArgs.Count -gt 1) {
-                        [string[]]$subTokens = $splitSubArgs[-1] -split ','
-                        $lastSubToken = $subTokens[-1]
-
-                        # if --arg=sub1=<unfinished value> or --arg=sub1=
-                        if ( $lastSubToken -match '=' ) {
-                            [string[]]$splitLastSubToken = $lastSubToken -split '='
-                            $lastSubValue = $splitLastSubToken[1]
-                            $value.Values | where { $_ -like "$lastSubValue*" }
-                          # if --arg=sub1=x,sub2=y or --arg=su
-                        } else {
-                            $lastSubKey = $lastSubToken[0]
-                            [string[]]$alreadyUsedSubKeys = $subtokens | foreach {
-                                if ($_ -match '=') {
-                                    ($_ -split '=')[0]
-                                }
-                            }
-                            $value.Keys | where { $_ -notin $alreadyUsedSubKeys -and $_ -like "$lastSubKey*" }
-                        }
-                        # if --arg=
-                    } else {
-                        $value.Keys
-                    }
-                }
-            }           
-            return $outCompletionStrings | Sort-Object -Unique
-        }
-        else {
-            $gcloudAllFlags = if ( $ht.gcloudAllowedAllFlags ) {
-                $ht.gcloudAllowedAllFlags
-            } else { @() }
-
-            return [string[]]($ht.Keys | Where-Object { $_ -like "$wordToComplete*" -and $_ -notin 'gcloudAllowedAllFlags', 'commandProperties' } | Sort-Object -Unique) + ($gcloudAllFlags | Where-Object { $_ -notin $argTokens -and $_ -in $flags })
         }
     }
 
-    Register-ArgumentCompleter -CommandName gcloud -ScriptBlock $gcloudCompletion -Native
-}#>
+    static [void] NewCompletionCacheFile([string]$completionCacheFilepath) {
+        $completionCacheDir = Split-Path $completionCacheFilepath -Parent
+        $gcloudCompletionFile = Split-Path ([GCloudSdkCompleter]::CompletionFilepath) -Leaf
+
+        $existingLocalCompletionFileVersions = Get-ChildItem $completionCacheDir -Filter "*$gcloudCompletionFile.json" | Sort-Object Name | ForEach-Object {
+            $_.Name -split '_' | Select-Object -First 1
+        }
+
+        if ( $existingLocalCompletionFileVersions -notcontains [GCloudSdkCompleter]::GcloudVersion.ToString() ) {
+
+            '{' + (Get-Content ([GCloudSdkCompleter]::CompletionFilepath) | Select-Object -skip 4) |
+                ConvertFrom-Json |
+                ConvertTo-Json -Compress -Depth 100 |
+                Set-Content $completionCacheFilepath
+        }
+    }
+}
+
+class GCloudSdkCompletionsAttribute : ArgumentCompleterAttribute, IArgumentCompleterFactory {
+
+    [IArgumentCompleter] Create() {
+        return [GCloudSdkCompleter]::new()
+    }
+}
+
+class GCloudCompletionsPropertiesBuilder {
+    [string[]]$RelevantHelpMenuText
+    
+    GCloudCompletionsPropertiesBuilder([string[]]$helpMenuToParse) {
+        $relevantHelpMenuSection = $helpMenuToParse -join "`n" | Select-String '(?sm)(?<=^AVAILABLE PROPERTIES\n).*\n(?=^NOTES)'
+        $this.RelevantHelpMenuText = $relevantHelpMenuSection -split '\n'
+    }
+
+    [hashtable] GetConfigPropertyCompletions() {
+
+        $completionDictionary = @{}
+
+        $currentSection = $null
+        $currentProperty = $null
+        foreach ($line in $this.RelevantHelpMenuText ) {
+            switch -regex ($line) {
+                '^\s{5}[a-zA-Z0-9]' {
+                    $currentSection = $line.Trim()
+                    $completionDictionary.Add("$CurrentSection/", @{})
+                }
+                '^\s{9}[a-zA-Z0-9]' {
+                    $currentProperty = $line.Trim()
+                    try {
+                    $completionDictionary."$currentSection/".Add($currentProperty, [HashSet[string]]::new())
+                    } catch {
+                        $completionDictionary | out-string
+                        $currentSection
+                        $currentProperty }
+                }
+                '^\s{10,}\+ [a-zA-Z0-9_'']+ -' {
+                    $enumValue = ($line -split ' - ' | Select-Object -first 1).Trim("' +")
+                    [void]$completionDictionary."$currentSection/".$currentProperty.Add($enumValue)
+                }
+                '^\s{10,}If True,? ' {
+                    [void]$completionDictionary."$currentSection/".$currentProperty.Add('True')
+                    [void]$completionDictionary."$currentSection/".$currentProperty.Add('False')
+                }
+            }
+        }
+
+        return $completionDictionary
+    }
+}

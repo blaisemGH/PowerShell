@@ -1,3 +1,4 @@
+using namespace System.Collections.Generic
 Function Get-KubeResource {
     [CmdletBinding()]
     Param(
@@ -33,6 +34,7 @@ Function Get-KubeResource {
         DEFAULT { $_ }
     }
     
+    <#
     $cmd = [Text.StringBuilder]::new()
     [void]$cmd.AppendLine("kubectl -n $Namespace get $getName")
     if ($itemName) {
@@ -54,20 +56,34 @@ Function Get-KubeResource {
         [void]$cmd.AppendLine("| ForEach { `$_ -replace ' {2,}', '#' } | ConvertFrom-Csv -Delimiter '#'")
     }
 
-    $o = $out = Invoke-Expression ( $cmd.ToString() -replace [Environment]::NewLine, ' ' )
-
-    if ( !$out ) { break }
-
-    If ($out | Get-Member -Membertype NoteProperty -Name items) {
-        $o = $out.items
+    $o = $out = I-E ( $cmd.ToString() -replace [Environment]::NewLine, ' ' )
+#>
+    $kubeArgs = [List[string]]::new()
+    $kubeArgs.Add("--namespace=$Namespace")
+    $kubeArgs.Add('get')
+    $kubeArgs.Add("$getName")
+    if ( $outputType ) {
+        $kubeArgs.Add("--output=$outputType")
     }
+    $kubectlOutput = kubectl @kubeArgs
+    $psObjectOutput = switch ($OutputType) {
+        json { $kubectlOutput | ConvertFrom-Json }
+        yaml { if ( Get-Command ConvertFrom-Yaml) { $kubectlOutput | ConvertFromYaml } else { $kubectlOutput }}
+        name { $kubectlOutput }
+        DEFAULT { $kubectlOutput -replace '\t', '    ' -replace '\s{2,}', [char]0x2561 | ConvertFrom-Csv -Delimiter ([char]0x2561) }
+    }
+    if ( !$psObjectOutput ) { break }
+
+    $noItemsOutput = if ($psObjectOutput | Get-Member -Membertype NoteProperty -Name items) {
+        $psObjectOutput.items
+    } else { $psObjectOutput }
 
     If ( $PSBoundParameters.OutVariable ) {
-        Return $o
-        Write-Host ($o | Format-Table)
+        Return $noItemsOutput
+        Write-Host ($noItemsOutput | Format-Table)
     }
     Else {
-        $script:k = $o
-        $o | Format-Table -AutoSize -Wrap
+        $script:k = $noItemsOutput
+        $noItemsOutput | Format-Table -AutoSize -Wrap
     }
 }
