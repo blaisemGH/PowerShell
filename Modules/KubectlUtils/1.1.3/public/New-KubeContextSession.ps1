@@ -13,6 +13,6 @@ function New-KubeContextSession {
     $kubeConfigPath = if ( $env:KUBECONFIG ) { $env:KUBECONFIG } else { "$HOME/.kube/config" }
     $newKubeConfigPath = Join-Path $sessionCacheDir "${PID}_config"
 
-    Copy-Item -LiteralPath $kubeConfigPath -Destination $newKubeConfigPath -Force
+    Copy-Item -LiteralPath $kubeConfigPath -Destination $newKubeConfigPath -Force -ErrorAction Stop
     $env:KUBECONFIG = $newKubeConfigPath
 }
