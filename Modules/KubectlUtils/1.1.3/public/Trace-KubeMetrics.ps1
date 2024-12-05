@@ -80,7 +80,7 @@ Function Trace-KubeMetrics {
     }
 
     $fmtRolloverSize = & {
-        $sizes = $RolloverSize -split '(?=[a-zA-Z]+$)'
+        $sizes = $RolloverSize -split '(?=[a-zA-Z]+$)', 2
         if ( $sizes.count -gt 1 ) {
             $sizes[0] / ('1' + $sizes[1])
         }

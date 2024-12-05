@@ -52,7 +52,7 @@ Function Update-KubeCompletions {
     Register-ArgumentCompleter -CommandName Enter-KubePod -Parameter Namespace -ScriptBlock $sbGetNamespaces
     Register-ArgumentCompleter -CommandName Copy-KubeFile -Parameter PodName -ScriptBlock $sbGetPodNames
     Register-ArgumentCompleter -CommandName Copy-KubeFile -Parameter Namespace -ScriptBlock $sbGetNamespaces
-    Register-ArgumentCompleter -CommandName Set-KubeNamespace -Parameter Namespace -ScriptBlock $sbGetNamespaces
+    #Register-ArgumentCompleter -CommandName Set-KubeNamespace -Parameter Namespace -ScriptBlock $sbGetNamespaces
     Register-ArgumentCompleter -CommandName Get-KubeResource -Parameter ResourceName -ScriptBlock $sbGetResource
     Register-ArgumentCompleter -CommandName Get-KubeResource -Parameter ItemName -ScriptBlock $sbGetItem
     Register-ArgumentCompleter -CommandName Get-KubeResource -Parameter Namespace -ScriptBlock $sbGetNamespaces

@@ -41,11 +41,18 @@ catch {}
 
 if ( (Get-Module PSPrompt) -and ! (Get-Module KubectlUtils) ) {
     $getItemKubernetes = {
+        param($ansi)
         try {
-            $area = (gkc).Name
-            $ns = (gkc).Namespace
-            [string]$nsNumber = [Kube]::MapIntsToNamespaces.GetEnumerator() | Where-Object Value -eq $ns | Select-Object -exp Name
-            "${area}: $ns ($nsNumber)"
+            $contextInfo = Get-KubeContextInfo
+            $area = $contextInfo.Name
+            $ns = $contextInfo.Namespace
+            #[string]$nsNumber = [Kube]::MapIntsToNamespaces.GetEnumerator() | Where-Object Value -eq $ns | Select-Object -ExpandProperty Name
+            if ( [Kube]::IsConfigForked ) {
+                # Sets icon in yellow before reverting to original color
+                "`e[36;1m$ansi ${area}: $ns" 
+            } else {
+                "${area}: $ns"
+            }
         } catch {}
     }
     $kubePromptTemplate = @{

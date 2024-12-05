@@ -15,7 +15,7 @@ class KubeContainerCompleter : IArgumentCompleter {
     ) {
         $resultList = [List[CompletionResult]]::new()
 
-        $ns = "--namespace=$($currentBoundParameters.Namespace)"
+        $ns = if ($currentBoundParameters.Namespace) {"--namespace=$($currentBoundParameters.Namespace)"}
         $resource = switch -regex ($currentBoundParameters.Keys) {
             '^Resource$' { $currentBoundParameters.Resource }
             '^Pod(?=s|Name)' { 'pods' }
@@ -71,7 +71,7 @@ class KubeContainerCompleter : IArgumentCompleter {
             }
         }
 
-        $containers | where { $_ -like "$wordToComplete*" } | foreach {
+        $containers.name | where { $_ -like "$wordToComplete*" } | foreach {
             $resultList.Add( [CompletionResult]::new($_) )
         }
 

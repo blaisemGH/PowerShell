@@ -32,9 +32,9 @@ function Get-KubeNodesByPod {
     $out | Foreach {
         [KubeNodesByPod]@{
             PodCount = $_.Count
-            nodeType = ($_.Name -replace '^.+nap-' -replace '(?<=-[0-9]{0,4})(-.+)$').Trim('-')
+            NodeType = ($_.Name -replace '^.+nap-' -replace '(?<=-[0-9]{0,4})(-.+)$').Trim('-') -replace '(?<=[a-z])(-[0-9])?$', ('-' + $_.group[0].cores)
             CoresAndMem = ('{0,2}' -f ($_.group[0].cores)) + ' / ' + [math]::round($_.group[0].memory)
-            pods = $_.group.name -join [Environment]::NewLine #', '
+            Pods = $_.group.name -join "`n" #', '
             NodeName = $_.Name
         }
     }

@@ -12,6 +12,7 @@ Class Kube {
     static [hashtable]$Namespaces = @{}
     static [HashSet[String]]$SyncNamespacePrefixesToInts = @()
     static [hashtable]$MapIntsToNamespaces = @{}
+    static [bool]$IsConfigForked
     static [scriptblock]$AddContext = {
         param($ContextName)
         kubectl config use-context $contextName
