@@ -215,71 +215,79 @@ Function Find-StringRecursively {
                 $filePath = Resolve-Path -LiteralPath $item -Relative
             }
 
-            #Select-String @SLSparams | ForEach-Object { If ( $Quiet ) { $_ } Else {
-            Select-String @SLSparams | ForEach-Object { If ( $Quiet ) { $_ } Else {
-                If ( $Context ) {
-                    # Get the right lines to display in the output when Select-String's -Context parameter is used.
-                    # By default, the preceding and succeeding lines are output with an offset, especially if
-                    # the span of context lines overlaps with another match. Both the offset and overlap are handled here.
-                    $preCount = try {@($_.Context.DisplayPreContext -split "`r?`n").Count } catch { $_.Context.DisplayPostContext.Count }
-                    $preLineNumber = ''
-                    $postCount = try {@($_.Context.DisplayPostContext -split "`r?`n").Count } catch { $_.Context.DisplayPostContext.Count }
-                    $postLineNumber = ''
-                    If ( $preCount ) {
-                        ForEach ($LineNumber in $preCount..1) {
-                            $preLineNumber += ($_.LineNumber - $LineNumber).ToString() + "`n"
-                        }
+            try {
+                Select-String @SLSparams -ErrorAction Stop | ForEach-Object { 
+                    If ( $Quiet ) {
+                        $_
                     }
-                    If ( $postCount ) {
-                        ForEach ($LineNumber in 1..$postCount) {
-                            $postLineNumber += "`n" + ($_.LineNumber + $LineNumber).ToString()
+                    Else {
+                        If ( $Context ) {
+                            # Get the right lines to display in the output when Select-String's -Context parameter is used.
+                            # By default, the preceding and succeeding lines are output with an offset, especially if
+                            # the span of context lines overlaps with another match. Both the offset and overlap are handled here.
+                            $preCount = try {@($_.Context.DisplayPreContext -split "`r?`n").Count } catch { $_.Context.DisplayPostContext.Count }
+                            $preLineNumber = ''
+                            $postCount = try {@($_.Context.DisplayPostContext -split "`r?`n").Count } catch { $_.Context.DisplayPostContext.Count }
+                            $postLineNumber = ''
+                            If ( $preCount ) {
+                                ForEach ($LineNumber in $preCount..1) {
+                                    $preLineNumber += ($_.LineNumber - $LineNumber).ToString() + "`n"
+                                }
+                            }
+                            If ( $postCount ) {
+                                ForEach ($LineNumber in 1..$postCount) {
+                                    $postLineNumber += "`n" + ($_.LineNumber + $LineNumber).ToString()
+                                }
+                            }
                         }
-                    }
-                }
-                If ( $isFilePath ) {
-                    # handle empty context attributes, such as if the parameter isn't selected.
-                    if ( !($displayPreContext = $_.Context.DisplayPreContext | Out-String) ) { $displayPreContext = '' }
-                    if ( !($displayPostContext = $_.Context.DisplayPostContext | Out-String) ) { $displayPostContext = '' }
-                    
-                    # Implement emphasis highlighting here.
-                    $formattedLineOutput = & {
-                        if ( $OnlyOutputMatches ) {
-                            $_.Matches.Value
-                        }
-                        elseif ($NoEmphasis) {
-                            $_.Line
-                        }
-                        # For Select-String outputs with -Context, which are multiline with the form
-                        # .*><filename>:<line number>:<preContext><line><postContext>
-                        # This regex captures all of that and keeps only <line>.
-                        elseif ($_.ToEmphasizedString($_.line) -match 
-                            '(?s).*(?-s)> .*:[0-9]+:(?<line>.+)\n?(?s).*'
-                        ) {
-                            $Matches.line
-                        }
-                        # Filter Select-String's output of <filename>:<linenumber>:<line> to just <line>
-                        else {
-                            $_.ToEmphasizedString($_.line) -replace ('>? ?' + ([regex]::Escape($_.Path + ':' + $_.LineNumber))  + ':')
-                        }
-                    }
-                    # The output for file input                        
-                    $out = @{
-                        FSRPath = $ansiOrange + $filePath + $ansiReset
-                        LineNo  = $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber
-                        Line = '{0}{1}{2}{3}' -f $displayPreContext,
-                            $formattedLineOutput,
-                            "`n",
-                            $displayPostContext -replace "`r?`n$"
-                        Context = $_.Context
-                        Matches = $_.Matches
-                        Path = $filePath
-                        Filename = Split-Path $filepath -Leaf
-                    }
+                        If ( $isFilePath ) {
+                            # handle empty context attributes, such as if the parameter isn't selected.
+                            if ( !($displayPreContext = $_.Context.DisplayPreContext | Out-String) ) { $displayPreContext = '' }
+                            if ( !($displayPostContext = $_.Context.DisplayPostContext | Out-String) ) { $displayPostContext = '' }
 
-                        if ( $ShortenFilePath ) { [FindStringShortPathDTO]$out }
-                        else {[FindStringDTO]$out}
+                            # Implement emphasis highlighting here.
+                            $formattedLineOutput = & {
+                                if ( $OnlyOutputMatches ) {
+                                    $_.Matches.Value
+                                }
+                                elseif ($NoEmphasis) {
+                                    $_.Line
+                                }
+                                # For Select-String outputs with -Context, which are multiline with the form
+                                # .*><filename>:<line number>:<preContext><line><postContext>
+                                # This regex captures all of that and keeps only <line>.
+                                elseif ($_.ToEmphasizedString($_.line) -match 
+                                    '(?s).*(?-s)> .*:[0-9]+:(?<line>.+)\n?(?s).*'
+                                ) {
+                                    $Matches.line
+                                }
+                                # Filter Select-String's output of <filename>:<linenumber>:<line> to just <line>
+                                else {
+                                    $_.ToEmphasizedString($_.line) -replace ('>? ?' + ([regex]::Escape($_.Path + ':' + $_.LineNumber))  + ':')
+                                }
+                            }
+                            # The output for file input                    
+                            $out = @{
+                                FSRPath = $ansiOrange + $filePath + $ansiReset
+                                LineNo  = $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber
+                                Line = '{0}{1}{2}{3}' -f $displayPreContext,
+                                    $formattedLineOutput,
+                                    "`n",
+                                    $displayPostContext -replace "`r?`n$"
+                                Context = $_.Context
+                                Matches = $_.Matches
+                                Path = $filePath
+                                Filename = Split-Path $filepath -Leaf
+                            }
+
+                                if ( $ShortenFilePath ) { [FindStringShortPathDTO]$out }
+                                else {[FindStringDTO]$out}
+                        }
+                    }
                 }
-            }}
+            } catch [ArgumentException] {
+                Write-Error "$($_.Exception)"
+            } catch { Write-Debug $_ }
         }
     }
     end {

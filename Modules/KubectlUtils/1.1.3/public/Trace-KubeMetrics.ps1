@@ -3,7 +3,9 @@ using namespace System.IO
 Function Trace-KubeMetrics {
     [CmdletBinding(DefaultParameterSetName='unlimitedDurationNoRollover')]
     Param(
-        [int]$IntervalOfOutputInSeconds = 20,
+        [ValidateRange(30,9999999999999999)]
+        [int]$IntervalOfOutputInSeconds = 30,
+
         [Parameter(Mandatory)]
         [alias('path')]
         [ConvertToFullPathTransform()]
