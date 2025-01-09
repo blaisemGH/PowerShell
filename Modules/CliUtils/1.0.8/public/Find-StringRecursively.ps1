@@ -174,13 +174,23 @@ Function Find-StringRecursively {
         $ansiStrikeOff  = "$ansi[29m"
         $ansiStrike     = "$ansi[9m"
         
-        $noFileSLSInput = [List[string]]@()
+        $noFileSLSInput = [List[string]]::new()
     }
     process {
-        $SLSInputFromFileObject = [ConcurrentDictionary[string,int]]@()
+        $SLSInputFromFileObject = [ConcurrentDictionary[string,int]]::new()
 
         if ($Path) {
             $Path | ForEach-Object -ThrottleLimit 4 -Parallel {
+                $SLSInputFromFileObject = $using:SLSInputFromFileObject
+                $binaryFilter = $using:binaryFilter
+                $noFileSLSInput = $using:noFileSLSInput
+                $binaryFilterPattern = $using:binaryFilterPattern
+                $FilterFile = $using:FilterFile
+                $enumerationOptions = $using:enumerationOptions
+                $GCIParams = $using:GCIParams
+                $NoRecurse = $using:NoRecurse
+                $Force = $using:Force
+
                 try {
                     $fullPath = Convert-Path $_ -ErrorAction Stop
                 
@@ -192,9 +202,9 @@ Function Find-StringRecursively {
 
                     try {
                         if ( $binaryFilter ) {
-                            $subFolderfileList.Where({ $_ -and $binaryFilterPattern.Match($_).Success }).ForEach({
+                            $subFolderfileList.Where({ $_ -and $binaryFilterPattern.Match($_).Success }) | ForEach {
                                 $null = $SLSInputFromFileObject.TryAdd($_, 0 )
-                            })
+                            }
                         } else {
                             $subFolderfileList.ForEach({
                                 $null = $SLSInputFromFileObject.TryAdd($_, 0)
