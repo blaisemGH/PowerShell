@@ -47,10 +47,10 @@ Function Find-StringRecursively {
         [string]$Pattern,
 
         [Parameter(ValueFromPipeline)]
-        [String]$InputObject = '.',
+        [String]$InputObject,
 
         [Parameter(ValueFromPipelineByPropertyName, Position=1)]
-        [alias('PSPath', 'LP')]
+        [alias('FullName', 'LP')]
         #[IfPathStringTransformToFileSystemInfo()]
         [SupportsWildcards()]
         [object]$Path,
@@ -174,7 +174,8 @@ Function Find-StringRecursively {
         $ansiStrikeOff  = "$ansi[29m"
         $ansiStrike     = "$ansi[9m"
         
-        $noFileSLSInput = [List[string]]::new()
+        #$noFileSLSInput = [List[string]]::new()
+        $noFileSLSWithContext = [List[string]]::new()
     }
     process {
         $SLSInputFromFileObject = [ConcurrentDictionary[string,int]]::new()
@@ -183,7 +184,6 @@ Function Find-StringRecursively {
             $Path | ForEach-Object -ThrottleLimit 4 -Parallel {
                 $SLSInputFromFileObject = $using:SLSInputFromFileObject
                 $binaryFilter = $using:binaryFilter
-                $noFileSLSInput = $using:noFileSLSInput
                 $binaryFilterPattern = $using:binaryFilterPattern
                 $FilterFile = $using:FilterFile
                 $enumerationOptions = $using:enumerationOptions
@@ -191,8 +191,8 @@ Function Find-StringRecursively {
                 $NoRecurse = $using:NoRecurse
                 $Force = $using:Force
 
-                try {
-                    $fullPath = Convert-Path $_ -ErrorAction Stop
+                #try {
+                    $fullPath = Convert-Path $_ #-ErrorAction Stop
                 
                     [string[]]$subFolderfileList = try {
                         [IO.Directory]::GetFiles( $fullPath, $FilterFile, $enumerationOptions )
@@ -211,16 +211,11 @@ Function Find-StringRecursively {
                             })
                         }
                     } catch [ArgumentNullException] {}
-                } catch [Management.Automation.ItemNotFoundException] {
-                    $noFileSLSInput.Add($_)
-                }
+                #} catch [Management.Automation.ItemNotFoundException] {
+                #    $noFileSLSInput.Add($_)
+                #}
             }
             $subFolderfileList = $null
-        }
-        else {
-            foreach ($inputItem in $InputObject) {
-                $noFileSLSInput.Add($inputItem)
-            }
         }
 
         # Run Select-String for file objects. Raw text is handled in the end block.
@@ -275,6 +270,7 @@ Function Find-StringRecursively {
                             # This regex captures all of that and keeps only <line>.
                             elseif ($_.ToEmphasizedString($_.line) -match 
                                 '(?s).*(?-s)> .*:[0-9]+:(?<line>.+)\n?(?s).*'
+
                             ) {
                                 $Matches.line
                             }
@@ -283,7 +279,7 @@ Function Find-StringRecursively {
                                 $_.ToEmphasizedString($_.line) -replace ('>? ?' + ([regex]::Escape($_.Path + ':' + $_.LineNumber))  + ':')
                             }
                         }
-                        # The output for file input                    
+                        # The output for file input
                         $out = @{
                             FSRPath = $ansiOrange + $filePath + $ansiReset
                             LineNo  = $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber
@@ -305,14 +301,24 @@ Function Find-StringRecursively {
                 Write-Error "$($_.Exception)"
             } catch { Write-Debug $_ }
         }
-        if ( $noFileSLSInput.count -gt 0 ) {
+        # Handling non-file input
+        if ( !$Path -and $Context -and $InputObject ) {
+            $noFileSLSWithContext.Add($_)
+        } elseif (!$Path -and $InputObject) {
             if ( $OnlyOutputMatches ) {
-                $noFileSLSInput |
-                    Select-String @SLSParams |
-                    Select-Object -ExpandProperty Matches |
-                    Select-Object -ExpandProperty Value
+                ($_ | Select-String @SLSParams).Matches.Value
             } else {
-                $noFileSLSInput | Select-String @SLSParams
+                $_ | Select-String @SLSParams
+            }
+        }
+    }
+    end {
+        # End is required for SLS with -Context. The process block does not have the contextual lines in the input to use -Context.
+        if ($noFileSLSWithContext) {
+            if ( $OnlyOutputMatches ) {
+                ($noFileSLSWithContext | Select-String @SLSParams).Matches.Value
+            } else {
+                $noFileSLSWithContext | Select-String @SLSParams
             }
         }
     }
