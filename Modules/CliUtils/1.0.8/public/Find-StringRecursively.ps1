@@ -305,16 +305,15 @@ Function Find-StringRecursively {
                 Write-Error "$($_.Exception)"
             } catch { Write-Debug $_ }
         }
-    }
-    end {
-        if ( !$Path ) {
+        if ( $noFileSLSInput.count -gt 0 ) {
             if ( $OnlyOutputMatches ) {
-                return $noFileSLSInput |
+                $noFileSLSInput |
                     Select-String @SLSParams |
                     Select-Object -ExpandProperty Matches |
                     Select-Object -ExpandProperty Value
+            } else {
+                $noFileSLSInput | Select-String @SLSParams
             }
-            $noFileSLSInput | Select-String @SLSParams
         }
     }
 }
