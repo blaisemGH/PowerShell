@@ -11,7 +11,7 @@ function New-KubeContextSession {
     $allProcessPIDs = Get-Process -Name $processName | Select-Object -ExpandProperty Id
 
     # Housekeep any old forked sessions
-    Get-ChildItem $sessionCacheDir | Where-Object { $_.Name.Split('_')[0] -notin $allProcessPIDs } | Remove-Item
+    Get-ChildItem $sessionCacheDir | Where-Object { $_.Name.Split('_')[0] -notin $allProcessPIDs } #| Remove-Item
 
     # Get the current kube config path and define the new forked one.
     $kubeConfigPath = if ( $env:KUBECONFIG ) { $env:KUBECONFIG } else { "$HOME/.kube/config" }

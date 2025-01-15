@@ -182,7 +182,7 @@ Function Find-StringRecursively {
         $SLSInputFromFileObject = [ConcurrentDictionary[string,int]]::new()
 
         if ($Path) {
-            $Path | ForEach-Object -ThrottleLimit 4 -Parallel {
+            $Path | Convert-Path | ForEach-Object -ThrottleLimit 4 -Parallel {
                 $SLSInputFromFileObject = $using:SLSInputFromFileObject
                 $binaryFilter = $using:binaryFilter
                 $binaryFilterPattern = $using:binaryFilterPattern
@@ -193,7 +193,7 @@ Function Find-StringRecursively {
                 $Force = $using:Force
 
                 #try {
-                    $fullPath = Convert-Path $_ #-ErrorAction Stop
+                    $fullPath = $_ #-ErrorAction Stop
                 
                     [string[]]$subFolderfileList = try {
                         [IO.Directory]::GetFiles( $fullPath, $FilterFile, $enumerationOptions )
