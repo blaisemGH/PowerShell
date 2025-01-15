@@ -44,6 +44,8 @@ Function Find-StringRecursively {
     Param (
         [Parameter(Mandatory, ParameterSetName = 'RegExPattern', Position=0)]
         [Parameter(Mandatory, ParameterSetName = 'SimplePattern', Position=0)]
+        [Parameter(Mandatory, ParameterSetName = 'RegExPatternAll', Position=0)]
+        [Parameter(Mandatory, ParameterSetName = 'OnlyOutputMatches', Position=0)]
         [string]$Pattern,
 
         [Parameter(ValueFromPipeline)]
@@ -55,16 +57,16 @@ Function Find-StringRecursively {
         [SupportsWildcards()]
         [object]$Path,
 
-        [Parameter(Mandatory, ParameterSetName = 'RegExNotMatch')]
-        [Parameter(Mandatory, ParameterSetName = 'SimpleNotMatch')]
-        [string]$NotMatch,
-
         [Parameter(ParameterSetName = 'RegExPattern')]
-        [Parameter(ParameterSetName = 'RegExNotMatch')]
+        [Parameter(ParameterSetName = 'SimplePattern')]
+        [Parameter(ParameterSetName = 'RegExPatternAll')]
+        [switch]$NotMatch,
+
+        [Parameter(Mandatory, ParameterSetName = 'RegExPatternAll')]
+        [Parameter(ParameterSetName = 'OnlyOutputMatches')]
         [switch]$AllMatches,
 
-        [Parameter(ParameterSetName = 'SimplePattern')]
-        [Parameter(ParameterSetName = 'SimpleNotMatch')]
+        [Parameter(Mandatory, ParameterSetName = 'SimplePattern')]
         [switch]$SimpleMatch,
 
         [string]$FilterFile = '*',
@@ -105,8 +107,7 @@ Function Find-StringRecursively {
         # Limits the file path displayed output to 35 characters (wraps longer filepaths).
         [switch]$ShortenFilePath,
 
-        [Parameter(ParameterSetName = 'RegExPattern')]
-        [Parameter(ParameterSetName = 'RegExNotMatch')]
+        [Parameter(Mandatory, ParameterSetName = 'OnlyOutputMatches')]
         [switch]$OnlyOutputMatches
     )
     begin {
