@@ -306,6 +306,8 @@ Function Find-StringRecursively {
         if ( !$Path -and $Context -and $InputObject ) {
             $noFileSLSWithContext.Add($_)
         } elseif (!$Path -and $InputObject) {
+            $SLSParams.NoEmphasis = $NoEmphasis
+
             if ( $OnlyOutputMatches ) {
                 ($_ | Select-String @SLSParams).Matches.Value
             } else {

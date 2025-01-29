@@ -129,6 +129,12 @@ class GitNewShellFilesCompleter : IArgumentCompleter {
                 $resultList.Add($_)
             }
 
+        if ( !$resultList.Count ) {
+            Get-ChildItem | Where { $_.PSIsContainer -or $_.Extension -in 'sh','bash','py','zsh' } | Where FullName -like "$wordToComplete*" | foreach {
+                $resultList.Add($_.FullName)
+            }
+        }
+
         return $resultList
     }
 }
