@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+  <ViewDefinitions>
+    <View>
+      <Name>KubeNodesByPodDefaultView</Name>
+      <ViewSelectedBy>
+        <TypeName>KubeNodesByPod</TypeName>
+        <TypeName>KubeNodesByPodDefaultView</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>NodeName</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>NodeType</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Cores/Mem</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Pods</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <Wrap />
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>NodeName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>NodeType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$(('{0,2}' -f $_.MaxCpu.ToString()) + ' / ' + ('{0,5}' -f ($_.MaxMemory + $_.MemoryUnits)))"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.Pods -join "`n"</ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
+      <Name>KubeNodesByPodMetricsView</Name>
+      <ViewSelectedBy>
+        <TypeName>KubeNodesByPodMetricsView</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>NodeName</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>NodeType</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MaxCpu</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>CpuUsed</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Cpu%</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MaxMemory</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MemoryUsed</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Memory%</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <Wrap />
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>NodeName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>NodeType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>MaxCpu</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>CpuUsed</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  [double]$cpu = ($_.'Cpu%' -split '(?=%)')[0]
+                  if ($cpu -ge 90) {
+                    "`e[91m$($_.'Cpu%')`e[0m"
+                  } elseif ($cpu -ge 80) {
+                    "`e[93m$($_.'Memory%')`e[0m"
+                  } else {
+                    $_.'Cpu%'
+                  }
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.MaxMemory + $_.MemoryUnits)"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.MemoryUsed.ToString('0.000') + $_.MemoryUnits)"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  [double]$memory = ($_.'memory%' -split '(?=%)')[0]
+                  if ($memory -ge 90) {
+                    "`e[91m$($_.'memory%')`e[0m"
+                  } elseif ($memory -ge 80) {
+                    "`e[93m$($_.'memory%')`e[0m"
+                  } elseif ($memory -lt 45) {
+                    "`e[96m$($_.'memory%')`e[0m"
+                  } else {
+                    $_.'memory%'
+                  }
+                </ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
+      <Name>KubeNodesByPodCombinedView</Name>
+      <ViewSelectedBy>
+        <TypeName>KubeNodesByPodCombinedView</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>NodeName</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>NodeType</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Pods</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MaxCpu</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>CpuUsed</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Cpu%</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MaxMemory</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MemoryUsed</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Memory%</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <Wrap />
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>NodeName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>NodeType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.Pods -join "`n"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>MaxCpu</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>CpuUsed</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  [double]$cpu = ($_.'Cpu%' -split '(?=%)')[0]
+                  if ($cpu -gt 90) {
+                    "`e[91m$($_.'Cpu%')`e[0m"
+                  } elseif ($cpu -gt 80) {
+                    "`e[93m$($_.'Memory%')`e[0m"
+                  } else {
+                    $_.'Cpu%'
+                  }
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.MaxMemory + $_.MemoryUnits)"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.MemoryUsed.ToString('0.000') + $_.MemoryUnits)"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  [double]$memory = ($_.'memory%' -split '(?=%)')[0]
+                  if ($memory -gt 90) {
+                    "`e[91m$($_.'memory%')`e[0m"
+                  } elseif ($memory -gt 80) {
+                    "`e[93m$($_.'memory%')`e[0m"
+                  } elseif ($memory -lt 45) {
+                    "`e[96m$($_.'memory%')`e[0m"
+                  } else {
+                    $_.'memory%'
+                  }
+                </ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+  </ViewDefinitions>
+</Configuration>

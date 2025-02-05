@@ -1,0 +1,1 @@
+Set-Alias -Name Count -Value Measure-CollectionCount -Scope Global -Option AllScope
