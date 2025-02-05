@@ -48,21 +48,26 @@ function Get-KubeNodesByPod {
                 # Previously used tokens are in NestedAst.Value
                 $alreadyUsedTokens = $paramTokens + $LastElement.NestedAst.Value | Where-Object {$_}
 
-                [Kube]::Get_Namespaces() + "'--all-namespaces'" + "'-A'" | Where-Object {
+                ((kubectl get ns -o name) -replace '^namespace/') + "'--all-namespaces'" + "'-A'" | Where-Object {
                     $_ -like "$lastTokenToComplete*" -and
                     $_ -notin $alreadyUsedTokens
                 }
             }
         )]
         [HashSet[string]]$Namespaces = (kubectl config view --minify -o json | ConvertFrom-Json).contexts.context.namespace ?? 'Default',
-        [ValidateSet('PodsOnly', 'MetricsOnly', 'Combined')]
+        
+        # Select a view to display the pods on each node usage, the pod usage on each node, or both.
+        [ValidateSet('PodsOnly', 'MetricsOnly', 'Combined', 'RequestsOnly')]
         [string]$ViewFilter = 'PodsOnly',
+
+        # Gives the units of any memory-related attribute
         [MemoryUnits]$OutputMemoryUnits = 'Gb'
     )
 
     [type]$viewClass = switch ($ViewFilter) {
         'MetricsOnly' {'KubeNodesByPodMetricsView'}
         'Combined' {'KubeNodesByPodCombinedView'}
+        'RequestsOnly' {'KubeNodesByPodRequestsView'}
         DEFAULT {'KubeNodesByPodDefaultView'}
     }
 
@@ -87,7 +92,10 @@ function Get-KubeNodesByPod {
     Foreach ( $ns in $Namespaces ) {
         Get-KubeResource -Namespace $ns pods -o yaml -ov +podyaml > $null
     }
-    $podConfigs = $podYaml | Select-Object @{
+    $podConfigs = $podYaml | where { $_.status.phase -eq 'Running' } | Select-Object @{
+        l = 'NamespaceFromYaml'
+        e = {$_.metadata.namespace}
+    }, @{
         l = 'NameFromYaml'
         e = {$_.metadata.name}
     }, @{
@@ -103,6 +111,15 @@ function Get-KubeNodesByPod {
                 Convert-MemoryUnits -ToUnits $OutputMemoryUnits |
                 Measure-Object Memory -Sum |
                 Select-Object -ExpandProperty Sum
+        }
+    } |
+    Group-Object NamespaceFromYaml, NameFromYaml | foreach {
+        [pscustomobject]@{
+            NamespaceFromYaml = $_.Group.NamespaceFromYaml
+            NodeFromYaml = $_.Group.NodeFromYaml
+            PodFromYaml = $_.Group.NameFromYaml
+            CpuRequest = $_.Group.PodCpuRequest
+            MemRequest = $_.Group.PodMemRequest
         }
     }
 
@@ -126,15 +143,17 @@ function Get-KubeNodesByPod {
             }
         }
 
-    $podInfo = Join-ObjectLinq $podConfigs $podMetrics NameFromYaml PodName | Where {$_} # Can have random null value here somehow
+    $podInfo = Join-ObjectLinq $podConfigs $podMetrics PodFromYaml, NamespaceFromYaml PodName, Namespace | Where {$_}
     $nodesByPod = Join-ObjectLinq $nodes $podInfo NodeName NodeFromYaml | Group-Object nodeName
 
     $nodesByPod | Foreach {
         $namespace = $_.Group.Namespace | Sort-Object -Unique
         $maxCores = $_.Group.MaxCores | Sort-Object -Unique
         $cores = $_.Group.Cpu | Measure-Object -Sum | Select-Object -ExpandProperty Sum
+        $cpuRequest = $_.Group.CpuRequest | Measure-Object -Sum | Select-Object -ExpandProperty Sum
         $maxMemory = $_.Group.MaxMemory | Sort-Object -Unique
         $memory = $_.Group.Memory | Measure-Object Memory -Sum | Select-Object -ExpandProperty Sum
+        $memRequest = $_.Group.MemRequest | Measure-Object -Sum | Select-Object -ExpandProperty Sum
         $memoryUnits = $_.Group.Memory.Units | Sort-Object -Unique
         $nodeType = $_.Group.NodeType | Sort-Object -Unique
         
@@ -147,9 +166,13 @@ function Get-KubeNodesByPod {
             MaxCpu = $maxCores
             CpuUsed = $cores
             'Cpu%' = "$(([Math]::Round($cores / $maxCores, 3) * 100).ToString('0.00'))%"
+            CpuReq = $cpuRequest
+            CpuReqFraction = [double]$cpuRequest / [int]$maxCores
             MaxMemory = $maxMemory
             MemoryUsed = $memory
             'Memory%' = "$(([Math]::Round($memory / $maxMemory,3) * 100).ToString('0.00'))%"
+            MemReq = $memRequest
+            MemReqFraction = [double]$memRequest / [double]$maxMemory
             MemoryUnits = $memoryUnits
         } -as $viewClass
     }

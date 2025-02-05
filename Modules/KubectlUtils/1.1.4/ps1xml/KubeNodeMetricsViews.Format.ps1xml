@@ -93,5 +93,240 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>KubeNodeMetricsRequestView</Name>
+      <ViewSelectedBy>
+        <TypeName>KubeNodeMetricsRequestView</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Namespaces</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Node</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>NodeType</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>CpuMax</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>CpuReq</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>CpuReq%</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MemMax</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MemReq</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MemReq%</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <Wrap />
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Namespaces</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Node</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>NodeType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>CpuMax</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.CpuReq.ToString('0.0'))"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  [double]$cpu = ($_.'CpuReq%' -split '(?=%)')[0]
+                  if ($cpu -lt 40) {
+                    "`e[91m$($cpu.ToString('0') + '%')`e[0m"
+                  } elseif ($cpu -lt 70) {
+                    "`e[93m$($cpu.ToString('0') + '%')`e[0m"
+                  } else {
+                    $cpu.ToString('0') + '%'
+                  }
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.MemMax.ToString() + $_.MemUnits)"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.MemReq.ToString('0.000') + $_.MemUnits)"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  [double]$memory = ($_.'MemReq%' -split '(?=%)')[0]
+                  if ($memory -lt 40) {
+                    "`e[91m$($memory.ToString('0') + '%')`e[0m"
+                  } elseif ($memory -lt 70) {
+                    "`e[93m$($memory.ToString('0') + '%')`e[0m"
+                  } else {
+                    $memory.ToString('0') + '%'
+                  }
+                </ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
+      <Name>KubeNodeMetricsCombinedView</Name>
+      <ViewSelectedBy>
+        <TypeName>KubeNodeMetricsCombinedView</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Namespaces</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Node</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>NodeType</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>CpuMax</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>CpuReq</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>CpuReq%</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>CpuUsed</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Cpu%</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MemMax</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MemReq</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MemReq%</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MemUsed</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Mem%</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <Wrap />
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Namespaces</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Node</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>NodeType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>CpuMax</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.CpuReq.ToString('0.0'))"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  [double]$cpu = ($_.'CpuReq%' -split '(?=%)')[0]
+                  if ($cpu -lt 40) {
+                    "`e[91m$($cpu.ToString('0') + '%')`e[0m"
+                  } elseif ($cpu -lt 70) {
+                    "`e[93m$($cpu.ToString('0') + '%')`e[0m"
+                  } else {
+                    $cpu.ToString('0.0') + '%'
+                  }
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.CpuUsed.ToString('0.00'))"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Cpu%</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.MemMax.ToString() + $_.MemUnits)"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.MemReq.ToString('0.000') + $_.MemUnits)"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  [double]$memory = ($_.'MemReq%' -split '(?=%)')[0]
+                  if ($memory -lt 40) {
+                    "`e[91m$($memory.ToString('0') + '%')`e[0m"
+                  } elseif ($memory -lt 70) {
+                    "`e[93m$($memory.ToString('0') + '%')`e[0m"
+                  } else {
+                    $memory.ToString('0') + '%'
+                  }
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.MemUsed.ToString('0.000') + $_.MemUnits)"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  [double]$memory = ($_.'Mem%' -split '(?=%)')[0]
+                  if ($memory -ge 90) {
+                    "`e[91m$($_.'mem%')`e[0m"
+                  } elseif ($memory -ge 80) {
+                    "`e[93m$($_.'mem%')`e[0m"
+                  } elseif ($memory -lt 45) {
+                    "`e[96m$($_.'mem%')`e[0m"
+                  } else {
+                    $_.'mem%'
+                  }
+                </ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

@@ -31,6 +31,7 @@ function Get-KubeNodeMetrics {
         [Parameter(ValueFromRemainingArguments)]
         [ArgumentCompleter(
             {
+                # Ignore the remaining comments: This is for the script code description.
                 # Enables tab completion for comma-delimited arguments to param -Namespaces
                 Param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
                 # The current element being tab-completed is the last command element in the ast.
@@ -42,15 +43,27 @@ function Get-KubeNodeMetrics {
                 # Previously used tokens are in NestedAst.Value
                 $alreadyUsedTokens = $paramTokens + $LastElement.NestedAst.Value | Where-Object {$_}
 
-                [Kube]::Get_Namespaces() + "'--all-namespaces'" + "'-A'" | Where-Object {
+                ((kubectl get ns -o name) -replace '^namespace/') + "'--all-namespaces'" + "'-A'" | Where-Object {
                     $_ -like "$lastTokenToComplete*" -and
                     $_ -notin $alreadyUsedTokens
                 }
             }
         )]
         [HashSet[string]]$Namespaces = (kubectl config view --minify -o json | ConvertFrom-Json).contexts.context.namespace ?? 'Default',
+        
+        # Select a view to display the actual (current) usage, or the request usage, or both.
+        [ValidateSet('ActualOnly', 'RequestOnly', 'Combined')]
+        [string]$ViewFilter = 'ActualOnly',
+        
+        # Gives the units of any memory-related attribute
         [MemoryUnits]$OutputMemoryUnits = 'Gb'
     )
+
+    [type]$viewClass = switch ($ViewFilter) {
+        'RequestOnly' {'KubeNodeMetricsRequestView'}
+        'Combined' {'KubeNodeMetricsCombinedView'}
+        DEFAULT {'KubeNodeMetricsActualView'}
+    }
 
     $nodes = kubectl get nodes -o json | 
         ConvertFrom-Json |
@@ -74,40 +87,57 @@ function Get-KubeNodeMetrics {
         Get-KubeResource -Namespace $ns pods -o yaml -ov +podYaml > $null
     }
 
-    $nodesByNamespaces = $podYaml | Select @{
+    $nodesByNamespaces = $podYaml | where { $_.Status.Phase -eq 'Running' } | Select @{
         label = 'Namespace'
         expression = { $_.metadata.namespace }
     }, @{
         label = 'Node'
         expression = { $_.spec.nodeName }
+    }, @{
+        l = 'PodCpuRequest'
+        e = {$_.spec.containers.resources.requests.cpu | Convert-KubeCpu | Measure-Object -Sum | Select-Object -ExpandProperty Sum}
+    }, @{
+        l = 'PodMemRequest'
+        e = {
+            $_.spec.containers.resources.requests.memory |
+                Convert-MemoryUnits -ToUnits $OutputMemoryUnits |
+                Measure-Object Memory -Sum |
+                Select-Object -ExpandProperty Sum
+        }
     } |
         Group-Object Namespace, Node | foreach {
             [pscustomobject]@{
                 Namespace = $_.Group.Namespace
                 Node = $_.Group.Node
+                CpuRequest = $_.Group.PodCpuRequest
+                MemRequest = $_.Group.PodMemRequest
             }
         }
 
     $nodesWithNamespaces = Join-ObjectLinq $nodes $nodesByNamespaces nodeName Node |
-        Select-Object NodeName, NodeType, Namespace, MaxCores, MaxMemory
+        Select-Object NodeName, NodeType, Namespace, MaxCores, MaxMemory, CpuRequest, MemRequest
     
     $nodeMetrics = kubectl top node --show-capacity | ConvertFrom-StringTable
 
     Join-ObjectLinq $nodesWithNamespaces $nodeMetrics NodeName Name | Where {$_} | Foreach {
         $memory = $_.'MEMORY(bytes)' | Convert-MemoryUnits -ToUnits $outputMemoryUnits
 
-        [KubeNodeMetrics]@{
+        @{
             Namespaces = $_.Namespace
             Node = $_.Name
             NodeType = $_.nodeType
             CpuMax = $_.MaxCores
             CpuUsed = $_.'CPU(cores)' | Convert-KubeCpu
             'Cpu%' = $_.'CPU%'
+            CpuReq = $_.CpuRequest
+            'CpuReq%' = ([double]$_.CpuRequest / [int]$_.MaxCores * 100).ToString() + '%'
             MemMax = $_.MaxMemory
             MemUsed = $memory.Memory
             'Mem%' = $_.'MEMORY%'
+            MemReq = $_.MemRequest
+            'MemReq%' = $([double]$_.MemRequest / [double]$_.MaxMemory * 100).ToString() + '%'
             MemUnits = $memory.Units
-        }
+        } -as $viewClass
     } | Sort-Object Namespaces
     # Sample output::
 #Count         : 2

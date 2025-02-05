@@ -240,5 +240,103 @@
         </TableRowEntries>
       </TableControl>
     </View>
+        <View>
+      <Name>KubeNodesByPodRequestsView</Name>
+      <ViewSelectedBy>
+        <TypeName>KubeNodesByPodRequestsView</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Namespace</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>NodeName</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>NodeType</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>CpuMax</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>CpuReq</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>CpuReq%</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MemMax</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MemReq</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>MemReq%</Label>
+            <Alignment>Right</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <Wrap />
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Namespace</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>NodeName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>NodeType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>MaxCpu</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>CpuReq</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  [double]$cpu = $_.CpuReqFraction * 100
+                  if ($cpu -lt 40) {
+                    "`e[91m$($cpu.ToString(0) + '%')`e[0m"
+                  } elseif ($cpu -lt 70) {
+                    "`e[93m$($cpu.ToString(0) + '%')`e[0m"
+                  } else {
+                    $cpu.ToString(0) + '%'
+                  }
+                </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.MaxMemory + $_.MemoryUnits)"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"$($_.MemReq.ToString('0.000') + $_.MemoryUnits)"</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>
+                  [double]$memory = $_.MemReqFraction * 100
+                  if ($memory -lt 40) {
+                    "`e[91m$($memory.ToString(0) + '%')`e[0m"
+                  } elseif ($memory -lt 70) {
+                    "`e[93m$($memory.ToString(0) + '%')`e[0m"
+                  } else {
+                    $memory.ToString(0) + '%'
+                  }
+                </ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

@@ -4,8 +4,8 @@ Function Join-ObjectLinq {
     Param(
         [object[]]$LeftInputObject,
         [object[]]$RightInputObject,
-        [string]$LeftJoinKeys,
-        [string]$RightJoinKeys,
+        [string[]]$LeftJoinKeys,
+        [string[]]$RightJoinKeys,
         [ValidateSet('inner','left','right', 'full')]
         [string]$JoinType = 'inner'
     )
@@ -54,8 +54,8 @@ Function Join-ObjectLinq {
         'inner' {
             $outer = [IEnumerable[object]]$inpObja
             $inner = [IEnumerable[object]]$inpObjb
-            $funcOuter = [Func[Object,string]] {param ($x);$x.$JoinColsA}
-            $funcInner = [Func[Object,string]] {param ($y);$y.$JoinColsB}
+            $funcOuter = [Func[Object,string]] {param ($x); foreach ($colA in $JoinColsA) { $x.$colA}}
+            $funcInner = [Func[Object,string]] {param ($y); foreach ($colB in $JoinColsB) { $y.$colB}}
             $result = (
                 [Func[Object,Object,Object]]{
                     param ($x,$y)
@@ -68,8 +68,8 @@ Function Join-ObjectLinq {
         '(left)|(right)' {
             $outer = [IEnumerable[object]]$inpObja
             $inner = [Linq.Enumerable]::DefaultIfEmpty([IEnumerable[object]]$inpObjb)
-            $funcOuter = [Func[Object,string]] {param ($x);$x.$JoinColsA}
-            $funcInner = [Func[Object,string]] {param ($y);$y.$JoinColsB}
+            $funcOuter = [Func[Object,string]] {param ($x); foreach ($colA in $JoinColsA) { $x.$colA}}
+            $funcInner = [Func[Object,string]] {param ($y); foreach ($colB in $JoinColsB) { $y.$colB}}
             $result = (
                 [Func[Object,[IEnumerable[object]],Object]]{
                     param ($x,$y)
@@ -82,8 +82,8 @@ Function Join-ObjectLinq {
         'full' {
             $outer = [IEnumerable[object]]$inpObja
             $inner = [Linq.Enumerable]::DefaultIfEmpty([IEnumerable[object]]$inpObjb)
-            $funcOuter = [Func[Object,string]] {param ($x);$x.$JoinColsA}
-            $funcInner = [Func[Object,string]] {param ($y);$y.$JoinColsB}
+            $funcOuter = [Func[Object,string]] {param ($x); foreach ($colA in $JoinColsA) { $x.$colA}}
+            $funcInner = [Func[Object,string]] {param ($y); foreach ($colB in $JoinColsB) { $y.$colB}}
             $result = (
                 [Func[Object,[IEnumerable[object]],Object]]{
                     param ($x,$y)
@@ -97,5 +97,9 @@ Function Join-ObjectLinq {
     }
 
     $linq = [Linq.Enumerable]::$join($outer, $inner, $funcOuter, $funcInner, $result )
-    return ([Linq.Enumerable]::ToArray($linq) + $fullouterJoin)
+
+    if ( $fullouterjoin ) {
+        return ([Linq.Enumerable]::ToArray($linq) + $fullouterJoin)
+    }
+    return ([Linq.Enumerable]::ToArray($linq))
 }

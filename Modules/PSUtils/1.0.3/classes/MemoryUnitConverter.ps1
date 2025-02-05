@@ -56,10 +56,26 @@ class MemoryUnitConverter {
         return $this.ConvertMemory($inputMemory, $this.OutputUnits)
     }
     
-    [MemoryUnitDTO] ConvertMemory ([string]$inputMemory, [MemoryUnits]$outputUnit) {
+    [MemoryUnitDTO] ConvertMemory ([string]$inputMemory, [MemoryUnits]$outputUnits) {
+        # If someone tries to convert a new memory string, reparse the input units just in case
+        $testMemory = $inputMemory -split '(?<=\d)(?=[a-zA-Z])'
+        $inputUnits = if ($testMemory.Count -gt 1) {
+            $testMemory[1]
+        } else {
+            $this.InputUnits
+        }
+
+        # If the input units are the same as the output units, then no conversion is necessary.
+        # Also need to check for the default of adding a b, e.g., g = gb by default.
+        if ($inputUnits -eq $outputUnits -or 
+            ($inputUnits + 'b') -eq $outputUnits -or 
+            $inputUnits -eq ($outputUnits + 'b')
+        ) {
+            return $inputMemory
+        }
     
-        $memoryInBytes = $this.DownscaleMemoryToBytes($inputMemory, $this.InputUnits)
-        $memoryInOutputUnits = $this.UpscaleMemoryFromBytes($memoryInBytes, $this.OutputUnits)
+        $memoryInBytes = $this.DownscaleMemoryToBytes($inputMemory, $inputUnits)
+        $memoryInOutputUnits = $this.UpscaleMemoryFromBytes($memoryInBytes, $outputUnits)
 
         return [MemoryUnitDTO]@{
             Memory = $memoryInOutputUnits
@@ -71,14 +87,14 @@ class MemoryUnitConverter {
         $multiplierFactor = $this.GetUnitMultiplier($binaryUnit)
         $conversionFactor = [Math]::Pow(1.024, $multiplierFactor)
         
-        return $memory / $conversionFactor
+        return $memory * $conversionFactor
     }
 
     [double] ConvertToBinary ([double]$memory, [MemoryUnits]$binaryUnit) {
         $multiplierFactor = $this.GetUnitMultiplier($binaryUnit)
         $conversionFactor = [Math]::Pow(1.024, $multiplierFactor)
         
-        return $memory * $conversionFactor
+        return $memory / $conversionFactor
     }
 
     [double] DownscaleMemoryToBytes([double]$memory, [MemoryUnits]$unit) {

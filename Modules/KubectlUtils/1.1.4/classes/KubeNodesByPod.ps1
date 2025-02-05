@@ -5,11 +5,15 @@ class KubeNodesByPod {
     [string[]]$Pods
     [int]$PodCount
     [int]$MaxCpu
-    [string]${Cpu%}
     [double]$CpuUsed
+    [string]${Cpu%}
+    [double]$CpuReq
+    [double]$CpuReqFraction
     [string]$MaxMemory
-    [string]${Memory%}
     [double]$MemoryUsed
+    [string]${Memory%}
+    [double]$MemReq
+    [double]$MemReqFraction
     [MemoryUnits]$MemoryUnits
 }
 
@@ -18,3 +22,5 @@ class KubeNodesByPodDefaultView : KubeNodesByPod {}
 class KubeNodesByPodMetricsView : KubeNodesByPod {}
 
 class KubeNodesByPodCombinedView : KubeNodesByPod {}
+
+class KubeNodesByPodRequestsView : KubeNodesByPod {}
