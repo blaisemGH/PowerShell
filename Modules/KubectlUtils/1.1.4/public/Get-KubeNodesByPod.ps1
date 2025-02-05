@@ -54,11 +54,12 @@ function Get-KubeNodesByPod {
                 }
             }
         )]
-        [HashSet[string]]$Namespaces = (kubectl config view --minify -o json | ConvertFrom-Json).contexts.context.namespace,
+        [HashSet[string]]$Namespaces = (kubectl config view --minify -o json | ConvertFrom-Json).contexts.context.namespace ?? 'Default',
         [ValidateSet('PodsOnly', 'MetricsOnly', 'Combined')]
         [string]$ViewFilter = 'PodsOnly',
         [MemoryUnits]$OutputMemoryUnits = 'Gb'
     )
+
     [type]$viewClass = switch ($ViewFilter) {
         'MetricsOnly' {'KubeNodesByPodMetricsView'}
         'Combined' {'KubeNodesByPodCombinedView'}

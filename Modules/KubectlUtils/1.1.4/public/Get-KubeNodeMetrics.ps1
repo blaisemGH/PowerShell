@@ -48,7 +48,7 @@ function Get-KubeNodeMetrics {
                 }
             }
         )]
-        [HashSet[string]]$Namespaces = (kubectl config view --minify -o json | ConvertFrom-Json).contexts.context.namespace,
+        [HashSet[string]]$Namespaces = (kubectl config view --minify -o json | ConvertFrom-Json).contexts.context.namespace ?? 'Default',
         [MemoryUnits]$OutputMemoryUnits = 'Gb'
     )
 
