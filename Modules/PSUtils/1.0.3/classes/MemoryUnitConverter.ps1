@@ -57,24 +57,24 @@ class MemoryUnitConverter {
     }
     
     [MemoryUnitDTO] ConvertMemory ([string]$inputMemory, [MemoryUnits]$outputUnits) {
-        # If someone tries to convert a new memory string, reparse the input units just in case
+        # If someone tries to convert a new memory string, reparse the input units just in case they've been changed.
         $testMemory = $inputMemory -split '(?<=\d)(?=[a-zA-Z])'
-        $inputUnits = if ($testMemory.Count -gt 1) {
+        $inputUnitsToUse = if ($testMemory.Count -gt 1) {
             $testMemory[1]
         } else {
             $this.InputUnits
         }
 
         # If the input units are the same as the output units, then no conversion is necessary.
-        # Also need to check for the default of adding a b, e.g., g = gb by default.
-        if ($inputUnits -eq $outputUnits -or 
-            ($inputUnits + 'b') -eq $outputUnits -or 
-            $inputUnits -eq ($outputUnits + 'b')
+        # Also need to check for the default of adding a b, e.g., g = gb by default in this class.
+        if ($inputUnitsToUse -eq $outputUnits -or 
+            ($inputUnitsToUse + 'b') -eq $outputUnits -or 
+            $inputUnitsToUse -eq ($outputUnits + 'b')
         ) {
             return $inputMemory
         }
     
-        $memoryInBytes = $this.DownscaleMemoryToBytes($inputMemory, $inputUnits)
+        $memoryInBytes = $this.DownscaleMemoryToBytes($inputMemory, $inputUnitsToUse)
         $memoryInOutputUnits = $this.UpscaleMemoryFromBytes($memoryInBytes, $outputUnits)
 
         return [MemoryUnitDTO]@{
@@ -83,24 +83,10 @@ class MemoryUnitConverter {
         }
     }
 
-    [double] ConvertFromBinary ([double]$memory, [MemoryUnits]$binaryUnit) {
-        $multiplierFactor = $this.GetUnitMultiplier($binaryUnit)
-        $conversionFactor = [Math]::Pow(1.024, $multiplierFactor)
-        
-        return $memory * $conversionFactor
-    }
-
-    [double] ConvertToBinary ([double]$memory, [MemoryUnits]$binaryUnit) {
-        $multiplierFactor = $this.GetUnitMultiplier($binaryUnit)
-        $conversionFactor = [Math]::Pow(1.024, $multiplierFactor)
-        
-        return $memory / $conversionFactor
-    }
-
     [double] DownscaleMemoryToBytes([double]$memory, [MemoryUnits]$unit) {
         return $(
             switch -Regex ($unit.ToString()) {
-                'i$' {
+                '^[a-zA-Z]i$' {
                     $decimalMemory = $this.ConvertFromBinary($memory, $_)
                     $baseUnit = $_ -replace 'i$', 'b'
                     $decimalMemory * "1$baseUnit"
@@ -112,6 +98,7 @@ class MemoryUnitConverter {
                 }
                 '^[ac-zAC-Z]$' {
                     $memory * "1${_}b"
+                    break
                 }
                 default {
                     $memory * "1$_"
@@ -123,7 +110,7 @@ class MemoryUnitConverter {
     [double] UpscaleMemoryFromBytes([double]$memory, [MemoryUnits]$unit) {
         return $(
             switch -Regex ($unit.ToString()) {
-                'i$' {
+                '^[a-zA-Z]i$' {
                     $binaryMemory = $this.ConvertToBinary($memory, $_)
                     $baseUnit = $_ -replace 'i$', 'b'
                     $binaryMemory / "1$baseUnit"
@@ -135,6 +122,7 @@ class MemoryUnitConverter {
                 }
                 '^[ac-zAC-Z]$' {
                     $memory / "1${_}b"
+                    break
                 }
                 default {
                     $memory / "1$_"
@@ -143,7 +131,17 @@ class MemoryUnitConverter {
         )
     }
 
-    [MemoryUnits] GetUnitMultiplier([MemoryUnits]$unit) {
+    [double] ConvertFromBinary ([double]$memory, [MemoryUnits]$binaryUnit) {
+        $conversionFactor = $this.GetBinaryToDecimalMultiplier($binaryUnit)
+        return $memory * $conversionFactor
+    }
+
+    [double] ConvertToBinary ([double]$memory, [MemoryUnits]$binaryUnit) {
+        $conversionFactor = $this.GetBinaryToDecimalMultiplier($binaryUnit)
+        return $memory / $conversionFactor
+    }
+
+    [double] GetBinaryToDecimalMultiplier([MemoryUnits]$unit) {
         $baseUnit = switch ($unit.ToString()) {
             {$_.Length -in 1,2} { $_.Substring(0,1) }
             {$_.Length -gt 2} { Throw "Unit $unit has too many characters. Must be 1 or 2 characters."}
@@ -154,6 +152,6 @@ class MemoryUnitConverter {
             Throw "Base unit $baseUnit from $unit not recognizable! Must be one of $($this.conversionTable.Keys)"
         }
         
-        return $this.ConversionTable.$baseUnit
+        return [Math]::Pow(1.024, $this.ConversionTable.$baseUnit)
     }
 }

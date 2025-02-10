@@ -2,10 +2,18 @@ using namespace System.Collections.Generic
 
 Function Join-ObjectLinq {
     Param(
+        [Parameter(Mandatory)]
         [object[]]$LeftInputObject,
+
+        [Parameter(Mandatory)]
         [object[]]$RightInputObject,
+
+        [Parameter(Mandatory)]
         [string[]]$LeftJoinKeys,
+
+        [Parameter(Mandatory)]
         [string[]]$RightJoinKeys,
+
         [ValidateSet('inner','left','right', 'full')]
         [string]$JoinType = 'inner'
     )
@@ -26,9 +34,21 @@ Function Join-ObjectLinq {
     }
 
     [hashset[string]]$colA = $inpObja | Get-Member -MemberType Properties | Select-Object -exp Name
-    [hashset[string]]$colb = $inpObjb | Get-Member -MemberType Properties | Select-Object -exp Name
+    [hashset[string]]$colB = $inpObjb | Get-Member -MemberType Properties | Select-Object -exp Name
+
+    if ( !$colA ) {
+        $errMsg = "No property names found in left object to join"
+        $err = New-ErrorRecord -ExceptionText $errMsg -ErrorId 'MissingColumns' -ErrorCategory InvalidData
+        $PSCmdlet.ThrowTerminatingError($err)
+    }
+    if ( !$colB ) {
+        $errMsg = "No property names found in right object to join"
+        $err = New-ErrorRecord -ExceptionText $errMsg -ErrorId 'MissingColumns' -ErrorCategory InvalidData
+        $PSCmdlet.ThrowTerminatingError($err)
+    }
+
     [hashset[string]]$cols = $colA.Clone()
-    $cols.UnionWith($colb)
+    $cols.UnionWith($colB)
     
     [text.stringbuilder]$outCols = ''
     [void]$outCols.AppendLine('{Param($x,$y) [PSCustomObject]@{')

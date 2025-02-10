@@ -1,7 +1,7 @@
 class KubeNodeMetrics {
-    [string]$Namespaces
     [string]$Node
     [string]$NodeType
+    [string[]]$Namespaces
     [int]$CpuMax
     [double]$CpuUsed
     [string]${Cpu%}

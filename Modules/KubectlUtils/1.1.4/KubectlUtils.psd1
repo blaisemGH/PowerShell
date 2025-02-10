@@ -78,7 +78,7 @@ ScriptsToProcess = 'classes/kube.ps1', 'classes/KubeNodeMetrics.ps1',
                'public/Start-KubePortForward.ps1', 
                'public/New-KubeContextSession.ps1',
                'public/Convert-KubeCpu.ps1',
-               'public/Get-KubeNodeMetrics.ps1'
+               'public/Get-KubeNodeMetrics.ps1', 'public/Sync-KubeMappedContexts.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -102,7 +102,8 @@ FunctionsToExport = 'Measure-KubeContainers', 'Copy-KubeFile', 'Enter-KubePod',
                'Get-KubeMappedContext', 'Remove-KubeMappedContext', 
                'Rename-KubeMappedContext', 'Set-KubeMappedContexts', 
                'Start-KubePortForward', 'New-KubeContextSession',
-               'Convert-KubeCpu', 'Get-KubeNodeMetrics'
+               'Convert-KubeCpu', 'Get-KubeNodeMetrics',
+               'Sync-KubeMappedContexts'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'

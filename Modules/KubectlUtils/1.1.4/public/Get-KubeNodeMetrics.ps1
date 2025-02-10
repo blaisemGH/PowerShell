@@ -105,17 +105,17 @@ function Get-KubeNodeMetrics {
                 Select-Object -ExpandProperty Sum
         }
     } |
-        Group-Object Namespace, Node | foreach {
+        Group-Object Node | foreach {
             [pscustomobject]@{
-                Namespace = $_.Group.Namespace
-                Node = $_.Group.Node
-                CpuRequest = $_.Group.PodCpuRequest
-                MemRequest = $_.Group.PodMemRequest
+                Namespaces = $_.Group.Namespace | Sort-Object -Unique
+                Node = $_.Name
+                CpuRequest = $_.Group.PodCpuRequest | Measure-Object -Sum | Select-Object -ExpandProperty Sum
+                MemRequest = $_.Group.PodMemRequest | Measure-Object -Sum | Select-Object -ExpandProperty Sum
             }
         }
 
     $nodesWithNamespaces = Join-ObjectLinq $nodes $nodesByNamespaces nodeName Node |
-        Select-Object NodeName, NodeType, Namespace, MaxCores, MaxMemory, CpuRequest, MemRequest
+        Select-Object NodeName, NodeType, Namespaces, MaxCores, MaxMemory, CpuRequest, MemRequest
     
     $nodeMetrics = kubectl top node --show-capacity | ConvertFrom-StringTable
 
@@ -123,7 +123,7 @@ function Get-KubeNodeMetrics {
         $memory = $_.'MEMORY(bytes)' | Convert-MemoryUnits -ToUnits $outputMemoryUnits
 
         @{
-            Namespaces = $_.Namespace
+            Namespaces = $_.Namespaces
             Node = $_.Name
             NodeType = $_.nodeType
             CpuMax = $_.MaxCores
@@ -138,7 +138,7 @@ function Get-KubeNodeMetrics {
             'MemReq%' = $([double]$_.MemRequest / [double]$_.MaxMemory * 100).ToString() + '%'
             MemUnits = $memory.Units
         } -as $viewClass
-    } | Sort-Object Namespaces
+    } | Sort-Object {$_.Namespaces}
     # Sample output::
 #Count         : 2
 #Group         : {@{NAME=oracle-1915-monitor-74946847d8-n2vjd; nodeName=gke-gke-rct-t3jq-5xv-nap-n2-highmem-4-27d30feb-nfsw; nodeType=n2-highmem-48;

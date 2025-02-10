@@ -10,10 +10,6 @@
       <TableControl>
         <TableHeaders>
           <TableColumnHeader>
-            <Label>Namespaces</Label>
-            <Alignment>Left</Alignment>
-          </TableColumnHeader>
-          <TableColumnHeader>
             <Label>Node</Label>
             <Alignment>Left</Alignment>
           </TableColumnHeader>
@@ -45,14 +41,15 @@
             <Label>Mem%</Label>
             <Alignment>Right</Alignment>
           </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Namespaces</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
           <TableRowEntry>
             <Wrap />
             <TableColumnItems>
-              <TableColumnItem>
-                <PropertyName>Namespaces</PropertyName>
-              </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>Node</PropertyName>
               </TableColumnItem>
@@ -88,6 +85,9 @@
                   }
                 </ScriptBlock>
               </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.Namespaces -join "`n"</ScriptBlock>
+              </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
         </TableRowEntries>
@@ -100,10 +100,6 @@
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
-          <TableColumnHeader>
-            <Label>Namespaces</Label>
-            <Alignment>Left</Alignment>
-          </TableColumnHeader>
           <TableColumnHeader>
             <Label>Node</Label>
             <Alignment>Left</Alignment>
@@ -136,14 +132,15 @@
             <Label>MemReq%</Label>
             <Alignment>Right</Alignment>
           </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Namespaces</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
           <TableRowEntry>
             <Wrap />
             <TableColumnItems>
-              <TableColumnItem>
-                <PropertyName>Namespaces</PropertyName>
-              </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>Node</PropertyName>
               </TableColumnItem>
@@ -186,6 +183,9 @@
                   }
                 </ScriptBlock>
               </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.Namespaces -join "`n"</ScriptBlock>
+              </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
         </TableRowEntries>
@@ -198,10 +198,6 @@
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
-          <TableColumnHeader>
-            <Label>Namespaces</Label>
-            <Alignment>Left</Alignment>
-          </TableColumnHeader>
           <TableColumnHeader>
             <Label>Node</Label>
             <Alignment>Left</Alignment>
@@ -250,14 +246,15 @@
             <Label>Mem%</Label>
             <Alignment>Right</Alignment>
           </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Namespaces</Label>
+            <Alignment>Left</Alignment>
+          </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
           <TableRowEntry>
             <Wrap />
             <TableColumnItems>
-              <TableColumnItem>
-                <PropertyName>Namespaces</PropertyName>
-              </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>Node</PropertyName>
               </TableColumnItem>
@@ -322,6 +319,9 @@
                     $_.'mem%'
                   }
                 </ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>$_.Namespaces -join "`n"</ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

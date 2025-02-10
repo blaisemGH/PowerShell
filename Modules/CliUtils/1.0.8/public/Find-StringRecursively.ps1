@@ -4,22 +4,20 @@ using namespace System.Collections.Concurrent
 using namespace System.IO
 
 class FindStringDTO {
-    [string]$FSRPath
+    [string]$Path
     [string]$LineNo
     [string]$Line
     [Microsoft.PowerShell.Commands.MatchInfoContext]$Context
     [string]$Matches
-    [string]$Path
     [string]$Filename
 }
 
 class FindStringShortPathDTO {
-    [string]$FSRPath
+    [string]$Path
     [string]$LineNo
     [string]$Line
     [Microsoft.PowerShell.Commands.MatchInfoContext]$Context
     [string]$Matches
-    [string]$Path
     [string]$Filename
 }
 
@@ -167,7 +165,6 @@ Function Find-StringRecursively {
         # end region 
 
         $ansi = [char]27
-        $ansiOrange  = "$ansi[38;5;202m"
         $ansiYellow  = "$ansi[93m"
         $ansiReset   = "$ansi[0m"
         $ansiReverse = "$ansi[7m"
@@ -282,7 +279,7 @@ Function Find-StringRecursively {
                         }
                         # The output for file input
                         $out = @{
-                            FSRPath = $ansiOrange + $filePath + $ansiReset
+                            Path = $filePath
                             LineNo  = $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber
                             Line = '{0}{1}{2}{3}' -f $displayPreContext,
                                 $formattedLineOutput,
@@ -290,7 +287,6 @@ Function Find-StringRecursively {
                                 $displayPostContext -replace "`r?`n$"
                             Context = $_.Context
                             Matches = $_.Matches
-                            Path = $filePath
                             Filename = Split-Path $filepath -Leaf
                         }
 
