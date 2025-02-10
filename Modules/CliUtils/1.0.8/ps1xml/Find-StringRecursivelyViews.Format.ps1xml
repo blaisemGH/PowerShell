@@ -9,7 +9,7 @@
       <TableControl>
         <TableHeaders>
           <TableColumnHeader>
-            <Label>Filepath</Label>
+            <Label>Path</Label>
             <Alignment>Left</Alignment>
             <!--Width>60</Width-->
           </TableColumnHeader>
@@ -28,7 +28,7 @@
             <Wrap />
             <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>FSRPath</PropertyName>
+                <ScriptBlock>"`e[38;5;202m$($_.Path)`e[0m"</ScriptBlock>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>LineNo</PropertyName>
@@ -68,7 +68,7 @@
             <Wrap />
             <TableColumnItems>
               <TableColumnItem>
-                <ScriptBlock>"`e[38;5;202m$($_.Path)`e0m"</ScriptBlock>
+                <ScriptBlock>"`e[38;5;202m$($_.Path)`e[0m"</ScriptBlock>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>LineNo</PropertyName>
