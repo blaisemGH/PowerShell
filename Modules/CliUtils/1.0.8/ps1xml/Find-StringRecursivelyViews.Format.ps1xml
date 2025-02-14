@@ -28,7 +28,10 @@
             <Wrap />
             <TableColumnItems>
               <TableColumnItem>
-                <ScriptBlock>"`e[38;5;202m$($_.Path)`e[0m"</ScriptBlock>
+                <ScriptBlock>
+                  $relativePath = Resolve-Path -LiteralPath $_.Path -Relative
+                  "`e[38;5;202m${relativePath}`e[0m"
+                </ScriptBlock>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>LineNo</PropertyName>
@@ -68,7 +71,10 @@
             <Wrap />
             <TableColumnItems>
               <TableColumnItem>
-                <ScriptBlock>"`e[38;5;202m$($_.Path)`e[0m"</ScriptBlock>
+                <ScriptBlock>
+                  $relativePath = Resolve-Path -LiteralPath $_.Path -Relative
+                  "`e[38;5;202m${relativePath}`e[0m"
+                </ScriptBlock>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>LineNo</PropertyName>

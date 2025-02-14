@@ -92,6 +92,12 @@ function Get-KubeNodesByPod {
     Foreach ( $ns in $Namespaces ) {
         Get-KubeResource -Namespace $ns pods -o yaml -ov +podyaml > $null
     }
+    if ( !$podYaml ) {
+        $err = "Namespace $ns does not contain any pods!"
+        $errRecord = New-ErrorRecord -ErrorId 'EmptyK8sNamespace' -ErrorCategory ObjectNotFound -ExceptionText $err
+        $PSCmdlet.ThrowTerminatingError($errRecord)
+    }
+
     $podConfigs = $podYaml | where { $_.status.phase -eq 'Running' } | Select-Object @{
         l = 'NamespaceFromYaml'
         e = {$_.metadata.namespace}
@@ -123,27 +129,38 @@ function Get-KubeNodesByPod {
         }
     }
 
-    $podMetrics = Get-KubeMetrics -Namespaces $Namespaces -ViewFilter All | 
-        Group-Object Namespace, PodName |
-        Select-Object @{
-            label = 'Namespace'
-            expression = {$_.name -split ',\s*' | select -first 1 }
-        }, @{
-            label = 'PodName'
-            expression = {$_.name -split ',\s*' | select -last 1 }
-        }, @{
-            label = 'Cpu'
-            expression = {$_.Group.CPU | Convert-KubeCpu | Measure-Object -Sum | Select-Object -ExpandProperty Sum}
-        }, @{
-            label = 'Memory'
-            expression = {$_.Group |
-                Measure-Object MemoryGB -Sum |
-                Select-Object -ExpandProperty Sum | 
-                Convert-MemoryUnits -FromUnits Gb -ToUnits $OutputMemoryUnits
+    $podInfo = if ( $ViewClass -notmatch 'Metrics|Combined' ) {
+        $podConfigs | Select-Object @{
+            l = 'Namespace'
+            e = {$_.NamespaceFromYaml}
+        }, NodeFromYaml, @{
+            l = 'PodName'
+            e = {$_.PodFromYaml}
+        }, CpuRequest, MemRequest
+    } else {
+        $podMetrics = Get-KubeMetrics -Namespaces $Namespaces -ViewFilter All | 
+            Group-Object Namespace, PodName |
+            Select-Object @{
+                label = 'Namespace'
+                expression = {$_.name -split ',\s*' | select -first 1 }
+            }, @{
+                label = 'PodName'
+                expression = {$_.name -split ',\s*' | select -last 1 }
+            }, @{
+                label = 'Cpu'
+                expression = {$_.Group.CPU | Convert-KubeCpu | Measure-Object -Sum | Select-Object -ExpandProperty Sum}
+            }, @{
+                label = 'Memory'
+                expression = {$_.Group |
+                    Measure-Object MemoryGB -Sum |
+                    Select-Object -ExpandProperty Sum | 
+                    Convert-MemoryUnits -FromUnits Gb -ToUnits $OutputMemoryUnits
+                }
             }
-        }
 
-    $podInfo = Join-ObjectLinq $podConfigs $podMetrics PodFromYaml, NamespaceFromYaml PodName, Namespace | Where {$_}
+        Join-ObjectLinq $podConfigs $podMetrics PodFromYaml, NamespaceFromYaml PodName, Namespace | Where {$_}
+    }
+
     $nodesByPod = Join-ObjectLinq $nodes $podInfo NodeName NodeFromYaml | Group-Object nodeName
 
     $nodesByPod | Foreach {
@@ -154,7 +171,7 @@ function Get-KubeNodesByPod {
         $maxMemory = $_.Group.MaxMemory | Sort-Object -Unique
         $memory = $_.Group.Memory | Measure-Object Memory -Sum | Select-Object -ExpandProperty Sum
         $memRequest = $_.Group.MemRequest | Measure-Object -Sum | Select-Object -ExpandProperty Sum
-        $memoryUnits = $_.Group.Memory.Units | Sort-Object -Unique
+        $memoryUnits = $OutputMemoryUnits
         $nodeType = $_.Group.NodeType | Sort-Object -Unique
         
         @{

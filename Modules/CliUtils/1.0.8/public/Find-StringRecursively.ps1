@@ -222,7 +222,6 @@ Function Find-StringRecursively {
             # Last param building for Select-String and output as a relative filepath.
             If ( $Path ) {
                 $SLSParams.LiteralPath = $item
-                $filePath = Resolve-Path -LiteralPath $item -Relative
             }
 
             try {
@@ -279,7 +278,7 @@ Function Find-StringRecursively {
                         }
                         # The output for file input
                         $out = @{
-                            Path = $filePath
+                            Path = $item
                             LineNo  = $preLineNumber + $ansiYellow + $_.LineNumber + "$ansiReset" + $postLineNumber
                             Line = '{0}{1}{2}{3}' -f $displayPreContext,
                                 $formattedLineOutput,
@@ -287,7 +286,7 @@ Function Find-StringRecursively {
                                 $displayPostContext -replace "`r?`n$"
                             Context = $_.Context
                             Matches = $_.Matches
-                            Filename = Split-Path $filepath -Leaf
+                            Filename = Split-Path $item -Leaf
                         }
 
                         if ( $ShortenFilePath ) { [FindStringShortPathDTO]$out }
