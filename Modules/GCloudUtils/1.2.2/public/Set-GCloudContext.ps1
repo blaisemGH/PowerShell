@@ -43,6 +43,6 @@ Function Set-GCloudContext {
     }
     else {
         Set-KubeContext -Context $gkeContext
-        #Set-GCloudConfigProject -ProjectId $projectId
+        Set-GCloudConfigProject -ProjectId $projectId
     }    
 }

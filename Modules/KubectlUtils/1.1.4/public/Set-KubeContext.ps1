@@ -22,7 +22,8 @@ Function Set-KubeContext {
         & ([Kube]::AddContext) $contextName
     }
     else {
-        kubectl config use-context $contextName
+        $output = kubectl config use-context $contextName
+        Write-Verbose $output
     }
 
     $null = New-Event -SourceIdentifier 'Set-KubeContext' -EventArguments $contextName

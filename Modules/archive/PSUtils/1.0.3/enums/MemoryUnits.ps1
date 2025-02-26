@@ -1,0 +1,28 @@
+enum MemoryUnits {
+    b
+    bi
+    k
+    kb
+    ki
+    m
+    mb
+    mi
+    g
+    gb
+    gi
+    t
+    tb
+    ti
+    p
+    pb
+    pi
+    e
+    eb
+    ei
+    z
+    zb
+    zi
+    y
+    yb
+    yi
+}

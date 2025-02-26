@@ -7,7 +7,13 @@ Register-EngineEvent -SourceIdentifier 'Set-KubeContext' -Action {
 }
 
 [Kube]::ModularContextFile = [GCloud]::PathToProjectGkeMappings
-[Kube]::AddContext = {param([ValidateNotNullOrEmpty()]$ContextName) Add-GKECredentials -SkipAddMapKey -ProjectID ($ContextName | Get-GCloudProjectIdFromGkeContext)}
+[Kube]::AddContext = {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]$ContextName
+    )
+    Add-GKECredentials -SkipAddMapKey -ProjectID ($ContextName | Get-GCloudProjectIdFromGkeContext)
+}
 [Kube]::UpdateKubeMappedContexts()
 
 $lastSyncDate = Get-Item ([GCloud]::PathToProjectCSV) | Select-Object -ExpandProperty LastWriteTime

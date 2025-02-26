@@ -88,6 +88,7 @@ function Add-GKECredentials {
         }
 
         gcloud config set project $selectedProjectID
+        
         [GCloud]::CurrentProject = $selectedProjectID
     }
 }

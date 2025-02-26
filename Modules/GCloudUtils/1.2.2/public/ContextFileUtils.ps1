@@ -17,6 +17,9 @@ function Update-ContextFileMap {
         Select-Object -ExpandProperty Name
     
     if ($contextMap.Values -contains $kubeContext ) {
+        break
+    }
+    <# Option to overwrite existing map key in custom map, but it was annoying. I tried to set up a check/flag in calling functions to avoid it, but it didn't always work. So I comment it out for now, probably should delete it.
         $confirm = Test-ReadHost -Query "Context map already contains a matching context. Would you like to replace it? [y/n]" -ValidationStrings 'y', 'n'
         if ( $confirm -eq 'y') {
             $oldKey = $contextMap.GetEnumerator() | Foreach { if ( $_.Value -eq $kubeContext ) { $_.Key }}
@@ -24,7 +27,7 @@ function Update-ContextFileMap {
         } else {
             break
         }
-    }
+    }#>
 
     $newKey = & {
         if ( $NewMapKey ) {

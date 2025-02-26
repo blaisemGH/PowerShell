@@ -19,7 +19,29 @@ Function Replace-StringInFile {
         [switch]$Recurse,
         [switch]$IncludeCommentedLines,
         [switch]$Fast,
-        [switch]$Force
+        [switch]$Force,
+        [ValidateSet('CRLF','LF')]
+        [string]$NewlineType = 'LF',
+        [ArgumentCompleter({
+            param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+            (
+                [Text.Encoding]::GetEncodings().Name + ([Text.Encoding] | Get-Member -Type Property -Static | Select-Object -exp Name)
+            ) |    Where-Object {
+                $_ -like "$wordToComplete*"
+            }
+        })]
+        [ValidateScript({
+            If ($_ -in [Text.Encoding]::GetEncodings().Name -or 
+                $_ -in ([Text.Encoding] | Get-Member -Type Property -Static | Select-Object -exp Name)
+            ) {
+                $true
+            }
+            Else {
+                $err = [ErrorRecord]::new("$_ is not a valid Encoding given by [System.Text.Encoding]::GetEncodings() or a static property of [System.Text.Encoding]", $null, 'InvalidArgument', $null)
+                $PSCmdlet.ThrowTerminatingError($err)
+            }
+        })]
+        [string]$Encoding = 'utf-8'
     )
     begin {
 
@@ -47,6 +69,11 @@ Function Replace-StringInFile {
 
         if ($Force -and !$Confirm){
             $ConfirmPreference = 'None'
+        }
+
+        $newLine = switch ($NewlineType) {
+            CRLF { "`r`n" }
+            LF { "`n" }
         }
 
         Write-Host ""
@@ -83,10 +110,10 @@ Function Replace-StringInFile {
                             }
                         }
                         $line
-                    })
+                    }) -join $newLine
 
                     If ( $flagChangeMade ) {
-                        Set-Content $file -Value $contents -Confirm:$false
+                        Set-Content $file -Value $contents -Encoding $Encoding -NoNewLine -Confirm:$false
                     }
                 }
                 Else {
@@ -94,40 +121,40 @@ Function Replace-StringInFile {
                     $tmpFile = New-TemporaryFile
                     $read = [System.IO.StreamReader]$file
                     $write = [System.IO.StreamWriter]$tmpFile
-                    $newLine = [System.Text.StringBuilder]''
+                    $replacedLine = [System.Text.StringBuilder]''
                     $lnumb = 1
                     try {
                         while ( ($line = $read.ReadLine()) -ne $null ){
                             $line = ($line + [Environment]::NewLine )
                             If ( $lnumb % 100000 -eq 0 ){
                                 If ( !($flagChangeMade) ) {
-                                    $checkLine = $newLine.ToString()
-                                    $newLine = $newLine -replace $Pattern, $ReplacementString
-                                    If ( $checkLine -ne $newLine.ToString() ) {
+                                    $checkLine = $replacedLine.ToString()
+                                    $replacedLine = $replacedLine -replace $Pattern, $ReplacementString
+                                    If ( $checkLine -ne $replacedLine.ToString() ) {
                                         $flagChangeMade = $true
                                     }
                                 }
                                 Else {
-                                    $newLine = $newLine -replace $Pattern, $ReplacementString
+                                    $replacedLine = $replacedLine -replace $Pattern, $ReplacementString
                                 }
-                                $write.Write($newLine)
-                                $newLine = [System.Text.StringBuilder]''
+                                $write.Write($replacedLine)
+                                $replacedLine = [System.Text.StringBuilder]''
                             }
-                            $null = $newLine.Append($line)
+                            $null = $replacedLine.Append($line)
                             $lnumb++
                         }
                         If ( !($flagChangeMade) ) {
-                            $checkLine = $newLine.ToString()
-                            $newLine = $newLine -replace $Pattern, $ReplacementString
-                            If ( $checkLine -ne $newLine.ToString() ) {
+                            $checkLine = $replacedLine.ToString()
+                            $replacedLine = $replacedLine -replace $Pattern, $ReplacementString
+                            If ( $checkLine -ne $replacedLine.ToString() ) {
                                 $flagChangeMade = $true
                             }
                         }
                         Else {
-                            $newLine = $newLine -replace $Pattern, $ReplacementString
+                            $replacedLine = $replacedLine -replace $Pattern, $ReplacementString
                         }
-                        $newLine = $newLine -replace $Pattern, $ReplacementString
-                        $write.Write($newLine)
+                        $replacedLine = $replacedLine -replace $Pattern, $ReplacementString
+                        $write.Write($replacedLine)
 
                         If ( $flagChangeMade ) {
                             Write-Host ("`t`t  " + 'String matches found! ') -ForegroundColor 'darkgreen' -NoNewLine; Write-Host ('File has been ') -NoNewLine; Write-Host 'updated' -ForeGroundColor 'Cyan' -NoNewLine; Write-Host ('.{0}' -f [Env]::NewLine)
@@ -139,7 +166,7 @@ Function Replace-StringInFile {
                         }
                     }
                     finally {
-                        $newLine = [System.Text.StringBuilder]''
+                        $replacedLine = [System.Text.StringBuilder]''
                         $write.Close()
                         $write.Dispose()
                         $read.Close()

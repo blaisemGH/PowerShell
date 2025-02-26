@@ -14,7 +14,7 @@ class KubeNamespaceCompleter : IArgumentCompleter {
     ) {
         $resultList = [List[CompletionResult]]::new()
         ((kubectl get namespaces -o name) -replace '[^\/]+/') + '-A' + '--all-namespaces' |
-            Where-Object { $_ -like "$wordToComplete*" } |
+            Where-Object { $_ -like "*$wordToComplete*" } |
             foreach {
                 $resultList.Add([CompletionResult]::new($_))
         }
@@ -40,7 +40,7 @@ class KubeSingleNamespaceCompleter : IArgumentCompleter {
     ) {
         $resultList = [List[CompletionResult]]::new()
         ((kubectl get namespaces -o name) -replace '[^\/]+/') |
-            Where-Object { $_ -like "$wordToComplete*" } |
+            Where-Object { $_ -like "*$wordToComplete*" } |
             foreach {
                 $resultList.Add([CompletionResult]::new($_))
         }
