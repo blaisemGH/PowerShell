@@ -59,15 +59,7 @@ PowerShellVersion = '7.3.6'
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 ScriptsToProcess = 'enums/MemoryUnits.ps1',
                'classes/ConvertToFullPathTransform.ps1', 'classes/MemoryUnitConverter.ps1',
-               './public/Convert-AllHashtablesToPSCObjects.ps1', 
-               './public/Convert-HashtableToOrderedDictionary.ps1', 
-               './public/Convert-ObjectToHashtable.ps1', 
-               './public/Join-ObjectLinq.ps1', './public/Test-ReadHost.ps1', 
-               './public/Test-ValidArgs.ps1', 
-               './public/Update-FileVersionIncrement.ps1', 
-               './public/Sync-HeaderProperties.ps1', 
-               './public/Move-FileToDatedFile.ps1', 'classes/ProcessHelper.ps1',
-               './public/Convert-MemoryUnits.ps1', 'public/New-ErrorRecord.ps1'
+               'classes/ProcessHelper.ps1'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()

@@ -14,7 +14,7 @@ using Google.Cloud.Storage.V1;
 using Google.Apis.Storage.v1.Data;
 
 
-namespace Microsoft.Samples.PowerShell.Providers
+namespace Custom.Providers
 {
     #region GoogleCloudStorageProvider
 
@@ -32,6 +32,9 @@ namespace Microsoft.Samples.PowerShell.Providers
     ]
     public class GoogleCloudStorageProvider : NavigationCmdletProvider//, IContentCmdletProvider
     {
+        private string pathSeparator = "/";
+        private static string pattern = @"^[-a-zA-Z0-9_!][-a-zA-Z0-9_!.]+$";
+
 
        #region Drive Manipulation
 
@@ -82,15 +85,6 @@ namespace Microsoft.Samples.PowerShell.Providers
             GoogleCloudStoragePSDriveInfo.GcsClient = client;
             GoogleCloudStoragePSDriveInfo.BucketUrl = drive.DisplayRoot;
             
-            /*OdbcConnectionStringBuilder builder = new OdbcConnectionStringBuilder();
-
-            builder.Driver = "Microsoft Access Driver (*.mdb)";
-            builder.Add("DBQ", drive.Root);
-
-            OdbcConnection conn = new OdbcConnection(builder.ConnectionString);
-            conn.Open();
-            GoogleCloudStoragePSDriveInfo.Connection = conn;
-            */
             return GoogleCloudStoragePSDriveInfo;
         } // NewDrive
 
@@ -121,7 +115,7 @@ namespace Microsoft.Samples.PowerShell.Providers
             {
                 return null;
             }
-            GoogleCloudStoragePSDriveInfo.Connection.Dispose();
+            GoogleCloudStoragePSDriveInfo.GcsClient.Dispose();
 
             return GoogleCloudStoragePSDriveInfo;
         } // RemoveDrive
@@ -134,38 +128,22 @@ namespace Microsoft.Samples.PowerShell.Providers
         /// Retrieves an item using the specified path.
         /// </summary>
         /// <param name="path">The path to the item to return.</param>
-        protected override void GetItem(string path)
+        protected override Object GetItem(string path)
         {
+            // TO-DO wtf is this
             // check if the path represented is a drive
             if (PathIsDrive(path))
             {
                 WriteItemObject(this.PSDriveInfo, path, true);
                 return;
-            }// if (PathIsDrive...
-
-            // Get table name and row information from the path and do 
-            // necessary actions
-            string objectName;
-            int rowNumber;
-
-            PathType type = GetNamesFromPath(path, out objectName, out rowNumber);
-
-            if (type == PathType.Table)
-            {
-                DatabaseTableInfo table = GetTable(objectName);
-                WriteItemObject(table, path, true);
-            }
-            else if (type == PathType.Row)
-            {
-                DatabaseRowInfo row = GetRow(objectName, rowNumber);
-                WriteItemObject(row, path, false);
-            }
-            else
-            {
-                ThrowTerminatingInvalidPathException(path);
             }
 
-        } // GetItem
+            var client = StorageClient.Create();
+
+            var gcsPath = GetGcsPath(path);
+            
+            return client.GetObject(gcsPath.BucketName, gcsPath.ObjectPath)
+        }
 
         /// <summary>
         /// Set the content of a row of data specified by the supplied path
@@ -176,11 +154,7 @@ namespace Microsoft.Samples.PowerShell.Providers
         /// <param name="values">Comma separated string of values</param>
         protected override void SetItem(string path, object values)
         {
-            // Get type, table name and row number from the path specified
-            string objectName;
-            int rowNumber;
-
-            PathType type = GetNamesFromPath(path, out objectName, out rowNumber);
+            var gcsPath = GetGcsPath(path);
 
             if (type != PathType.Row)
             {
@@ -191,27 +165,7 @@ namespace Microsoft.Samples.PowerShell.Providers
                 return;
             }
 
-            // Get in-memory representation of table
-            OdbcDataAdapter da = GetAdapterForTable(objectName);
-
-            if (da == null)
-            {
-                return;
-            }
-            DataSet ds = GetDataSetForTable(da, objectName);
-            DataTable table = GetDataTable(ds, objectName);
-
-            if (rowNumber >= table.Rows.Count)
-            {
-                // The specified row number has to be available. If not
-                // NewItem has to be used to add a new row
-                throw new ArgumentException("Row specified is not available");
-            } // if (rowNum...
-
             string[] colValues = (values as string).Split(',');
-
-            // set the specified row
-            DataRow row = table.Rows[rowNumber];
 
             for (int i = 0; i < colValues.Length; i++)
             {
@@ -239,36 +193,14 @@ namespace Microsoft.Samples.PowerShell.Providers
                 return true;
             }
 
-            // Obtain type, table name and row number from path
-            string objectName;
-            int rowNumber;
+            var gcsPath = GetGcsPath(path);
 
-            PathType type = GetNamesFromPath(path, out objectName, out rowNumber);
-
-            DatabaseTableInfo table = GetTable(objectName);
-
-            if (type == PathType.Table)
+            var itemInGcs = GetItem(objectName);
+            if (itemInGcs == null)
             {
-                // if specified path represents a table then DatabaseTableInfo
-                // object for the same should exist
-                if (table != null)
-                {
-                    return true;
-                }
+                return false;
             }
-            else if (type == PathType.Row)
-            {
-                // if specified path represents a row then DatabaseTableInfo should
-                // exist for the table and then specified row number must be within
-                // the maximum row count in the table
-                if (table != null && rowNumber < table.RowCount)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-
+            return true;
         } // ItemExists
 
         /// <summary>
@@ -278,12 +210,10 @@ namespace Microsoft.Samples.PowerShell.Providers
         /// <returns>True if the specified path is valid.</returns>
         protected override bool IsValidPath(string path)
         {
-            bool result = true;
-
             // check if the path is null or empty
             if (String.IsNullOrEmpty(path))
             {
-                result = false;
+                return false;
             }
 
             // convert all separators in the path to a uniform one
@@ -292,14 +222,19 @@ namespace Microsoft.Samples.PowerShell.Providers
             // split the path into individual chunks
             string[] pathChunks = path.Split(pathSeparator.ToCharArray());
 
+            if (pathChunks.Length < 1)
+            {
+                return false;
+            }
+
             foreach (string pathChunk in pathChunks)
             {
                 if (pathChunk.Length == 0)
                 {
-                    result = false;
+                    return false;
                 }
             }
-            return result;
+            return true;
         } // IsValidPath
 
         #endregion Item Overloads
@@ -314,23 +249,30 @@ namespace Microsoft.Samples.PowerShell.Providers
         /// </param>
         protected override void GetChildItems(string path, bool recurse)
         {
+            var drive = this.PSDriveInfo as GoogleCloudStoragePSDriveInfo;
             // If path represented is a drive then the children in the path are 
             // tables. Hence all tables in the drive represented will have to be
             // returned
             if (PathIsDrive(path))
             {
-                foreach (DatabaseTableInfo table in GetTables())
+                string[] projectBuckets = drive.GcsClient.ListBuckets(drive.ProjectId)
+                foreach (var bucket in projectBuckets)
                 {
-                    WriteItemObject(table, path, true);
+                    WriteItemObject(bucket, path, true);
 
                     // if the specified item exists and recurse has been set then 
                     // all child items within it have to be obtained as well
                     if (ItemExists(path) && recurse)
                     {
-                        GetChildItems(path + pathSeparator + table.Name, recurse);
+                        GetChildItems(path + pathSeparator + bucket.Name, recurse);
                     }
                 } // foreach (DatabaseTableInfo...
             } // if (PathIsDrive...
+            if (PathIsBucket(path))
+            {
+                objectPrefix = GetObjectPrefix(path)
+                string[] bucketObjects = drive.GcsClient.ListObjects(bucket, null, null)
+            }
             else
             {
                 // Get the table name, row number and type of path from the
@@ -1168,11 +1110,12 @@ namespace Microsoft.Samples.PowerShell.Providers
             // Remove the drive name and first path separator.  If the 
             // path is reduced to nothing, it is a drive. Also if its
             // just a drive then there wont be any path separators
-            if (String.IsNullOrEmpty(
-                        path.Replace(this.PSDriveInfo.Root, "")) ||
+            if (
+                String.IsNullOrEmpty(
+                        path.Replace(this.PSDriveInfo.Root, ""))
+                ||
                 String.IsNullOrEmpty(
                         path.Replace(this.PSDriveInfo.Root + pathSeparator, ""))
-
                )
             {
                 return true;
@@ -1213,7 +1156,7 @@ namespace Microsoft.Samples.PowerShell.Providers
 
             if (!String.IsNullOrEmpty(path))
             {
-                result = path.Replace("/", pathSeparator);
+                result = path.Replace("\\", pathSeparator);
             }
 
             return result;
@@ -1227,7 +1170,6 @@ namespace Microsoft.Samples.PowerShell.Providers
         /// <returns>Path with drive information removed</returns>
         private string RemoveDriveFromPath(string path)
         {
-            string result = path;
             string root;
 
             if (this.PSDriveInfo == null)
@@ -1239,17 +1181,17 @@ namespace Microsoft.Samples.PowerShell.Providers
                 root = this.PSDriveInfo.Root;
             }
 
-            if (result == null)
+            if (path == null)
             {
-                result = String.Empty;
+                return String.Empty;
             }
 
-            if (result.Contains(root))
+            if (path.Contains(root))
             {
-                result = result.Substring(result.IndexOf(root, StringComparison.OrdinalIgnoreCase) + root.Length);
+                return path.Substring(path.IndexOf(root, StringComparison.OrdinalIgnoreCase) + root.Length);
             }
 
-            return result;
+            return path;
         }
 
         /// <summary>
@@ -1257,21 +1199,11 @@ namespace Microsoft.Samples.PowerShell.Providers
         /// from the path
         /// </summary>
         /// <param name="path">Path to chunk and obtain information</param>
-        /// <param name="objectName">Name of the table as represented in the 
-        /// path</param>
-        /// <param name="rowNumber">Row number obtained from the path</param>
-        /// <returns>what the path represents</returns>
-        public PathType GetNamesFromPath(string path, out string objectName, out int rowNumber)
+        /// <returns>GcsPath</returns>
+        public GcsPath GetGcsPath(string path)
         {
             PathType retVal = PathType.Invalid;
-            rowNumber = -1;
-            objectName = null;
-
-            // Check if the path specified is a drive
-            if (PathIsDrive(path))
-            {
-                return PathType.Database;
-            }
+            var gcsPath = new GcsPath;
 
             // chunk the path into parts
             string[] pathChunks = ChunkPath(path);
@@ -1280,42 +1212,14 @@ namespace Microsoft.Samples.PowerShell.Providers
             {
                 case 1:
                     {
-                        string name = pathChunks[0];
-
-                        if (ObjectNameIsValid(name))
-                        {
-                            objectName = name;
-                            retVal = PathType.Table;
-                        }
+                        gcsPath.BucketName = pathChunks[0];
                     }
                     break;
-
-                case 2:
+                case > 1:
                     {
-                        string name = pathChunks[0];
-
-                        if (ObjectNameIsValid(name))
-                        {
-                            objectName = name;
-                        }
-
-                        int number = SafeConvertRowNumber(pathChunks[1]);
-
-                        if (number >= 0)
-                        {
-                            rowNumber = number;
-                            retVal = PathType.Row;
-                        }
-                        else
-                        {
-                            WriteError(new ErrorRecord(
-                                new ArgumentException("Row number is not valid"),
-                                "RowNumberNotValid",
-                                ErrorCategory.InvalidArgument,
-                                path));
-                        }
+                        gcsPath.BucketName = pathChunks[0];
+                        gcsPath.ObjectPath = String.Join("/", pathChunks[1..(pathChunks.Length - 1)])
                     }
-                    break;
 
                 default:
                     {
@@ -1324,12 +1228,13 @@ namespace Microsoft.Samples.PowerShell.Providers
                             "PathNotValid",
                             ErrorCategory.InvalidArgument,
                             path));
+                        ThrowTerminatingInvalidPathException(path);
                     }
                     break;
-            } // switch(pathChunks...
+            }
 
-            return retVal;
-        } // GetNamesFromPath
+            return gcsPath;
+        }
 
         /// <summary>
         /// Throws an argument exception stating that the specified path does
@@ -1338,84 +1243,11 @@ namespace Microsoft.Samples.PowerShell.Providers
         /// <param name="path">path which is invalid</param>
         private void ThrowTerminatingInvalidPathException(string path)
         {
-            StringBuilder message = new StringBuilder("Path must represent either a table or a row :");
+            StringBuilder message = new StringBuilder("Path must include at least a bucket");
             message.Append(path);
 
             throw new ArgumentException(message.ToString());
         }
-
-        /// <summary>
-        /// Retrieve the list of tables from the database.
-        /// </summary>
-        /// <returns>
-        /// Collection of DatabaseTableInfo objects, each object representing
-        /// information about one database table
-        /// </returns>
-        internal Collection<DatabaseTableInfo> GetTables()
-        {
-            Collection<DatabaseTableInfo> results =
-                    new Collection<DatabaseTableInfo>();
-
-            // using ODBC connection to the database and get the schema of tables
-            GoogleCloudStoragePSDriveInfo di = this.PSDriveInfo as GoogleCloudStoragePSDriveInfo;
-
-            if (di == null)
-            {
-                return null;
-            }
-
-            OdbcConnection connection = di.Connection;
-            DataTable dt = connection.GetSchema("Tables");
-            int count;
-
-            // iterate through all rows in the schema and create DatabaseTableInfo
-            // objects which represents a table
-            foreach (DataRow dr in dt.Rows)
-            {
-                String objectName = dr["TABLE_NAME"] as String;
-                DataColumnCollection columns = null;
-
-                // find the number of rows in the table
-                try
-                {
-                    String cmd = "Select count(*) from \"" + objectName + "\"";
-                    OdbcCommand command = new OdbcCommand(cmd, connection);
-
-                    count = (Int32)command.ExecuteScalar();
-                }
-                catch
-                {
-                    count = 0;
-                }
-
-                // create DatabaseTableInfo object representing the table
-                DatabaseTableInfo table =
-                        new DatabaseTableInfo(dr, objectName, count, columns);
-
-                results.Add(table);
-            } // foreach (DataRow...
-
-            return results;
-        } // GetTables
-
-        /// <summary>
-        /// Retrieve information about a single table.
-        /// </summary>
-        /// <param name="objectName">The table for which to retrieve 
-        /// data.</param>
-        /// <returns>Table information.</returns>
-        private DatabaseTableInfo GetTable(string objectName)
-        {
-            foreach (DatabaseTableInfo table in GetTables())
-            {
-                if (String.Equals(objectName, table.Name, StringComparison.OrdinalIgnoreCase))
-                {
-                    return table;
-                }
-            }
-
-            return null;
-        } // GetTable
 
         /// <summary>
         /// Removes the specified table from the database
@@ -1499,90 +1331,6 @@ namespace Microsoft.Samples.PowerShell.Providers
            return false;
        }// TableIsPresent
 
-/*
-       public void ClearContent(string path)
-       {
-           string objectName;
-           int rowNumber;
-
-           PathType type = GetNamesFromPath(path, out objectName, out rowNumber);
-
-           if (type != PathType.Table)
-           {
-               WriteError(new ErrorRecord(
-                   new InvalidOperationException("Operation not supported. Content can be cleared only for table"),
-                       "NotValidRow", ErrorCategory.InvalidArgument,
-                           path));
-               return;
-           }
-
-           OdbcDataAdapter da = GetAdapterForTable(objectName);
-
-           if (da == null)
-           {
-               return;
-           }
-
-           DataSet ds = GetDataSetForTable(da, objectName);
-           DataTable table = GetDataTable(ds, objectName);
-
-           // Clear contents at the specified location
-           for (int i = 0; i < table.Rows.Count; i++)
-           {
-               table.Rows[i].Delete();
-           }
-
-           if (ShouldProcess(path, "ClearContent"))
-           {
-               da.Update(ds, objectName);
-           }
-
-       } // ClearContent
-
-       /// <summary>
-       /// Not implemented.
-       /// </summary>
-       /// <param name="path"></param>
-       /// <returns></returns>
-       public object ClearContentDynamicParameters(string path)
-       {
-           return null;
-       }
-
-       /// <summary>
-       /// Get a reader at the path specified.
-       /// </summary>
-       /// <param name="path">The path from which to read.</param>
-       /// <returns>A content reader used to read the data.</returns>
-       public IContentReader GetContentReader(string path)
-       {
-           string objectName;
-           int rowNumber;
-
-           PathType type = GetNamesFromPath(path, out objectName, out rowNumber);
-
-           if (type == PathType.Invalid)
-           {
-               ThrowTerminatingInvalidPathException(path);
-           }
-           else if (type == PathType.Row)
-           {
-               throw new InvalidOperationException("contents can be obtained only for tables");
-           }
-
-           return new GoogleCloudStorageContentReader(path, this);
-       } // GetContentReader
-
-       /// <summary>
-       /// Not implemented.
-       /// </summary>
-       /// <param name="path"></param>
-       /// <returns></returns>
-       public object GetContentReaderDynamicParameters(string path)
-       {
-           return null;
-       }
-*/
        /// <summary>
        /// Get an object used to write content.
        /// </summary>
@@ -1618,14 +1366,6 @@ namespace Microsoft.Samples.PowerShell.Providers
        }
 
        #endregion Content Methods
-
-       #region Private Properties
-      
-       private string pathSeparator = "/";
-       private static string pattern = @"^[-a-zA-Z0-9_!][-a-zA-Z0-9_!.]+$";
-
-       #endregion Private Properties
-
     } // GoogleCloudStorageProvider
 
     #endregion GoogleCloudStorageProvider
@@ -1637,10 +1377,6 @@ namespace Microsoft.Samples.PowerShell.Providers
     /// </summary>
     public enum PathType
     {
-       /// <summary>
-       /// Represents a database
-       /// </summary>
-       Database,
        /// <summary>
        /// Represents a table
        /// </summary>
@@ -1665,23 +1401,20 @@ namespace Microsoft.Samples.PowerShell.Providers
     /// </summary>
     internal class GoogleCloudStoragePSDriveInfo : PSDriveInfo
     {
-        private StorageClient gcsClient;
-        
-        private String bucketUrl;
 
         /// <summary>
         /// Google Cloud Storage client information.
         /// </summary>
         public StorageClient GcsClient
         {
-            get { return gcsClient; }
-            set { gcsClient = value; }
+            get { return GcsClient; }
+            set { GcsClient = value; }
         }
 
-        public String BucketUrl
+        public String ProjectId
         {
-            get { return bucketUrl; }
-            set { bucketUrl = value; }
+            get { return ProjectId; }
+            set { ProjectId = value; }
         }
 
         /// <summary>
@@ -1690,10 +1423,25 @@ namespace Microsoft.Samples.PowerShell.Providers
         /// <param name="driveInfo">Drive provided by this provider</param>
         public GoogleCloudStoragePSDriveInfo(PSDriveInfo driveInfo)
             : base(driveInfo)
-        { }
+        {
+            this.GcsClient = StorageClient.Create();
+        }
 
     } // class GoogleCloudStoragePSDriveInfo
 
     #endregion GoogleCloudStoragePSDriveInfo
 
-} // namespace Microsoft.Samples.PowerShell.Providers
+    internal class GcsPath {
+        public string BucketName
+        {
+            get { return BucketName; }
+            set { BucketName = value; }
+        }
+        public string ObjectPath
+        {
+            get { return ObjectPath; }
+            set { ObjectPath = value; }
+        }
+    }
+
+}

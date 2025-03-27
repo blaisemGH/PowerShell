@@ -1,1 +1,0 @@
-Set-GCloudCompletion -ModuleHome $PSScriptRoot
