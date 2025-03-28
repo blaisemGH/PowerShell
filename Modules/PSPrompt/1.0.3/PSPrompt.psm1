@@ -78,7 +78,9 @@ if ( [PSPromptConfig]::PromptConfigsLeft.Count -lt 1 ) {
         Note this is automatically set if right alignment items are added.
 #>
 
-if (!(Test-Path $HOME/.pwsh/PSPrompt/templates.ps1)) {
-    New-Item -ItemType Directory -Name $HOME/.pwsh/PSPrompt
-    Copy-Item templates.ps1 $HOME/.pwsh/PSPrompt/templates.ps1
+$localConfigDir = "$HOME/.pwsh/PSPrompt"
+
+if (!(Test-Path $localConfigDir/templates.ps1)) {
+    New-Item -ItemType Directory -Path $localConfigDir -ErrorAction SilentlyContinue
+    Copy-Item $PSScriptRoot/templates.ps1 $localConfigDir/templates.ps1
 }
