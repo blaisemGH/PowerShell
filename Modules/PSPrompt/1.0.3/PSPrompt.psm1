@@ -39,17 +39,17 @@ Set-PSReadlineKeyHandler    -Key Ctrl+e 		-Function EndOfLine				# Navigates to 
 If ( (Get-Module PSReadLine | Select-Object -ExpandProperty Version) -ge [Version]'2.0' ) {
 
 	Set-PSReadLineOption -Colors @{
-'Variable'			=	"$([char]0x1b)[38;2;115;195;255m"	
+'Variable'			=	"$([char]0x1b)[38;2;115;195;255m"
 'Operator'			=	"$([char]0x1b)[38;2;60;110;235m"	# Sets color of operators, e.g., =, -match, -in, -lt/-gt, etc.
-'Comment'			=	"$([char]0x1b)[38;2;55;110;165m"	
+'Comment'			=	"$([char]0x1b)[38;2;55;110;165m"
 'ContinuationPrompt'=	"$([char]0x1b)[38;2;115;195;55m"	# Color of the prompt character for multi-line commands
 'Member'			=	"$([char]0x1b)[38;2;255;166;77m"	# Object properties, such as "Path" from $variable.Path
-'Number'			=	"$([char]0x1b)[38;2;156;241;203m"	
+'Number'			=	"$([char]0x1b)[38;2;156;241;203m"
 'Type'				=	"$([char]0x1b)[38;2;204;51;255m"	# typing, e.g., [int], [string] (bracket color still "default")
 'Command'			=	"$([char]0x1b)[38;2;255;255;102m"	# Sets the color of commands such as gci, cat, echo
 'Default'			=	"$([char]0x1b)[1;38;2;145;200;180m"	# Normal text and delimiters, e.g., () and {}
 'Keyword'			=	"$([char]0x1b)[38;2;203;1;67m"		# Sets the color of if or foreach, etc.
-'Error'				=	"$([char]0x1b)[103;91m"			
+'Error'				=	"$([char]0x1b)[103;91m"
 'Selection' 		=	"$([char]0x1b)[7m"					# Color of highlighting text with mouse.
 'String'			=	"$([char]0x1b)[38;2;215;215;180m"	# all strings, encased in either "" or ''
 'Parameter'			=	"$([char]0x1b)[38;2;255;155;195m"	# argument parameters, e.g., gci -Recurse (recurse is colored).
@@ -77,3 +77,8 @@ if ( [PSPromptConfig]::PromptConfigsLeft.Count -lt 1 ) {
             [PSPromptConfig]::SetMultilineConnector([char]0x0256d, [char]0x02502, [char]0x02570)
         Note this is automatically set if right alignment items are added.
 #>
+
+if (!(Test-Path $HOME/.pwsh/PSPrompt/templates.ps1)) {
+    New-Item -ItemType Directory -Name $HOME/.pwsh/PSPrompt
+    Copy-Item templates.ps1 $HOME/.pwsh/PSPrompt/templates.ps1
+}

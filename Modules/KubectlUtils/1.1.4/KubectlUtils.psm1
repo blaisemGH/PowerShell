@@ -1,3 +1,22 @@
+$importSource = 'private/Measure-KubeContainers.ps1', 
+'public/Copy-KubeFile.ps1', 'public/Enter-KubePod.ps1', 
+'public/Find-MaxPodMetric.ps1', 'public/Get-KubeContextInfo.ps1', 
+'public/Get-KubeMetrics.ps1', 'public/Get-KubeNodesByPod.ps1', 
+'public/Get-KubeResource.ps1', 'public/Measure-DiskIO.ps1', 
+'public/Set-KubeContext.ps1', 'public/Set-KubeNamespace.ps1', 
+'public/Trace-KubeMetrics.ps1', 'public/Update-KubeCompletions.ps1', 
+'public/ConvertFrom-StringTable.ps1', 
+'public/Get-KubeMappedContext.ps1', 
+'public/Remove-KubeMappedContext.ps1', 
+'public/Rename-KubeMappedContext.ps1', 
+'public/Set-KubeMappedContexts.ps1', 
+'public/Start-KubePortForward.ps1', 
+'public/New-KubeContextSession.ps1',
+'public/Convert-KubeCpu.ps1',
+'public/Get-KubeNodeMetrics.ps1', 'public/Sync-KubeMappedContexts.ps1'
+
+$importSource | % { . (Join-Path $PSScriptRoot $_)}
+
 $kubectlAlias = 'k'
 If ( Get-Command kubectl -ErrorAction SilentlyContinue ) {
     if ( $PSNativeCommandArgumentPassing -eq 'Legacy' ) {
