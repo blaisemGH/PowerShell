@@ -67,6 +67,8 @@ Set-Alias -Name fsr	    -Value Find-StringRecursively	    -Scope Global -Option 
 Set-Alias -Name rs		-Value Replace-StringInFile		    -Scope Global -Option AllScope
 Set-Alias -Name clip	-Value Set-Clipboard		 	    -Scope Global -Option AllScope
 
+Set-Alias -Name afk	-Value Invoke-DefinitelyNotAfk		 	-Scope Global -Option AllScope
+
 if ( $env:OS -match 'Windows' ) {
     Set-Alias -Name du		-Value Get-ItemSize				-Scope Global -Option AllScope
     Set-Alias -Name find	-Value Find-FileRecursively		-Scope Global -Option AllScope
