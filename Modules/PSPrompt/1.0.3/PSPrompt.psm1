@@ -81,6 +81,6 @@ if ( [PSPromptConfig]::PromptConfigsLeft.Count -lt 1 ) {
 $localConfigDir = "$HOME/.pwsh/PSPrompt"
 
 if (!(Test-Path $localConfigDir/templates.ps1)) {
-    New-Item -ItemType Directory -Path $localConfigDir -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory -Path $localConfigDir -ErrorAction SilentlyContinue -Force
     Copy-Item $PSScriptRoot/templates.ps1 $localConfigDir/templates.ps1
 }
