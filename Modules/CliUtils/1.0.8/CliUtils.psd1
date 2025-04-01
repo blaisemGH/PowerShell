@@ -57,55 +57,38 @@ PowerShellVersion = '5.1'
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = 'enums/enums.ps1', 
-               'classes/transformations/IfPathStringTransformToFileSystemInfo.ps1', 
-               'classes/transformations/TransformToChmodGrant.ps1', 
-               'classes/completions/GitBranchCompletions.ps1', 
-               'classes/ItemSize.ps1', 'classes/newline.ps1', 
-               'classes/SearchObject.ps1', 'classes/PSDirTree.ps1', 
-               'public/Add-EnvironmentVariable.ps1', 'public/Back-Dir.ps1', 
-               'public/Checkpoint-ModuleVersion.ps1', 
-               'public/Compare-FileDiff.ps1', 'public/Convert-Base64.ps1', 
-               'public/env.ps1', 'public/Find-FileRecursively.ps1', 
-               'public/Find-StringRecursively.ps1', 'public/Get-Dir.ps1', 
-               'public/Get-ItemSize.ps1', 'public/Get-ObjectLength.ps1', 
-               'public/Get-ObjectType.ps1', 'public/Group-ObjectCount.ps1', 
-               'public/Invoke-JoinOperator.ps1', 'public/Invoke-MatchOperator.ps1', 
-               'public/Invoke-ReplaceOperator.ps1', 
-               'public/Invoke-SplitOperator.ps1', 
-               'public/Measure-CollectionCount.ps1', 'public/LockThread.ps1', 
-               'public/Out-AllPropertiesInGridView.ps1', 'public/Out-FileHash.ps1', 
-               'public/Repair-GitConflictsInFiles.ps1', 
-               'public/Replace-StringInFile.ps1', 
-               'public/Search-ObjectProperties.ps1', 
-               'public/Search-ObjectValues.ps1', 'public/Select-NestedObject.ps1', 
-               'public/Use-GitCliForBranch.ps1', 
-               'public/Invoke-DefinitelyNotAfk.ps1'
+ScriptsToProcess = 'enums/enums.ps1',
+               'classes/transformations/IfPathStringTransformToFileSystemInfo.ps1',
+               'classes/transformations/TransformToChmodGrant.ps1',
+               'classes/completions/GitBranchCompletions.ps1',
+               'classes/ItemSize.ps1', 'classes/newline.ps1',
+               'classes/SearchObject.ps1', 'classes/PSDirTree.ps1',
+               'classes/PSObjectSelector'
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
 
 # Format files (.ps1xml) to be loaded when importing this module
-FormatsToProcess = 'ps1xml/Find-StringRecursivelyViews.Format.ps1xml', 
-               'ps1xml/ItemSizeViews.Format.ps1xml', 
-               'ps1xml/Select-ObjectPropertiesViews.Format.ps1xml', 
+FormatsToProcess = 'ps1xml/Find-StringRecursivelyViews.Format.ps1xml',
+               'ps1xml/ItemSizeViews.Format.ps1xml',
+               'ps1xml/Select-ObjectPropertiesViews.Format.ps1xml',
                'ps1xml/PSDirTree.Format.ps1xml'
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'cd-', '..', '...', '....', '.....', '......', '.......', '........', '.........', 
-               'Add-EnvironmentVariable', 'Back-Dir', 'Checkpoint-ModuleVersion', 
-               'Compare-FileDiff', 'Convert-Base64', 'env', 'Find-FileRecursively', 
-               'Find-StringRecursively', 'Get-Dir', 'Get-ItemSize', 'Get-ObjectLength', 
-               'Get-ObjectType', 'Group-ObjectCount', 'Invoke-JoinOperator', 
-               'Invoke-MatchOperator', 'Invoke-ReplaceOperator', 
-               'Invoke-SplitOperator', 'Measure-CollectionCount', 'LockThread', 
-               'Out-AllPropertiesInGridView', 'Out-FileHash', 
-               'Repair-GitConflictsInFiles', 'Replace-StringInFile', 
-               'Search-ObjectProperties', 'Search-ObjectValues', 
-               'Select-NestedObject', 'Use-GitCliForBranch', 
+FunctionsToExport = 'cd-', '..', '...', '....', '.....', '......', '.......', '........', '.........',
+               'Add-EnvironmentVariable', 'Back-Dir', 'Checkpoint-ModuleVersion',
+               'Compare-FileDiff', 'Convert-Base64', 'env', 'Find-FileRecursively',
+               'Find-StringRecursively', 'Get-Dir', 'Get-ItemSize', 'Get-ObjectLength',
+               'Get-ObjectType', 'Group-ObjectCount', 'Invoke-JoinOperator',
+               'Invoke-MatchOperator', 'Invoke-ReplaceOperator',
+               'Invoke-SplitOperator', 'Measure-CollectionCount', 'LockThread',
+               'Out-AllPropertiesInGridView', 'Out-FileHash',
+               'Repair-GitConflictsInFiles', 'Replace-StringInFile',
+               'Search-ObjectProperties', 'Search-ObjectValues',
+               'Select-Property', 'Use-GitCliForBranch',
                'Invoke-DefinitelyNotAfk'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

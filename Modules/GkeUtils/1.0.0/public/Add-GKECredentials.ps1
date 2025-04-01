@@ -90,9 +90,10 @@
                 Update-ContextFileMap -ProjectID $selectedProjectID -NewMapKey $NewMapKey -ErrorAction Stop | Export-ContextFileAsPSD1
             }
 
-            gcloud config set project $selectedProjectID
+            #gcloud config set project $selectedProjectID
 
-            [Gcp]::CurrentProject = $selectedProjectID
+            #[Gcp]::CurrentProject = $selectedProjectID
+            Set-GcpConfigProject $selectedProjectID
         }
     }
 }

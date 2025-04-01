@@ -4,7 +4,7 @@ using namespace System.Management.Automation
 class PSObjectSelector {
     [Hashtable]$IntermediateSelectResults = @{}
     [object]$FinalResults
-    
+
     PSObjectSelector ([PSCustomObject]$inputObject) {
         $this.IntermediateSelectResults.Add('.', $inputObject)
     }
@@ -22,7 +22,7 @@ class PSObjectSelector {
             $cleanSegment = (
                 $lockedSegment -split ('\s*' + $noRegexDelimiter + '\s*') | Where {$_}
             ) -join $delimiter
-            
+
             $splitNodePath = $cleanSegment -split "(?<!\*)$noRegexDelimiter", 2
             $maybeWildCardNode = $splitNodePath[0]
             $nonWildCardNodes = $this.UnlockQuotedNodes($splitNodePath[1], $delimiter)
@@ -31,7 +31,7 @@ class PSObjectSelector {
             foreach ($kvPair in $this.IntermediateSelectResults.Clone().GetEnumerator()) {
                 # Resolves the first node, resolving out a possible wildcard.
                 $intermediateResults = $this.ResolveNestedObject($kvPair.Value, $maybeWildCardNode)
-                
+
                 # Once the first node has been expanded, there could be remaining nodes in the input nodepath. Each result should append this.
                 foreach ($result in $intermediateResults) {
                     $completeIntermediateSelection = & {
@@ -117,55 +117,5 @@ class PSObjectSelector {
     # Once splitting on the delimiter has been performed, restore the original nodepath string by replacing the impossible delimiter with the actual delimiter.
     [string] UnlockQuotedNodes([string]$nodes, $delimiter) {
         return $nodes -replace ([string][char]0x2561 * 3), $delimiter
-    }
-}
-
-function Select-Property {
-    param(
-        [Parameter(Mandatory, ValueFromPipeline)]
-        [object[]]$InputObject,
-
-        [Alias('NodePath')]
-        [Parameter(Position=0, ValueFromPipelineByPropertyName, ValueFromRemainingArguments)]
-        [string[]]$PropertyNodes,
-
-        [Alias('s','sep')]
-        [ValidateScript({
-            if ($_ -match '\*') {throw '* is reserved for wildcards and cannot be input for this parameter.'} else { $true }
-        })]
-        [string]$NodeSeparator = '.',
-        [switch]$ExpandProperties
-    )
-    begin {
-        $joinedNodes = $PropertyNodes -join ' '
-        $checkIfDelimiter = ($joinedNodes -replace '\*' -replace '[\w$]' -replace '^\s+$', ' ' | ForEach Trim('''"'))[0]
-        $delimiter = & {
-            if ($NodeSeparator ) {
-                $NodeSeparator
-            }
-            elseif ($checkIfDelimiter) {
-                $checkIfDelimiter
-            }
-            else { '.' }
-        }
-        $noRegexDelimiter = [Regex]::Escape($delimiter)
-
-        [string[]]$searchSegments = & {
-            # Parse the input PropertyNodes, specifically to handle any * characters as wildcards. No * means only 1 segment.
-            $joinedNodes -replace # replace quoted wildcards with a unicode placeholder
-                '((?<=''\S*)[*](?=\S*''))|((?<="\S*)[*](?=\S*"))', [char]0x2561 -split
-                "([*][^*]*)(?![$noRegexDelimiter])" | # Split on wildcards
-                foreach TrimEnd('.') | # The split leaves trailing dots. Trim these.
-                foreach replace([char]0x2561, '*') | # restore the unicode placeholder to an asterisk
-                where {$_} # The split returns empty elements with every match. Remove these.
-        }
-    }
-    process {
-        foreach ($object in $InputObject) { 
-            $PSObjectSelector = [PSObjectSelector]::new($object)
-            $PSObjectSelector.SetNestedObjectResults($delimiter, $searchSegments)
-            
-            $PSObjectSelector.GetFinalResults($ExpandProperties)
-        }
     }
 }

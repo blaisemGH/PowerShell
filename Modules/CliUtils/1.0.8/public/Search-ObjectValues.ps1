@@ -1,14 +1,5 @@
 using namespace System.Collections.Generic
 
-class SearchObjectValues : SearchObject {
-    [string]$NodePath = ''
-    
-    SearchObjectValues(){}
-    SearchObjectValues([string]$NodePath){
-        $this.NodePath = $NodePath
-    }
-}
-
 # Wrapper function for Find-ValueInObject. The purpose of the wrapper is to process the NodePath arg and facilitate a compiled Pattern.
 # export
 function Search-ObjectValues {

@@ -83,7 +83,7 @@ Function Update-IncompleteGcpProjectsInFSCache {
     }
     $totalProjects = $projectsToUpdate.Count
     $count = -1
-    $projectsToUpdate | ForEach-Object {
+    $projectsToUpdate | Where-Object {$_} | ForEach-Object {
         Write-Progress -Activity 'Update-IncompleteGcpProjectsInFSCache' -Status $_.Name -PercentComplete (($count += 1) / $totalProjects)
         $localPath = $_.FullName
         try {

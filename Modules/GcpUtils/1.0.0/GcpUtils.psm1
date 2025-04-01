@@ -1,17 +1,17 @@
-﻿$importSource = @(
-    'private/Get-GcloudVersion.ps1',
-    'public/Update-GcpProjectRecord.ps1',
-    'public/Update-GcpProjectFS.ps1',
-    'public/Sync-GcpProjectsAsJob.ps1',
-    'public/Sync-GkeContextMappings.ps1',
-    'public/Get-GcpProjectId.ps1',
-    'public/Request-GcpPamGrant.ps1',
-    'public/Set-GcpConfigProject.ps1',
-    'public/New-GcpProjectSession.ps1',
-    'public/Open-GcpConsoleWebpage.ps1'
-)
+﻿#$importSource = @(
+. "$PSScriptRoot/private/Get-GcloudVersion.ps1"
+. "$PSScriptRoot/public/Update-GcpProjectRecord.ps1"
+. "$PSScriptRoot/public/Update-GcpProjectFS.ps1"
+. "$PSScriptRoot/public/Sync-GcpProjectsAsJob.ps1"
+. "$PSScriptRoot/public/Sync-GkeContextMappings.ps1"
+. "$PSScriptRoot/public/Get-GcpProjectId.ps1"
+. "$PSScriptRoot/public/Request-GcpPamGrant.ps1"
+. "$PSScriptRoot/public/Set-GcpConfigProject.ps1"
+. "$PSScriptRoot/public/New-GcpProjectSession.ps1"
+. "$PSScriptRoot/public/Open-GcpConsoleWebpage.ps1"
+#)
 
-$importSource | foreach { . (Join-Path $PSScriptRoot $_) }
+#$importSource | foreach { . (Join-Path $PSScriptRoot $_) }
 
 Set-Alias -Name ggp     -Value Get-GcpProjectId    -Scope Global -Option AllScope
 Set-Alias -Name ugp     -Value Use-GcpProjectId    -Scope Global -Option AllScope
@@ -75,7 +75,7 @@ if ( (Get-Module PSPrompt) -and !(Get-Module GcpUtils) ) {
     [PSPromptConfig]::AddTemplate($promptTemplateGetGcpContext)
 }
 
-
+<#
 $jobGcpConfig = Start-ThreadJob -ScriptBlock {
     gcloud config set survey/disable_prompts True 2>$null
     gcloud config set disable_usage_reporting true 2>$null
@@ -84,6 +84,7 @@ Register-ObjectEvent -InputObject $jobGcpConfig -EventName StateChanged -Action 
     Unregister-Event $EventSubscriber.SourceIdentifier
     Wait-Job -Id $EventSubscriber.SourceObject.Id | Remove-Job -Force
 }
+#>
 
 #Removing private functions that were loaded via ScriptsToProcess.
 #Get-ChildItem (Join-Path $PSScriptRoot private) | Foreach {

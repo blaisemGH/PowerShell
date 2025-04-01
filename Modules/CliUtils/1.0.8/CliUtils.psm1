@@ -1,5 +1,34 @@
 using namespace System.Management.Automation
 
+. "$PSScriptRoot/public/Add-EnvironmentVariable.ps1"
+. "$PSScriptRoot/public/Back-Dir.ps1"
+. "$PSScriptRoot/public/Checkpoint-ModuleVersion.ps1"
+. "$PSScriptRoot/public/Compare-FileDiff.ps1"
+. "$PSScriptRoot/public/Convert-Base64.ps1"
+. "$PSScriptRoot/public/env.ps1"
+. "$PSScriptRoot/public/Find-FileRecursively.ps1"
+. "$PSScriptRoot/public/Find-StringRecursively.ps1"
+. "$PSScriptRoot/public/Get-Dir.ps1"
+. "$PSScriptRoot/public/Get-ItemSize.ps1"
+. "$PSScriptRoot/public/Get-ObjectLength.ps1"
+. "$PSScriptRoot/public/Get-ObjectType.ps1"
+. "$PSScriptRoot/public/Group-ObjectCount.ps1"
+. "$PSScriptRoot/public/Invoke-JoinOperator.ps1"
+. "$PSScriptRoot/public/Invoke-MatchOperator.ps1"
+. "$PSScriptRoot/public/Invoke-ReplaceOperator.ps1"
+. "$PSScriptRoot/public/Invoke-SplitOperator.ps1"
+. "$PSScriptRoot/public/Measure-CollectionCount.ps1"
+. "$PSScriptRoot/public/LockThread.ps1"
+. "$PSScriptRoot/public/Out-AllPropertiesInGridView.ps1"
+. "$PSScriptRoot/public/Out-FileHash.ps1"
+. "$PSScriptRoot/public/Repair-GitConflictsInFiles.ps1"
+. "$PSScriptRoot/public/Replace-StringInFile.ps1"
+. "$PSScriptRoot/public/Search-ObjectProperties.ps1"
+. "$PSScriptRoot/public/Search-ObjectValues.ps1"
+. "$PSScriptRoot/public/Select-Property.ps1"
+. "$PSScriptRoot/public/Use-GitCliForBranch.ps1"
+. "$PSScriptRoot/public/Invoke-DefinitelyNotAfk.ps1"
+
 # cd has been redefined to pushd.
 If ( [System.Environment]::OSVersion.Platform -notmatch 'unix' -and [System.Environment]::OSVersion.Platform -match 'Win' ) {
 	Set-Alias -Name cd -Value Push-Location -Scope Global -Option AllScope
