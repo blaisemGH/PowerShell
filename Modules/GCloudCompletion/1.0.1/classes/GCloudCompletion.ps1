@@ -15,7 +15,7 @@ class GCloudCompletion {
     static [string]$CompletionsWorkDir = "$HOME/.pwsh/gcloud/completions"
     static [string]$CompletionFilepath
     static [hashtable]$CompletionTree
-    static [version]$GcloudVersion = $(try {Get-Command gcloud.ps1 | Select-Object -ExpandProperty Source | Split-Path -Parent | Split-Path -Parent | Get-ChildItem | where name -eq VERSION | Get-Content -Raw} catch {(gcloud version | sls 'Google Cloud SDK ([0-9.]+)').Matches.Groups[1].Value})
+    static [version]$GcloudVersion = $(try {Get-Command gcloud.ps1 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source | Split-Path -Parent | Split-Path -Parent | Get-ChildItem | where name -eq VERSION | Get-Content -Raw} catch {(gcloud version | sls 'Google Cloud SDK ([0-9.]+)').Matches.Groups[1].Value})
 
     [IEnumerable[CompletionResult]] GetCompletions(
         [string] $wordToComplete,

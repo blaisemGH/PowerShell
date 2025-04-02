@@ -49,9 +49,9 @@ if ( Get-Command helm -ErrorAction SilentlyContinue ) {
     $helmCompletionFile = "$completionDir/helm.ps1"
     if ( !(Test-Path $helmCompletionFile) -or ! (Get-item $helmCompletionFile).Length ) {
         if ( $PSNativeCommandArgumentPassing -eq 'Legacy' ) {
-            New-Item -Path $helmCompletionFile -Value (kubectl completion powershell | Out-String) -Force
+            New-Item -Path $helmCompletionFile -Value (helm completion powershell | Out-String) -Force
         } else {
-            New-Item -Path $helmCompletionFile -Value ((kubectl completion powershell | Out-String) -replace "\+ ' ``""``""'", '+ '' ""''') -Force
+            New-Item -Path $helmCompletionFile -Value ((helm completion powershell | Out-String) -replace "\+ ' ``""``""'", '+ '' ""''') -Force
         }
     }
 
