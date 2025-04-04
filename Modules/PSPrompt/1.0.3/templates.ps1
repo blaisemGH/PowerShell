@@ -55,7 +55,7 @@ $itemCurrentPath = {
     param($ansi)
     $dirSep = [IO.Path]::DirectorySeparatorChar
     $regExDirSep = [Regex]::Escape($dirSep)
-    $driveSep = if ( $env:OS -match 'Windows' ) { ':' } else {$null} 
+    $driveSep = if ( $env:OS -match 'Windows' ) { ':' } else {$null}
     If ( Get-Command git ) {
         $rootDir = git rev-parse --show-toplevel
         if ( $rootDir ) {
@@ -111,7 +111,7 @@ if ( Get-Command git ) {
         $branchName = git branch --show-current
         If ( $? ) {
             If ( $branchName -in 'main', 'master' ) {
-                $out = " `e[0m`e[93m " + $ansi + $branchName.ToUpper()
+                $out = " `e[0m`e[93m " + $ansi + $branchName
                 $parent = $branchName
             }
             Else {
