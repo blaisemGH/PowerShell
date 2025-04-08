@@ -155,14 +155,14 @@ Class Kube {
     }
     static [void] UpdateKubeMappedContexts() {
         try {
-            $contexts = Import-PowerShellDataFile ([Kube]::ContextFile)#& { $o = [ordered]@{}; ($ht = Import-PowerShellDataFile $HOME\Documents\tenants\contexts.psd1) | Select -exp Keys | Sort | % { $o.Add($_,$ht[$_])}; $o }
+            $contexts = Import-PowerShellDataFile ([Kube]::ContextFile) -SkipLimitCheck #& { $o = [ordered]@{}; ($ht = Import-PowerShellDataFile $HOME\Documents\tenants\contexts.psd1) | Select -exp Keys | Sort | % { $o.Add($_,$ht[$_])}; $o }
         } catch {
             Write-Verbose "No contextFile map found. This is used by the `Get-KubeContext` function to shortcut access to different contexts. Checked [Kube]::contextFile for a PowerShellDataFile and found path: $([Kube]::contextFile)"
             $contexts = @{}
         }
         $modularContexts = if ( [Kube]::ModularContextFile -and (Test-Path ([Kube]::ModularContextFile)) ) {
             try {
-                Import-PowerShellDataFile ([Kube]::ModularContextFile)
+                Import-PowerShellDataFile ([Kube]::ModularContextFile) -SkipLimitCheck
             } catch {
                 @{}
             }

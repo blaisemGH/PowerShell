@@ -43,11 +43,7 @@ function Find-FileRecursively {
         [switch]$File,
 
         [Parameter(ParameterSetName = 'Directory')]
-        [switch]$Directory,
-
-        # Fall back to Get-ChildItem instead of using the faster .NET EnumerateFileSystemEntries.
-        # Left in here for Windows PS users who wouldn't have the .NET workaround for AccessDenied.
-        [switch]$useGCI
+        [switch]$Directory
     )
     begin {
         $GCIParams = @{}
@@ -67,16 +63,16 @@ function Find-FileRecursively {
         }
         if ( $CaseSensitive ) {
             $enumerationOptions.MatchCasing = 'CaseSensitive'
-            $likeOperator = {$_.Name -clike $Name }
+            $likeOperator = {$_ -clike $Name }
         } else {
             $enumerationOptions.MatchCasing = 'CaseInsensitive'
-            $likeOperator = {$_.Name -like $Name }
+            $likeOperator = {$_ -like $Name }
         }
 
         $GCIParams.Recurse = $gciRecurse
         $GCIParams.Filter = $Filter
         $GCIParams.Force = $Force
-        
+
         if ( $Directory -or $Type -eq 'd' ) {
             $GCIParams.Directory = $Directory
             $FileSystemType = 'directory'
@@ -87,18 +83,9 @@ function Find-FileRecursively {
         }
     }
     process {
-        $cleanPath = Convert-Path -LiteralPath $Path
+        $cleanPath = Convert-Path -LiteralPath $Path -ErrorAction Stop
 
-        if ( $useGCI ) {
-            <#
-            The Where-Object is to allow the CaseSensitive argument to work with GCI.
-            Even though it's already been filtered left, the case sensitivity wouldn't have been applied.
-            I'm aware this is slower in 99.99% of cases where you don't use $CaseSensitive, but otherwise there's no
-            reason to use this function over GCI, so either use GCI instead in that case or don't call this with $useGCI.
-            #>
-          Get-ChildItem -LiteralPath $cleanPath @GCIParams | Where-Object $likeOperator
-        }
-        else {
+        try {
             switch ($FileSystemType) {
                 'directory' {[System.IO.Directory]::EnumerateDirectories( $cleanPath, $Filter, $enumerationOptions) | Resolve-Path -Relative }
                 'file' {[System.IO.Directory]::EnumerateFiles( $cleanPath, $Filter, $enumerationOptions) | Resolve-Path -Relative }
@@ -106,6 +93,8 @@ function Find-FileRecursively {
                     [System.IO.Directory]::EnumerateFileSystemEntries( $cleanPath, $Filter, $enumerationOptions) | Resolve-Path -Relative
                 }
             }
+        } catch [UnauthorizedAccessException] {
+            Get-ChildItem -LiteralPath $cleanPath @GCIParams -Name | Where-Object $likeOperator
         }
     }
 }
