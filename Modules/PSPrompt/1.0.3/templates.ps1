@@ -174,10 +174,8 @@ Add-PSPromptTemplateItem @promptTemplateGetGitBranch
         Alignment = 'Left'
         ItemSeparator = ' '
         NoGroup = $true
-        BackgroundColor = '150;30;65'
         ContentFunction = $getRunDuration
     }
-    if ( $isZsh) { $promptTemplateGetRunDuration.Remove('BackgroundColor') }
     Add-PSPromptTemplateItem @promptTemplateGetRunDuration
 
 
@@ -228,10 +226,8 @@ Add-PSPromptTemplateItem @promptTemplateGetGitBranch
         Alignment = 'Left'
         ItemSeparator = ' '
         NoGroup = $true
-        BackgroundColor = '40;169;120'
         ContentFunction = $itemCurrentPath
     }
-    if ( $isZsh) { $promptTemplateGetCurrentPath.Remove('BackgroundColor') }
     Add-PSPromptTemplateItem @promptTemplateGetCurrentPath
 
 
