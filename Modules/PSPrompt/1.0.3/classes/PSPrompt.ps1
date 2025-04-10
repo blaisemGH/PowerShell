@@ -182,7 +182,7 @@ class PSPromptConfig {
     static [int]$EmptyLinesToPrecedePromptline = 0
     static [int]$SpacesBetweenItemSeparators = 0
     static [string]$TerminalBackgroundColor = ($host.ui.RawUI.BackgroundColor)
-    static [string]$shellAnsiSign = (if ($env:SHELL -match 'zsh') {'$'})
+    #static [string]$shellAnsiSign = (if ($env:SHELL -match 'zsh') {'$'})
     static [OrderedDictionary]$GroupMarkerMaps = [ordered]@{ 0 = @{
         open = ''
         close = ''
