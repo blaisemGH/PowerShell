@@ -154,6 +154,14 @@ if ( $env:NerdFont ) {
         Add-PSPromptTemplateItem @promptTemplateGetGitBranch
     }
 } else {
+
+
+
+
+    
+# For non nerd font
+
+
     [PSPromptConfig]::DefaultPromptBeckon = ' >'
     [PSPromptConfig]::MultiLineConnectorOpenDefaults = @{
         FirstLine = ''
