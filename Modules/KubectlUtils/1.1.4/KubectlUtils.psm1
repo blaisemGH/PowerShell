@@ -105,9 +105,12 @@ if ( (Get-Module PSPrompt) -and ! (Get-Module KubectlUtils) ) {
         label = 'KubectlUtilsSetContext'
         UniqueId = 69
     }
+    if ($env:SHELL -match 'zsh') {
+        $kubePromptTemplate.Remove('ForegroundColor')
+    }
     #$align = $kubePromptTemplate.Alignment
     #if ( [PSPromptConfig]::"PromptConfigs$align".Values.UniqueId -eq $kubePromptTemplate.UniqueId ) {
-        [PSPromptConfig]::AddTemplate($kubePromptTemplate)
+    [PSPromptConfig]::AddTemplate($kubePromptTemplate)
     #}
 }
 

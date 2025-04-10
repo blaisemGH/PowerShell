@@ -18,7 +18,7 @@ function Sync-GkeContextMappings {
 
     $mappingsToCreate |
         New-GcpStandardGkeContextMapping |
-        Sort-Object | 
+        Sort-Object |
         Export-GcpStandardGkeContextMappings -ExistingMappingsToKeep ($upToDateCurrentMappings ?? @{})
 
     Write-Host 'Done syncing all project IDs!' -ForegroundColor Cyan

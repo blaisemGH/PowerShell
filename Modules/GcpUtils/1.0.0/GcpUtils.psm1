@@ -66,8 +66,11 @@ if ( !(Test-Path "${psDriveGoogleProjects}:" -ErrorAction SilentlyContinue) ) {
 }
 
 if ( (Get-Module PSPrompt) -and !(Get-Module GcpUtils) ) {
+    $gcloudSymbol = if ( $env:NerdFont ) { '' } else { 'G' }
     $LineToPrintOn = if ( [PSPromptConfig]::PromptConfigsRight.values.Label -match 'KubectlUtils' ) { 2 } else { 1 }
-    $getGcpContext = { ': ' + [Gcp]::CurrentProject }
+    $getGcpContext = {
+        $using:gcloudSymbol + ': ' + [Gcp]::CurrentProject
+    }
     $promptTemplateGetGcpContext = @{
         Alignment = 'Right'
         ItemSeparator = ' '
@@ -75,6 +78,9 @@ if ( (Get-Module PSPrompt) -and !(Get-Module GcpUtils) ) {
         ForegroundColor = 'DarkKhaki'
         ContentFunction = $getGcpContext
         label = 'GcpUtilsSetContext'
+    }
+    if ($env:SHELL -match 'zsh') {
+        $promptTemplateGetGcpContext.Remove('ForegroundColor')
     }
     [PSPromptConfig]::AddTemplate($promptTemplateGetGcpContext)
 }
