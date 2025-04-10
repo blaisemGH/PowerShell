@@ -153,8 +153,26 @@ $promptTemplateGetGitBranch = @{
 
 Add-PSPromptTemplateItem @promptTemplateGetGitBranch
 } else {
-    [PSPromptConfig]::SetMultilineConnector(' ','|','--')
+    [PSPromptConfig]::[PSPromptConfig]::MultiLineConnectorOpenDefaults = @{
+        FirstLine = ''
+        MiddleLine = ''
+        LastLine = '--'
+    }
     $isZsh = if ($env:SHELL -match 'zsh') { $true }
+
+    $getPSVersion = { 'PS ' + $PSVersionTable.PSVersion.ToString() + ' ' }
+    $promptTemplateGetPSVersion = @{
+        Alignment = 'Left'
+        AnsiEffects = 'italicize'
+        ForegroundColor = '20;90;169'
+        ContentFunction = $getPSVersion
+        DoNotRecalculateContentValue = $true
+    }
+    if ($isZsh) {
+        $promptTemplateGetPSVersion.Remove('AnsiEffects')
+        $promptTemplateGetPSVersion.Remove('ForegroundColor')
+    }
+    Add-PSPromptTemplateItem @promptTemplateGetPSVersion
 
     $itemCurrentPath = {
         param($ansi)
@@ -203,8 +221,10 @@ Add-PSPromptTemplateItem @promptTemplateGetGitBranch
         Alignment = 'Left'
         ItemSeparator = ' '
         NoGroup = $true
+        ForegroundColor = '40;169;120'
         ContentFunction = $itemCurrentPath
     }
+    if ($isZsh) {$promptTemplateGetPSVersion.Remove('ForegroundColor')}
     Add-PSPromptTemplateItem @promptTemplateGetCurrentPath
 
 
@@ -287,7 +307,7 @@ Add-PSPromptTemplateItem @promptTemplateGetGitBranch
             ContentFunction = $getGitBranch
             AnsiEffects = 'italicize'
         }
-        if ( $isZsh) { $promptTemplateGetGitBranch.Remove('ForegroundColor') }
+        if ($isZsh) { $promptTemplateGetGitBranch.Remove('ForegroundColor') }
 
         Add-PSPromptTemplateItem @promptTemplateGetGitBranch
     }

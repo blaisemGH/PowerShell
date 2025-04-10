@@ -177,6 +177,11 @@ class PSPromptConfig {
     static [string]$MultiLineConnectorOpenFirstLine
     static [string]$MultiLineConnectorOpenMiddleLine
     static [string]$MultiLineConnectorOpenLastLine
+    static [string]$MultiLineConnectorOpenDefaults = @{
+        FirstLine = [char]0x0250C
+        MiddleLine = [char]0x02502
+        LastLine = [char]0x02514
+    }
     static [bool]$NoItemsOnLastLine
     static [string]$DefaultPromptBeckon = '>'
     static [int]$EmptyLinesToPrecedePromptline = 0
@@ -342,9 +347,9 @@ class PSPromptConfig {
     
     static [void] SetMultilineConnector() {
         [PSPromptConfig]::MultiLineConnector = [Environment]::NewLine
-        [PSPromptConfig]::MultiLineConnectorOpenFirstLine = [char]0x0250C
-        [PSPromptConfig]::MultiLineConnectorOpenMiddleLine = [char]0x02502
-        [PSPromptConfig]::MultiLineConnectorOpenLastLine = [char]0x02514
+        [PSPromptConfig]::MultiLineConnectorOpenFirstLine = [PSPromptConfig]::MultiLineConnectorOpenDefaults.FirstLine
+        [PSPromptConfig]::MultiLineConnectorOpenMiddleLine = [PSPromptConfig]::MultiLineConnectorOpenDefaults.MiddleLine
+        [PSPromptConfig]::MultiLineConnectorOpenLastLine = [PSPromptConfig]::MultiLineConnectorOpenDefaults.LastLine
     }
     
     static [void] SetMultilineConnector([string]$open, [string]$middle, [string]$close) {
