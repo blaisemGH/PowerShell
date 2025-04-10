@@ -236,8 +236,8 @@ Add-PSPromptTemplateItem @promptTemplateGetGitBranch
 
 
     if ( Get-Command git ) {
-        if ($isZsh) {
-            $getGitBranch = {
+        $getGitBranch = if ($isZsh) {
+            {    
                 param($ansi)
                 $branchName = git branch --show-current
                 If ( $? ) {
@@ -271,7 +271,7 @@ Add-PSPromptTemplateItem @promptTemplateGetGitBranch
                 return $out
             }
         } else {
-            $getGitBranch = {
+            {
                 param($ansi)
                 $branchName = git branch --show-current
                 If ( $? ) {
@@ -306,15 +306,16 @@ Add-PSPromptTemplateItem @promptTemplateGetGitBranch
                 return $out
             }
         }
-    }
-    $promptTemplateGetGitBranch = @{
-        Alignment = 'Left'
-        NoGroup = $true
-        ForegroundColor = 'Orchid'
-        ContentFunction = $getGitBranch
-        AnsiEffects = 'italicize'
-    }
-    if ( $isZsh) { $promptTemplateGetGitBranch.Remove('ForegroundColor') }
 
-    Add-PSPromptTemplateItem @promptTemplateGetGitBranch
+        $promptTemplateGetGitBranch = @{
+            Alignment = 'Left'
+            NoGroup = $true
+            ForegroundColor = 'Orchid'
+            ContentFunction = $getGitBranch
+            AnsiEffects = 'italicize'
+        }
+        if ( $isZsh) { $promptTemplateGetGitBranch.Remove('ForegroundColor') }
+
+        Add-PSPromptTemplateItem @promptTemplateGetGitBranch
+    }
 }
