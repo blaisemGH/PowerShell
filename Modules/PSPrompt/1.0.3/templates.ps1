@@ -19,7 +19,7 @@ $getRunDuration = {
             }
         } catch {}
     }
-    return '' + $fmtDuration
+    return ' ' + $fmtDuration
 }
 $promptTemplateGetRunDuration = @{
     Alignment = 'Left'
