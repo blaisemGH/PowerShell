@@ -153,6 +153,7 @@ $promptTemplateGetGitBranch = @{
 
 Add-PSPromptTemplateItem @promptTemplateGetGitBranch
 } else {
+    [PSPromptConfig]::SetMultilineConnector('-','|','-')
     $isZsh = if ($env:SHELL -match 'zsh') { $true }
     $getRunDuration = {
         $history = Get-History
