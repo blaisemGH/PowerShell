@@ -117,7 +117,7 @@ Function Add-MissingGcpProjectsToFSCache {
         ForEach-Object {
             $projectId = $_.project_id
             Write-Host "Found new project folder $($_.name) ($($_.project_id)). Fetching metadata..." -Fore Green
-            $projectDriveFilePath = Get-GcpProjectLineageAsFilepath -ProjectID $projectId
+            $projectDriveFilePath = Get-GcpProjectLineageAsFilepath -GcpProjectID $projectId
 
             if ( $projectDriveFilePath ) {
 
