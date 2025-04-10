@@ -153,7 +153,7 @@ $promptTemplateGetGitBranch = @{
 
 Add-PSPromptTemplateItem @promptTemplateGetGitBranch
 } else {
-    [PSPromptConfig]::[PSPromptConfig]::MultiLineConnectorOpenDefaults = @{
+    [PSPromptConfig]::MultiLineConnectorOpenDefaults = @{
         FirstLine = ''
         MiddleLine = ''
         LastLine = '--'
