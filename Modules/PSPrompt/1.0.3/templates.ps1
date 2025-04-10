@@ -153,32 +153,8 @@ $promptTemplateGetGitBranch = @{
 
 Add-PSPromptTemplateItem @promptTemplateGetGitBranch
 } else {
-    [PSPromptConfig]::SetMultilineConnector('-','|','-')
+    [PSPromptConfig]::SetMultilineConnector(' ','|','--')
     $isZsh = if ($env:SHELL -match 'zsh') { $true }
-    $getRunDuration = {
-        $history = Get-History
-        $fmtDuration = if ( $history ) {
-            try {
-                $duration = $d = $history[-1].Duration
-                switch ($duration) {
-                    {$_.Days} { '{0}d {1}h{2}m{3}.{4}s' -f $d.Days, $d.Hours, $d.Minutes, $d.Seconds, $d.Milliseconds; break }
-                    {$_.Hours} { '{0}h{1}m{2}.{3}s' -f $d.Hours, $d.Minutes, $d.Seconds, $d.Milliseconds; break }
-                    {$_.Minutes} {'{0}m{1}.{2}s' -f $d.Minutes, $d.Seconds, $d.Milliseconds; break }
-                    {$_.Seconds} {'{0}.{1}s' -f $d.Seconds, $d.Milliseconds }
-                    DEFAULT { '{0}ms' -f $d.Milliseconds }
-                }
-            } catch {}
-        }
-        return $fmtDuration
-    }
-    $promptTemplateGetRunDuration = @{
-        Alignment = 'Left'
-        ItemSeparator = ' '
-        NoGroup = $true
-        ContentFunction = $getRunDuration
-    }
-    Add-PSPromptTemplateItem @promptTemplateGetRunDuration
-
 
     $itemCurrentPath = {
         param($ansi)
@@ -260,8 +236,8 @@ Add-PSPromptTemplateItem @promptTemplateGetGitBranch
                 }
                 if ( $out ) {
                     $relativeCommits = (git rev-list --left-right --count origin/$parent...origin/$branchName ) -split '\s+'
-                    $commitsBehind = if ( $relativeCommits[0] ) { "$($relativeCommits[0])" }
-                    $commitsAhead = if ( $relativeCommits[1] ) { "$($relativeCommits[1])" }
+                    $commitsBehind = if ( $relativeCommits[0] ) { "-$($relativeCommits[0])" }
+                    $commitsAhead = if ( $relativeCommits[1] ) { "+$($relativeCommits[1])" }
                     $null = try {git log --oneline -n 50 --decorate=short | % { if ( $_ -match '^([a-zA-Z0-9]+) \((\S+)\)' ) { return } } } catch {}
                     $out += " $commitsBehind $commitsAhead "
                 }
@@ -295,8 +271,8 @@ Add-PSPromptTemplateItem @promptTemplateGetGitBranch
                 }
                 if ( $out ) {
                     $relativeCommits = (git rev-list --left-right --count origin/$parent...origin/$branchName ) -split '\s+'
-                    $commitsBehind = if ( $relativeCommits[0] ) { "`e[91m$($relativeCommits[0])" }
-                    $commitsAhead = if ( $relativeCommits[1] ) { "`e[32m$($relativeCommits[1])" }
+                    $commitsBehind = if ( $relativeCommits[0] ) { "`e[91m-$($relativeCommits[0])" }
+                    $commitsAhead = if ( $relativeCommits[1] ) { "`e[32m+$($relativeCommits[1])" }
                     $null = try {git log --oneline -n 50 --decorate=short | % { if ( $_ -match '^([a-zA-Z0-9]+) \((\S+)\)' ) { return } } } catch {}
                     $out += " $commitsBehind $commitsAhead `e[0m $ansi"
                 }
