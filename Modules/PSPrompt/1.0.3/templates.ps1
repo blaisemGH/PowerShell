@@ -153,6 +153,7 @@ $promptTemplateGetGitBranch = @{
 
 Add-PSPromptTemplateItem @promptTemplateGetGitBranch
 } else {
+    [PSPromptConfig]::DefaultPromptBeckon = ' >'
     [PSPromptConfig]::MultiLineConnectorOpenDefaults = @{
         FirstLine = ''
         MiddleLine = ''
@@ -164,7 +165,7 @@ Add-PSPromptTemplateItem @promptTemplateGetGitBranch
     $promptTemplateGetPSVersion = @{
         Alignment = 'Left'
         AnsiEffects = 'italicize'
-        ForegroundColor = '20;90;169'
+        ForegroundColor = 'MenuHighlight'
         ContentFunction = $getPSVersion
         DoNotRecalculateContentValue = $true
     }
@@ -221,7 +222,7 @@ Add-PSPromptTemplateItem @promptTemplateGetGitBranch
         Alignment = 'Left'
         ItemSeparator = ' '
         NoGroup = $true
-        ForegroundColor = '40;169;120'
+        ForegroundColor = 'MediumSpringGreen'
         ContentFunction = $itemCurrentPath
     }
     if ($isZsh) {$promptTemplateGetPSVersion.Remove('ForegroundColor')}
