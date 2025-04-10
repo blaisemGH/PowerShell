@@ -66,7 +66,7 @@ Function Sync-GcpProjectsAsJob {
 
         [Gcp]::SetGcpProperties($using:GcpParams)
 
-        Write-Host 'Initialized GcpUtils module' -Fore Green
+        Write-Host "Initialized GcpUtils module with gcp config $([Gcp]::Config | Out-String)" -Fore Green
 
         if ( [Gcp]::SyncProjectsPreparatoryFunction ) {
             & ([Gcp]::SyncProjectsPreparatoryFunction)

@@ -165,19 +165,19 @@ Function Get-GcpProjectLineageAsFilepath {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory)]
-        [string]$ProjectId
+        [string]$GcpProjectId
     )
-    $projectLineage = (gcloud projects get-ancestors $ProjectId) -replace
+    $projectLineage = (gcloud projects get-ancestors $GcpProjectId) -replace
         '\s{2,}', [char]0x2561 |
         ConvertFrom-Csv -Delimiter ([char]0x2561)
 
     $folderNames = foreach ( $folder in ($projectLineage | where TYPE -eq folder) ){
-        # Stop at the designated organization ID. This prevents permission errors for tiers above this.        
-        if ( $folder.ID -eq [Gcp]::OrganizationNumber ) { 
+        # Stop at the designated organization ID. This prevents permission errors for tiers above this.
+        if ( $folder.ID -eq [Gcp]::OrganizationNumber ) {
             break
         }
 
-        gcloud resource-manager folders describe $folder.ID --format json | 
+        gcloud resource-manager folders describe $folder.ID --format json |
             ConvertFrom-Json |
             Select-Object -ExpandProperty DisplayName
     }

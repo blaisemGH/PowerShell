@@ -26,7 +26,9 @@ Class Kube {
     static [string] $relevantContainersFile = [Kube]::KubeLocalCache + '/relevantContainers.psd1'
     static [HashSet[string]] $relevantContainers = ( & {
         try {
-            return (Import-PowerShellDataFile ([Kube]::relevantContainersFile) -ErrorAction Stop).Values
+            if ( Test-Path [Kube]::relevantContainersFile ) {
+                return (Import-PowerShellDataFile ([Kube]::relevantContainersFile) -ErrorAction Stop).Values
+            }
         } catch {
             Write-Verbose "No relevant containers found. These are used in e.g., `Get-KubeMetrics` to filter a curated list of relevant containers. Checked [kube]::relevantContainersFile for a PowerShellDataFile and found path: $([Kube]::relevantContainersFile)"
             return [HashSet[string]]@($null)

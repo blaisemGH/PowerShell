@@ -104,7 +104,7 @@ function New-GcpStandardGkeContextMapping {
                 Write-Host "Creating gke context mapping for project id: $projectId" -Fore Cyan
 
                 try {
-                    $localPath = Get-ChildItem ([Gcp]::ProjectRoot) -Recurse -File -Filter $projectID
+                    $localPath = Get-ChildItem ([Gcp]::ProjectRoot) -Recurse -File -Filter $projectID | Sort-Object LastWriteTime | Select -Last 1
                     $gkeClusterContext = if ( ($localPath | Select-String '^Context') ) {
                         Get-Content $localPath -Raw | ConvertFrom-StringData | Select-Object -ExpandProperty Context
                     } else {
@@ -116,7 +116,7 @@ function New-GcpStandardGkeContextMapping {
                     @{ $key = $gkeClusterContext }
                 }
                 catch {
-                    Write-Host ($_.Exception.Message + " --> Cannot set a kube context mapping for this project, skipping it.")
+                    Write-Host ($_.Exception.Message + " --> Cannot set a kube context mapping for this project, e.g., project is in deletion. Skipping this project.)")
                 }
             }
         }

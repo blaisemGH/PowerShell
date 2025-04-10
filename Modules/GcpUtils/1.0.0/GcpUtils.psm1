@@ -25,6 +25,10 @@ if ( !(Test-Path ([Gcp]::ProjectRoot)) ) {
     New-Item ([Gcp]::ProjectRoot) -ItemType Directory -Force
 }
 
+if ( !(Test-Path "$([Gcp]::LocalCache)/pam-grants") ) {
+    New-Item "$([Gcp]::LocalCache)/pam-grants" -ItemType Directory -Force
+}
+
 if ( !(Test-Path ([Gcp]::PathToProjectGkeMappings)) ) {
     New-Item ([Gcp]::PathToProjectGkeMappings) -ItemType File -Value '@{}' -Force
 }

@@ -20,34 +20,41 @@ function Add-EnvironmentVariable {
     )
     $ErrorActionPreference = 'Stop'
     $setEnvParams = [hashtable]$PSBoundParameters
+    $setEnvParams.Scope = $Scope
+    $setEnvParams.Force = $Force
     $setEnvParams.IsAdmin = Test-HasAdminPrivileges
 
     $currentEnvVarValue = [Environment]::GetEnvironmentVariable($Name, $setEnvParams.Scope)
 
     # Setup things for Path environment variables
     $isPathVariable = if ( $Name -match 'Path' -and $Name -ne 'PATH' ) {
-            Test-ReadHost -Query 'Is this a PATH variable?' -ValidationStrings 'Y','N'
-        } else { $true }
-    
+            $out = Test-ReadHost -Query 'Is this a PATH variable?' -ValidationStrings 'Y','N'
+            if ($out -eq 'Y') {$true} else {$false}
+        } elseif ($Name -eq 'PATH') {
+            $true
+        } else {
+            $false
+        }
+
     if ( $isPathVariable ) {
-        
+
         [string[]]$currentPaths = & {
             if ( $env:OS -match 'Windows' -and $Scope -ne 'Process') {
                 try {
                     $key = switch ($Scope) {
                         Machine {
                             [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(
-                                'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 
+                                'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
                                 $true # Write access
                             )
                         }
                         User { [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey( 'Environment', $true ) }
                     }
-                     
+
                     $key.GetValue('Path', $null, 'DoNotExpandEnvironmentNames').TrimEnd([IO.Path]::PathSeparator)
                 } finally {
-                    if ($null -ne $key) { 
-                        $key.Dispose() 
+                    if ($null -ne $key) {
+                        $key.Dispose()
                     }
                 }
             }
@@ -82,7 +89,7 @@ function Add-EnvironmentVariable {
             Test-ReadHost -Query 'Do you wish to overwrite it? [y/n]' -ValidationStrings 'y', 'n' -DefaultResponse 'n'
         }
     }
-    
+
     # Set environment variable
     if ( $confirm -ne 'n' ) {
         $setEnvParams.Value = Get-EnvironmentVariableValue -Name $Name -Value $setEnvParams.Value -CurrentPaths $currentPaths
@@ -112,6 +119,7 @@ function Test-HasAdminPrivileges {
 
 function Get-EnvironmentVariableValue {
     [CmdletBinding(DefaultParameterSetName='NotPathVariable')]
+    [OutputType([String])]
     param(
         [Parameter(Mandatory)]
         [string]$Name,
@@ -160,18 +168,18 @@ function Export-EnvironmentVariable {
     }
 
     if ( $env:OS -match 'Windows' ) {
-        
+
         [Environment]::SetEnvironmentVariable($Name, $Value, $Scope)
         if ( $WindowsCompanionScopePathValues -and $Scope -eq 'Machine' ) {
             try {
                 $key = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(
-                    'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 
+                    'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
                     $true # Write access
                 )
                 $key.SetValue('Path', $Value, 'ExpandString')
             } finally {
-                if ($null -ne $key) { 
-                    $key.Dispose() 
+                if ($null -ne $key) {
+                    $key.Dispose()
                 }
             }
             $updateSessionValue = $WindowsCompanionScopePathValues + [Path]::PathSeparator + $Value
@@ -181,8 +189,8 @@ function Export-EnvironmentVariable {
                 $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment', $true)
                 $key.SetValue('Path', $Value, 'ExpandString')
             } finally {
-                if ($null -ne $key) { 
-                    $key.Dispose() 
+                if ($null -ne $key) {
+                    $key.Dispose()
                 }
             }
             $updateSessionValue = $Value + [Path]::PathSeparator + $WindowsCompanionScopePathValues
@@ -232,7 +240,7 @@ function Format-UniqueWindowsPaths {
         $companionScopeValues = [Environment]::GetEnvironmentVariable($Name, $companionScope) -split [Path]::PathSeparator
         $overlappingValues = $companionScopeValues | Where { $_ -in $Value }
         $filteredCompanionValues = ($companionScopeValues | Where { $_ -notin $Value }) -join [Path]::PathSeparator
-        
+
         $exit = $null
         $confirm = $null
         if ( $overlappingValues -and $companionScope -in 'User', 'Machine') {
@@ -245,7 +253,7 @@ function Format-UniqueWindowsPaths {
                 $confirm = Test-ReadHost "Do you wish to remove the redundant $Value from $Name in scope $companionScope?" -ValidationStrings 'y','n'
             }
         }
-        
+
         if ( $confirm -eq 'y' ) {
             [Environment]::SetEnvironmentVariable($Name, $filteredCompanionValues, $companionScope)
             Write-Host "$Value removed from $Name in scope $companionScope"
